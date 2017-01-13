@@ -67,7 +67,7 @@ func updateRules() {
 func getSSServerDomainList() (res []string) {
 	retry := 0
 doRequest:
-	req, err := http.NewRequest("GET", "https://console.yii.li/admin/servers", nil)
+	req, err := http.NewRequest("GET", config.Generals.ConsoleHost +"/admin/servers", nil)
 	if err != nil {
 		common.Error("Could not parse get ss server list request:", err)
 		return
