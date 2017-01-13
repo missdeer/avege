@@ -102,3 +102,12 @@ cp config-sample.json config.json
 # modify config.json as you like
 ./avege
 ```
+
+## Reference
+
+* [redsocks](https://github.com/darkk/redsocks)
+* [Shadowsocks-go](https://github.com/shadowsocks/shadowsocks-go)
+* [ShadowsocksR](https://github.com/breakwa11/shadowsocks-csharp)
+* [ProxyClient](https://github.com/GameXG/ProxyClient)
+* [go-any-proxy](https://github.com/freskog/go-any-proxy)
+* [go-socks5](https://github.com/armon/go-socks5)
