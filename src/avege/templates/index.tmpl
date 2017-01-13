@@ -1,0 +1,79 @@
+{{ define "index.tmpl" }}
+<html>
+<head>
+	<meta charset="utf-8"> 
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Avege - A powerful anti-GFW toolset.</title>
+	<link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css">  
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="http://cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="http://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+	<script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+	<script src="//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body role="document">
+<div class="container theme-showcase" role="main">
+<table class="table table-hover">
+<caption>运行基本信息</caption>
+    <tbody>
+        <tr><td>Quote</td><td align="right">{{.quote}}</td></tr>
+        <tr><td>TotalDownload</td><td align="right">{{.totalDownload}}</td></tr>
+        <tr><td>TotalUpload</td><td align="right">{{.totalUpload}}</td></tr>
+        <tr><td>CurrentUsing</td><td>{{.currentUsing}}</td></tr>
+        <tr><td>StartAt</td><td>{{.startAt}}</td></tr>
+        <tr><td>Uptime</td><td>{{.uptime}}</td></tr>
+    </tbody>
+</table>
+<div class="table-responsive">
+<table class="table table-hover">
+<caption>运行统计信息</caption>
+   <thead>
+      <tr>
+         <th><a href="/h5/?orderby=address&order={{.order}}">Address</a></th>
+         <th>Current Use</th>
+         <th><a href="/h5/?orderby=latency&order={{.order}}">Latency (ms)</a></th>
+         <th><a href="/h5/?orderby=upload&order={{.order}}">Total Upload (MB)</a></th>
+         <th><a href="/h5/?orderby=download&order={{.order}}">Total Download (MB)</a></th>
+         <th><a href="/h5/?orderby=highestlastsecondbps&order={{.order}}">Highest Last Second KBps</a></th>
+         <th><a href="/h5/?orderby=highestlastminutebps&order={{.order}}">Highest Last Minute KBps</a></th>
+         <th><a href="/h5/?orderby=highestlasttenminutesbps&order={{.order}}">Highest Last Ten Minutes KBps</a></th>
+         <th><a href="/h5/?orderby=highestlasthourbps&order={{.order}}">Highest Last Hour KBps</a></th>
+         <th><a href="/h5/?orderby=lastsecondbps&order={{.order}}">Last Second Bps</a></th>
+         <th><a href="/h5/?orderby=lastminutebps&order={{.order}}">Last Minute Bps</a></th>
+         <th><a href="/h5/?orderby=lasttenminutesbps&order={{.order}}">Last Ten Minutes Bps</a></th>
+         <th><a href="/h5/?orderby=lasthourbps&order={{.order}}">Last Hour Bps</a></th>
+         <th><a href="/h5/?orderby=failedcount&order={{.order}}">Failed Count</a></th>
+         <th><a href="/h5/?orderby=protocol&order={{.order}}">Protocol</a></th>
+      </tr>
+   </thead>
+   <tbody>
+    {{range .stats}}
+      <tr>
+         <td>{{.Address}}</td>
+         <td>{{if ne .Address $.currentUsing}}<a href="/h5/server/select/{{.Id}}?next={{$.next}}" class="btn btn-default btn-xs active" role="button">使用</a>{{end}}</td>
+         <td align="right">{{.Latency}}</td>
+         <td align="right">{{.TotalUpload}}</td>
+         <td align="right">{{.TotalDownload}}</td>
+         <td align="right">{{.HighestLastSecondBps}}</td>
+         <td align="right">{{.HighestLastMinuteBps}}</td>
+         <td align="right">{{.HighestLastTenMinutesBps}}</td>
+         <td align="right">{{.HighestLastHourBps}}</td>
+         <td align="right">{{.LastSecondBps}}</td>
+         <td align="right">{{.LastMinuteBps}}</td>
+         <td align="right">{{.LastTenMinutesBps}}</td>
+         <td align="right">{{.LastHourBps}}</td>
+         <td align="right">{{.FailedCount}}</td>
+         <td>{{.ProtocolType}}</td>
+      </tr>
+    {{end}}
+   </tbody>
+</table>
+</div>
+</div>
+</body>
+</html>
+{{ end }}

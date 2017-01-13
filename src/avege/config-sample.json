@@ -1,0 +1,138 @@
+{
+  "general": {
+    "priority_interface_address": "192.168.77.0/24",
+    "priority_interface_enabled": true,
+    "max_openfiles": 51200,
+    "log_level": 5,
+    "pprof": false,
+    "gen_release": true,
+    "timeout": 10,
+    "load_balance": "smart",
+    "udp_enabled": false,
+    "api": "127.0.0.1:58098",
+    "api_enabled": true,
+    "token": "",
+    "broadcast_enabled": true,
+    "tun2socks_enabled": false,
+    "console_host": "https://www.console.com",
+    "console_version": "v1",
+    "console_websocket_url": "wss://www.console.com/v1/ws"
+  },
+  "dns": {
+    "enabled": false,
+    "cache": true,
+    "cache_timeout": 60,
+    "cache_ttl": false,
+    "search_domain": "cisco.com",
+    "timeout": 12,
+    "read_timeout": 10,
+    "write_timeout": 10,
+    "china_server_count": "3",
+    "abroad_server_count": "2",
+    "abroad_protocol": "udp",
+    "local" : [
+      { "address": "127.0.0.1:35353", "protocol": "tcp"},
+      { "address": "[::1]:35353", "protocol": "tcp"},
+      { "address": "127.0.0.1:35353", "protocol": "udp"},
+      { "address": "[::1]:35353", "protocol": "udp"}
+    ],
+    "china" : [
+      { "address": "114.114.114.114:53", "protocol": "udp"},
+      { "address": "223.6.6.6:53", "protocol": "udp"},
+      { "address": "119.29.29.29:53", "protocol": "udp"},
+      { "address": "114.114.115.115:53", "protocol": "udp"},
+      { "address": "223.5.5.5:53", "protocol": "udp"},
+      { "address": "182.254.116.116:53", "protocol": "udp"},
+      { "address": "[2001:da8:202:10::36]:53", "protocol": "udp"},
+      { "address": "[2001:da8:202:10::37]:53", "protocol": "udp"},
+      { "address": "[2001:cc0:2fff:2::6]:53", "protocol": "udp"}
+    ],
+    "abroad" : [
+      { "address": "208.67.222.222:443", "protocol": "udp"},
+      { "address": "208.67.220.220:443", "protocol": "udp"},
+      { "address": "208.67.222.222:443", "protocol": "tcp"},
+      { "address": "208.67.220.220:443", "protocol": "tcp"},
+      { "address": "208.67.222.222:5353", "protocol": "udp"},
+      { "address": "208.67.220.220:5353", "protocol": "udp"},
+      { "address": "208.67.222.222:5353", "protocol": "tcp"},
+      { "address": "208.67.220.220:5353", "protocol": "tcp"},
+      { "address": "208.67.222.222:53", "protocol": "udp"},
+      { "address": "208.67.220.220:53", "protocol": "udp"},
+      { "address": "208.67.222.222:53", "protocol": "tcp"},
+      { "address": "208.67.220.220:53", "protocol": "tcp"},
+      { "address": "208.67.222.220:53", "protocol": "udp"},
+      { "address": "208.67.220.222:53", "protocol": "udp"},
+      { "address": "208.67.222.220:53", "protocol": "tcp"},
+      { "address": "208.67.220.222:53", "protocol": "tcp"},
+      { "address": "[2620:0:ccc::2]:53", "protocol": "udp"},
+      { "address": "[2620:0:ccd::2]:53", "protocol": "udp"},
+      { "address": "[2620:0:ccc::2]:53", "protocol": "tcp"},
+      { "address": "[2620:0:ccd::2]:53", "protocol": "tcp"},
+      { "address": "8.8.8.8:53", "protocol": "udp"},
+      { "address": "8.8.4.4:53", "protocol": "udp"},
+      { "address": "[2001:4860:4860::8888]:53", "protocol": "udp"},
+      { "address": "[2001:4860:4860::8844]:53", "protocol": "udp"},
+      { "address": "8.8.8.8:53", "protocol": "tcp"},
+      { "address": "8.8.4.4:53", "protocol": "tcp"},
+      { "address": "[2001:4860:4860::8888]:53", "protocol": "tcp"},
+      { "address": "[2001:4860:4860::8844]:53", "protocol": "tcp"},
+      { "address": "156.154.70.1:53", "protocol": "udp"},
+      { "address": "156.154.71.1:53", "protocol": "udp"},
+      { "address": "198.153.192.1:53", "protocol": "udp"},
+      { "address": "198.153.194.1:53", "protocol": "udp"}
+    ],
+    "server" : {
+      "domains": ["cisco.com", "webex.com", "webexconnect.com"],
+      "servers": [
+        { "address": "72.163.128.140:53", "protocol": "udp"},
+        { "address": "64.104.123.245:53", "protocol": "udp"},
+        { "address": "64.104.76.247:53", "protocol": "udp"},
+        { "address": "171.70.168.183:53", "protocol": "udp"},
+        { "address": "64.104.123.144:53", "protocol": "udp"}
+      ]
+    }
+  },
+  "target": {
+    "port": {
+      "allow": "80,443",
+      "deny": "all"
+    },
+    "ip": {
+      "allow": "all",
+      "deny": ""
+    }
+  },
+  "inbound": {
+    "address": "127.0.0.1",
+    "port": 1080,
+    "timeout": 60,
+	"type": "socks5"
+  },
+  "outbounds": [
+    {
+      "address": "s1.domain.com:3389",
+      "key": "abcdefg",
+      "method": "rc4-md5",
+      "type": "shadowsocks",
+      "protocol": "origin",
+      "obfs": "plain"
+    },
+    {
+      "address": "s2.domain.com:3389",
+      "key": "abcdefg",
+      "method": "rc4-md5",
+      "timeout": 300,
+      "type": "shadowsocks",
+      "protocol": "origin",
+      "obfs": "plain"
+    },
+    {
+      "address": "s3.domain.com:3389",
+      "key": "abcdefg",
+      "method": "rc4-md5",
+      "type": "shadowsocks",
+      "protocol": "origin",
+      "obfs": "plain"
+    }
+  ]
+}
