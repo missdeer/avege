@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"common"
+	"encoding/binary"
 )
 
 const (
@@ -36,7 +37,15 @@ var (
 
 func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *common.Buffer) (err error) {
 	needChangeUsedServerInfo := (smartLastUsedBackendInfo == nil)
-	port := uint16(rawaddr[5])<<8 + uint16(rawaddr[6])
+	var port uint16
+	switch rawaddr[0] {
+	case 1:
+		port = binary.BigEndian.Uint16(rawaddr[5:])
+	case 3:
+		port = binary.BigEndian.Uint16(rawaddr[2 + rawaddr[1]:])
+	case 4:
+		port = binary.BigEndian.Uint16(rawaddr[17:])
+	}
 	if forceUpdateSmartLastUsedBackendInfo {
 		forceUpdateSmartLastUsedBackendInfo = false
 		needChangeUsedServerInfo = true
@@ -231,45 +240,54 @@ func roundRobinLoadBalance(local net.Conn, rawaddr []byte, addr string) {
 
 func handleOutbound(conn net.Conn, rawaddr []byte, addr string) {
 	defer conn.Close()
-	targetIP := net.IPv4(rawaddr[1], rawaddr[2], rawaddr[3], rawaddr[4])
-	port := int(rawaddr[5])<<8 + int(rawaddr[6])
-	ipAddr := uint32(rawaddr[4]) + uint32(rawaddr[3])<<8 + uint32(rawaddr[2])<<16 + uint32(rawaddr[1])<<24
-	if _, ok := deniedPort[port]; ok {
-		common.Warning(conn.RemoteAddr(), "is trying to access denied port", port)
-		return
-	}
-	if config.Target.Port.Deny == "all" {
-		if _, ok := allowedPort[port]; !ok {
-			common.Warning(conn.RemoteAddr(), "is trying to access not allowed port", port)
+	switch rawaddr[0] {
+	case 1:
+		// IPv4
+		targetIP := net.IPv4(rawaddr[1], rawaddr[2], rawaddr[3], rawaddr[4])
+		port := int(rawaddr[5])<<8 + int(rawaddr[6])
+		ipAddr := uint32(rawaddr[4]) + uint32(rawaddr[3])<<8 + uint32(rawaddr[2])<<16 + uint32(rawaddr[1])<<24
+		if _, ok := deniedPort[port]; ok {
+			common.Warning(conn.RemoteAddr(), "is trying to access denied port", port)
 			return
 		}
-	}
-	if _, ok := deniedIP[ipAddr]; ok {
-		common.Warning(conn.RemoteAddr(), "is trying to access denied IP", targetIP)
-		return
-	}
-	if config.Target.IP.Deny == "all" {
-		if _, ok := allowedIP[ipAddr]; !ok {
-			common.Warning(conn.RemoteAddr(), "is trying to access not allowed IP", targetIP)
-			return
-		}
-	}
-	if p, ok := serverIP[ipAddr]; ok && port == p {
-		common.Warningf("%v is trying to access proxy server %v:%d",
-			conn.RemoteAddr(), targetIP, port)
-		Backends.RLock()
-		defer Backends.RUnlock()
-		for _, si := range Backends.BackendsInformation {
-			for _, ip := range si.ips {
-				if ip.Equal(targetIP) {
-					si.firewalled = true
-					break
-				}
+		if config.Target.Port.Deny == "all" {
+			if _, ok := allowedPort[port]; !ok {
+				common.Warning(conn.RemoteAddr(), "is trying to access not allowed port", port)
+				return
 			}
 		}
-		return
+		if _, ok := deniedIP[ipAddr]; ok {
+			common.Warning(conn.RemoteAddr(), "is trying to access denied IP", targetIP)
+			return
+		}
+		if config.Target.IP.Deny == "all" {
+			if _, ok := allowedIP[ipAddr]; !ok {
+				common.Warning(conn.RemoteAddr(), "is trying to access not allowed IP", targetIP)
+				return
+			}
+		}
+		if p, ok := serverIP[ipAddr]; ok && port == p {
+			common.Warningf("%v is trying to access proxy server %v:%d",
+				conn.RemoteAddr(), targetIP, port)
+			Backends.RLock()
+			defer Backends.RUnlock()
+			for _, si := range Backends.BackendsInformation {
+				for _, ip := range si.ips {
+					if ip.Equal(targetIP) {
+						si.firewalled = true
+						break
+					}
+				}
+			}
+			return
+		}
+		common.Debug("try to access:", targetIP, port)
+	case 3:
+	// variant length domain name
+
+	case 4:
+	// IPv6
 	}
-	common.Debug("try to access:", targetIP, port)
 
 	if outboundLoadBalanceHandler == nil {
 		switch config.Generals.LoadBalance {

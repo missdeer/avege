@@ -1,8 +1,11 @@
 package socks
 
 import (
+	"encoding/binary"
 	"net"
+
 	"common"
+	"common/domain"
 	iputil "common/ip"
 )
 
@@ -20,21 +23,41 @@ func HandleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 		return
 	}
 
-	// \attention: IPv4 only!!!
-	rawaddr := make([]byte, 7)
-	// address type, 1 - IPv4, 4 - IPv6, 3 - hostname, only IPv4 is supported now
-	rawaddr[0] = 1
-	// raw IP address, 4 bytes for IPv4 or 16 bytes for IPv6, only IPv4 is supported now
-	copy(rawaddr[1:5], req.DestAddr.IP)
-	// port
-	rawaddr[5] = byte(req.DestAddr.Port / 256)
-	rawaddr[6] = byte(req.DestAddr.Port % 256)
+	var rawaddr []byte
+	if req.DestAddr.IP.To4() != nil {
+		// IPv4
+		rawaddr = make([]byte, 7)
+		// address type, 1 - IPv4, 4 - IPv6, 3 - hostname
+		rawaddr[0] = 1
+		// raw IP address, 4 bytes for IPv4 or 16 bytes for IPv6
+		copy(rawaddr[1:5], req.DestAddr.IP)
+		// port
+		binary.BigEndian.PutUint16(rawaddr[5:], uint16(req.DestAddr.Port))
 
-	if rawaddr[0] == 1 && iputil.IPv4InChina(rawaddr[1:5]) {
-		// ipv4 connect directly
-		defer conn.Close()
-		s.HandleRequest(req, conn)
-		return
+		if rawaddr[0] == 1 && iputil.IPv4InChina(rawaddr[1:5]) {
+			// ipv4 connect directly
+			defer conn.Close()
+			s.HandleRequest(req, conn)
+			return
+		}
+	} else if req.DestAddr.IP.To16() != nil {
+		// IPv6
+		rawaddr = make([]byte, 19)
+		rawaddr[0] = 4
+		copy(rawaddr[1:1+16], req.DestAddr.IP)
+		binary.BigEndian.PutUint16(rawaddr[17:], uint16(req.DestAddr.Port))
+	} else {
+		// variant length domain name
+		host, _, _ := net.SplitHostPort(req.DestAddr.Address())
+		if domain.ToBlock(host) {
+			conn.Close()
+			return
+		}
+		rawaddr = make([]byte, 1 + 1 + len(host) + 2)
+		rawaddr[0] = 3
+		rawaddr[1] = byte(len(host))
+		copy(rawaddr[2:2+len(host)], []byte(host))
+		binary.BigEndian.PutUint16(rawaddr[2+len(host):], uint16(req.DestAddr.Port))
 	}
 	// Sending connection established message immediately to client.
 	// This some round trip time for creating socks connection with the client.
