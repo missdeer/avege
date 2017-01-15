@@ -12,6 +12,7 @@
     "api": "127.0.0.1:58098",
     "api_enabled": true,
     "token": "",
+    "cache_service": "gocache",
     "broadcast_enabled": true,
     "tun2socks_enabled": false,
     "console_host": "https://www.console.com",
@@ -115,7 +116,9 @@
       "method": "rc4-md5",
       "type": "shadowsocks",
       "protocol": "origin",
-      "obfs": "plain"
+      "pparam": "ppppppp",
+      "obfs": "plain",
+      "oparam": "ooooooo"
     },
     {
       "address": "s2.domain.com:3389",
@@ -124,7 +127,9 @@
       "timeout": 300,
       "type": "shadowsocks",
       "protocol": "origin",
-      "obfs": "plain"
+      "pparam": "ppppppp",
+      "obfs": "plain",
+      "oparam": "ooooooo"
     },
     {
       "address": "s3.domain.com:3389",
@@ -132,7 +137,9 @@
       "method": "rc4-md5",
       "type": "shadowsocks",
       "protocol": "origin",
-      "obfs": "plain"
+      "pparam": "ppppppp",
+      "obfs": "plain",
+      "oparam": "ooooooo"
     }
   ]
 }

@@ -79,6 +79,7 @@ go get github.com/dgryski/go-camellia
 go get github.com/dgryski/go-idea
 go get github.com/dgryski/go-rc2
 go get github.com/patrickmn/go-cache
+go get github.com/RouterScript/ProxyClient
 ```
 
 #### Steps

@@ -13,7 +13,7 @@ import (
 
 	"common"
 	"common/semaphore"
-	"outbound/proxyclient"
+	"github.com/RouterScript/ProxyClient"
 	"outbound/ss"
 	"outbound/ss/obfs"
 	"outbound/ss/protocol"
@@ -136,17 +136,24 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 }
 
 func (bi *BackendInfo) connectToProxy(u string, addr string) (remote net.Conn, err error) {
-	p, err := proxyclient.NewProxyClient(u)
+	var p proxyclient.Dial
+	if bi.timeout != 0 {
+		p, err = proxyclient.NewProxyClientWithDial(u, func(network, address string) (net.Conn, error) {
+			dialer := net.Dialer{
+				Timeout: time.Duration(bi.timeout) * time.Second,
+			}
+			return dialer.Dial(network, address)
+		})
+	} else {
+		p, err = proxyclient.NewProxyClient(u)
+	}
+
 	if err != nil {
 		common.Error("creating proxy client failed", u, err)
 		return
 	}
 
-	if bi.timeout != 0 {
-		remote, err = p.DialTimeout("tcp", addr, time.Duration(bi.timeout)*time.Second)
-	} else {
-		remote, err = p.Dial("tcp", addr)
-	}
+	remote, err = p("tcp", addr)
 	if err != nil {
 		common.Error("connecting to target failed.", u, addr, err)
 	}
