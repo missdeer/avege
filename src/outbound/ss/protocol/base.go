@@ -1,12 +1,12 @@
 package protocol
 
 import (
-	"common"
+	"outbound/ss/ssr"
 )
 
 type IProtocol interface {
-	SetServerInfo(s *common.ServerInfoForObfs)
-	GetServerInfo() *common.ServerInfoForObfs
+	SetServerInfo(s *ssr.ServerInfoForObfs)
+	GetServerInfo() *ssr.ServerInfoForObfs
 	PreEncrypt(data []byte) (encryptedData []byte, err error)
 	PostDecrypt(data []byte) (decryptedData []byte, err error)
 	SetData(data interface{})

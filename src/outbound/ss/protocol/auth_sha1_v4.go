@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"common"
+	"outbound/ss/ssr"
 )
 
 type AuthSHA1v4 struct {
-	common.ServerInfoForObfs
+	ssr.ServerInfoForObfs
 	data             *authData
 	hasSentHeader    bool
 	recvBuffer       []byte
@@ -21,11 +22,11 @@ func NewAuthSHA1v4() *AuthSHA1v4 {
 	return a
 }
 
-func (a *AuthSHA1v4) SetServerInfo(s *common.ServerInfoForObfs) {
+func (a *AuthSHA1v4) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	a.ServerInfoForObfs = *s
 }
 
-func (a *AuthSHA1v4) GetServerInfo() (s *common.ServerInfoForObfs) {
+func (a *AuthSHA1v4) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &a.ServerInfoForObfs
 }
 
@@ -58,7 +59,7 @@ func (a *AuthSHA1v4) packData(data []byte) (outData []byte) {
 	// 0~1, out length
 	binary.BigEndian.PutUint16(outData[0:2], uint16(outLength & 0xFFFF))
 	// 2~3, crc of out length
-	crc32 := common.CalcCRC32(outData, 2, 0xFFFFFFFF)
+	crc32 := ssr.CalcCRC32(outData, 2, 0xFFFFFFFF)
 	binary.LittleEndian.PutUint16(outData[2:4], uint16(crc32 & 0xFFFF))
 	// 4~rand length+4, rand number
 	rand.Read(outData[4: 4 + randLength])
@@ -76,7 +77,7 @@ func (a *AuthSHA1v4) packData(data []byte) (outData []byte) {
 		copy(outData[randLength + 4:], data)
 	}
 	// out length-4~end, adler32 of full data
-	adler := common.CalcAdler32(outData[:outLength - 4])
+	adler := ssr.CalcAdler32(outData[:outLength - 4])
 	binary.LittleEndian.PutUint32(outData[outLength - 4:], adler)
 
 	return outData
@@ -93,7 +94,7 @@ func (a *AuthSHA1v4) packAuthData(data []byte) (outData []byte) {
 		}
 	}
 	dataOffset := randLength + 4 + 2
-	outLength := dataOffset + dataLength + 12 + common.ObfsHMACSHA1Len
+	outLength := dataOffset + dataLength + 12 + ssr.ObfsHMACSHA1Len
 	outData = make([]byte, outLength)
 
 	a.data.connectionID++
@@ -116,7 +117,7 @@ func (a *AuthSHA1v4) packAuthData(data []byte) (outData []byte) {
 	copy(crcData[0:2], outData[0:2])
 	copy(crcData[2:], salt)
 	copy(crcData[2 + len(salt):], a.Key)
-	crc32 := common.CalcCRC32(crcData, len(crcData), 0xFFFFFFFF)
+	crc32 := ssr.CalcCRC32(crcData, len(crcData), 0xFFFFFFFF)
 	// 2~6, crc of out length+salt+key
 	binary.LittleEndian.PutUint32(outData[2:], crc32)
 	// 6~rand length+6, rand numbers
@@ -144,9 +145,9 @@ func (a *AuthSHA1v4) packAuthData(data []byte) (outData []byte) {
 	copy(key, a.IV)
 	copy(key[a.IVLen:], a.Key)
 
-	h := common.HmacSHA1(key, outData[:outLength - common.ObfsHMACSHA1Len])
+	h := common.HmacSHA1(key, outData[:outLength - ssr.ObfsHMACSHA1Len])
 	// out length-10~out length/rand length+18+data length~end, hmac
-	copy(outData[outLength - common.ObfsHMACSHA1Len:], h[0:common.ObfsHMACSHA1Len])
+	copy(outData[outLength - ssr.ObfsHMACSHA1Len:], h[0:ssr.ObfsHMACSHA1Len])
 
 	return outData
 }
@@ -156,7 +157,7 @@ func (a *AuthSHA1v4) PreEncrypt(plainData []byte) (outData []byte, err error) {
 	offset := 0
 	if !a.hasSentHeader && dataLength > 0 {
 		authLength := dataLength
-		if headSize := common.GetHeadSize(plainData, 30); headSize <= dataLength {
+		if headSize := ssr.GetHeadSize(plainData, 30); headSize <= dataLength {
 			authLength = headSize
 		}
 		packData := a.packAuthData(plainData[:authLength])
@@ -188,23 +189,23 @@ func (a *AuthSHA1v4) PostDecrypt(plainData []byte) (outData []byte, err error) {
 	a.recvBuffer = b
 	a.recvBufferLength = len(b)
 	for a.recvBufferLength > 4 {
-		crc32 := common.CalcCRC32(a.recvBuffer, 2, 0xFFFFFFFF)
+		crc32 := ssr.CalcCRC32(a.recvBuffer, 2, 0xFFFFFFFF)
 		if binary.LittleEndian.Uint16(a.recvBuffer[2:4]) != uint16(crc32 & 0xFFFF) {
 			common.Error("auth_sha1_v4 post decrypt data crc32 error")
-			return nil, common.ErrAuthSHA1v4CRC32Error
+			return nil, ssr.ErrAuthSHA1v4CRC32Error
 		}
 		length := int(binary.BigEndian.Uint16(a.recvBuffer[0:2]))
 		if length >= 8192 || length < 8 {
 			common.Error("auth_sha1_v4 post decrypt data length error")
 			a.recvBufferLength = 0
 			a.recvBuffer = nil
-			return nil, common.ErrAuthSHA1v4DataLengthError
+			return nil, ssr.ErrAuthSHA1v4DataLengthError
 		}
 		if length > a.recvBufferLength {
 			break
 		}
 
-		if common.CheckAdler32(a.recvBuffer, length) {
+		if ssr.CheckAdler32(a.recvBuffer, length) {
 			pos := int(a.recvBuffer[4])
 			if pos != 0xFF {
 				pos += 4
@@ -222,7 +223,7 @@ func (a *AuthSHA1v4) PostDecrypt(plainData []byte) (outData []byte, err error) {
 			common.Error("auth_sha1_v4 post decrypt incorrect checksum")
 			a.recvBufferLength = 0
 			a.recvBuffer = nil
-			return nil, common.ErrAuthSHA1v4IncorrectChecksum
+			return nil, ssr.ErrAuthSHA1v4IncorrectChecksum
 		}
 	}
 	return

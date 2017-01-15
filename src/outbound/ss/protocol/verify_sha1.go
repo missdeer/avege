@@ -5,10 +5,11 @@ import (
 	"encoding/binary"
 
 	"common"
+	"outbound/ss/ssr"
 )
 
 type VerifySHA1 struct {
-	common.ServerInfoForObfs
+	ssr.ServerInfoForObfs
 	hasSentHeader bool
 	chunkId       uint32
 }
@@ -48,11 +49,11 @@ func (v *VerifySHA1) getAndIncreaseChunkId() (chunkId uint32) {
 	return
 }
 
-func (v *VerifySHA1) SetServerInfo(s *common.ServerInfoForObfs) {
+func (v *VerifySHA1) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	v.ServerInfoForObfs = *s
 }
 
-func (v *VerifySHA1) GetServerInfo() (s *common.ServerInfoForObfs) {
+func (v *VerifySHA1) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &v.ServerInfoForObfs
 }
 

@@ -1,11 +1,11 @@
 package protocol
 
 import (
-	"common"
+	"outbound/ss/ssr"
 )
 
 type Origin struct {
-	common.ServerInfoForObfs
+	ssr.ServerInfoForObfs
 }
 
 func NewOrigin() *Origin {
@@ -13,11 +13,11 @@ func NewOrigin() *Origin {
 	return a
 }
 
-func (o *Origin) SetServerInfo(s *common.ServerInfoForObfs) {
+func (o *Origin) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	o.ServerInfoForObfs = *s
 }
 
-func (o *Origin) GetServerInfo() (s *common.ServerInfoForObfs) {
+func (o *Origin) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &o.ServerInfoForObfs
 }
 

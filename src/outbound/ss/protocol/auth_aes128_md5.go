@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"common"
+	"outbound/ss/ssr"
 )
 
 type hmacMethod func(key []byte, data []byte) []byte
@@ -25,7 +26,7 @@ func NewAuthAES128MD5() *AuthAES128 {
 }
 
 type AuthAES128 struct {
-	common.ServerInfoForObfs
+	ssr.ServerInfoForObfs
 	data             *authData
 	hasSentHeader    bool
 	packID           uint32
@@ -37,11 +38,11 @@ type AuthAES128 struct {
 	hmac             hmacMethod
 }
 
-func (a *AuthAES128) SetServerInfo(s *common.ServerInfoForObfs) {
+func (a *AuthAES128) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	a.ServerInfoForObfs = *s
 }
 
-func (a *AuthAES128) GetServerInfo() (s *common.ServerInfoForObfs) {
+func (a *AuthAES128) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &a.ServerInfoForObfs
 }
 
@@ -223,13 +224,13 @@ func (a *AuthAES128) PostDecrypt(plainData []byte) (outData []byte, err error) {
 		h := a.hmac(key, a.recvBuffer[0:2])
 		if h[0] != a.recvBuffer[2] || h[1] != a.recvBuffer[3] {
 			common.Error("client post decrypt hmac error")
-			return nil, common.ErrAuthAES128HMACError
+			return nil, ssr.ErrAuthAES128HMACError
 		}
 
 		length := int(binary.LittleEndian.Uint16(a.recvBuffer[0:2]))
 		if length >= 8192 || length < 8 {
 			common.Error("client post decrypt length mismatch")
-			return nil, common.ErrAuthAES128DataLengthError
+			return nil, ssr.ErrAuthAES128DataLengthError
 		}
 
 		if length > a.recvBufferLength {
@@ -239,7 +240,7 @@ func (a *AuthAES128) PostDecrypt(plainData []byte) (outData []byte, err error) {
 		h = a.hmac(key, a.recvBuffer[0:length - 4])
 		if !hmac.Equal(h[0:4], a.recvBuffer[length - 4:]) {
 			common.Error("client post decrypt incorrect checksum")
-			return nil, common.ErrAuthAES128IncorrectChecksum
+			return nil, ssr.ErrAuthAES128IncorrectChecksum
 		}
 
 		a.recvID++

@@ -1,4 +1,4 @@
-package common
+package ssr
 
 import "encoding/binary"
 

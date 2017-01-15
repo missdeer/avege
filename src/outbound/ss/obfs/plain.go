@@ -1,11 +1,11 @@
 package obfs
 
 import (
-	"common"
+	"outbound/ss/ssr"
 )
 
 type PlainObfs struct {
-	common.ServerInfoForObfs
+	ssr.ServerInfoForObfs
 }
 
 func NewPlainObfs() *PlainObfs {
@@ -13,11 +13,11 @@ func NewPlainObfs() *PlainObfs {
 	return p
 }
 
-func (p *PlainObfs) SetServerInfo(s *common.ServerInfoForObfs) {
+func (p *PlainObfs) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	p.ServerInfoForObfs = *s
 }
 
-func (p *PlainObfs) GetServerInfo() (s *common.ServerInfoForObfs) {
+func (p *PlainObfs) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &p.ServerInfoForObfs
 }
 

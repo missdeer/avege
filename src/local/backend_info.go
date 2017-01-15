@@ -17,6 +17,7 @@ import (
 	"outbound/ss"
 	"outbound/ss/obfs"
 	"outbound/ss/protocol"
+	"outbound/ss/ssr"
 )
 
 var (
@@ -136,17 +137,11 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 }
 
 func (bi *BackendInfo) connectToProxy(u string, addr string) (remote net.Conn, err error) {
-	var p proxyclient.Dial
+	dialer := net.Dial
 	if bi.timeout != 0 {
-		p, err = proxyclient.NewProxyClientWithDial(u, func(network, address string) (net.Conn, error) {
-			dialer := net.Dialer{
-				Timeout: time.Duration(bi.timeout) * time.Second,
-			}
-			return dialer.Dial(network, address)
-		})
-	} else {
-		p, err = proxyclient.NewProxyClient(u)
+		dialer = proxyclient.DialWithTimeout(time.Duration(bi.timeout) * time.Second)
 	}
+	p, err := proxyclient.NewProxyClientWithDial(u, dialer)
 
 	if err != nil {
 		common.Error("creating proxy client failed", u, err)
@@ -227,7 +222,7 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 		port, _ := strconv.Atoi(rs[1])
 
 		ssconn.IObfs = obfs.NewObfs(bi.obfs)
-		obfsServerInfo := &common.ServerInfoForObfs{
+		obfsServerInfo := &ssr.ServerInfoForObfs{
 			Host:       rs[0],
 			Port:       uint16(port),
 			TcpMss:     1460,
@@ -240,7 +235,7 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 		ssconn.IObfs.SetData(bi.obfsData)
 
 		ssconn.IProtocol = protocol.NewProtocol(bi.protocol)
-		protocolServerInfo := &common.ServerInfoForObfs{
+		protocolServerInfo := &ssr.ServerInfoForObfs{
 			Host:       rs[0],
 			Port:       uint16(port),
 			TcpMss:     1460,

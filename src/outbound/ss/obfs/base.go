@@ -1,12 +1,12 @@
 package obfs
 
 import (
-	"common"
+	"outbound/ss/ssr"
 )
 
 type IObfs interface {
-	SetServerInfo(s *common.ServerInfoForObfs)
-	GetServerInfo() (s *common.ServerInfoForObfs)
+	SetServerInfo(s *ssr.ServerInfoForObfs)
+	GetServerInfo() (s *ssr.ServerInfoForObfs)
 	Encode(data []byte) (encodedData []byte, err error)
 	Decode(data []byte) (decodedData []byte, needSendBack bool, err error)
 	SetData(data interface{})

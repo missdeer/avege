@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"common"
+	"outbound/ss/ssr"
 )
 
 type tlsAuthData struct {
@@ -16,7 +17,7 @@ type tlsAuthData struct {
 
 // TLS12TicketAuth tls1.2_ticket_auth obfs encapsulate
 type TLS12TicketAuth struct {
-	common.ServerInfoForObfs
+	ssr.ServerInfoForObfs
 	data            *tlsAuthData
 	sendID          int
 	handshakeStatus int
@@ -29,11 +30,11 @@ func NewTLS12TicketAuth() *TLS12TicketAuth {
 	return &TLS12TicketAuth{}
 }
 
-func (t *TLS12TicketAuth) SetServerInfo(s *common.ServerInfoForObfs) {
+func (t *TLS12TicketAuth) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	t.ServerInfoForObfs = *s
 }
 
-func (t *TLS12TicketAuth) GetServerInfo() (s *common.ServerInfoForObfs) {
+func (t *TLS12TicketAuth) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &t.ServerInfoForObfs
 }
 
@@ -211,7 +212,7 @@ func (t *TLS12TicketAuth) Decode(data []byte) (decodedData []byte, needSendBack 
 		for len(t.recvBuffer) > 5 {
 			if !hmac.Equal(t.recvBuffer[0:3], []byte{0x17, 0x3, 0x3}) {
 				common.Error("incorrect magic number", t.recvBuffer[0:3], ", 0x170303 is expected")
-				return nil, false, common.ErrTLS12TicketAuthIncorrectMagicNumber
+				return nil, false, ssr.ErrTLS12TicketAuthIncorrectMagicNumber
 			}
 			size := int(binary.BigEndian.Uint16(t.recvBuffer[3:5]))
 			if size+5 > len(t.recvBuffer) {
@@ -230,14 +231,14 @@ func (t *TLS12TicketAuth) Decode(data []byte) (decodedData []byte, needSendBack 
 
 	if dataLength < 11+32+1+32 {
 		common.Error("too short data:", dataLength)
-		return nil, false, common.ErrTLS12TicketAuthTooShortData
+		return nil, false, ssr.ErrTLS12TicketAuthTooShortData
 	}
 
 	hash := t.hmacSHA1(data[11:11 + 22])
 
-	if !hmac.Equal(data[33:33 + common.ObfsHMACSHA1Len], hash) {
-		common.Error("hmac verification failed:", hash, data[33: 33 + common.ObfsHMACSHA1Len], len(data), " bytes recevied:", data)
-		return nil, false, common.ErrTLS12TicketAuthHMACError
+	if !hmac.Equal(data[33:33 + ssr.ObfsHMACSHA1Len], hash) {
+		common.Error("hmac verification failed:", hash, data[33: 33 + ssr.ObfsHMACSHA1Len], len(data), " bytes recevied:", data)
+		return nil, false, ssr.ErrTLS12TicketAuthHMACError
 	}
 	needSendBack = true
 	return nil, true, nil
@@ -252,8 +253,8 @@ func (t *TLS12TicketAuth) packAuthData() (outData []byte) {
 
 	rand.Read(outData[4: 4 + 18])
 
-	hash := t.hmacSHA1(outData[:outSize - common.ObfsHMACSHA1Len])
-	copy(outData[outSize - common.ObfsHMACSHA1Len:], hash)
+	hash := t.hmacSHA1(outData[:outSize - ssr.ObfsHMACSHA1Len])
+	copy(outData[outSize - ssr.ObfsHMACSHA1Len:], hash)
 
 	return
 }
@@ -264,7 +265,7 @@ func (t *TLS12TicketAuth) hmacSHA1(data []byte) []byte {
 	copy(key[t.KeyLen:], t.data.localClientID[:])
 
 	sha1Data := common.HmacSHA1(key, data)
-	return sha1Data[:common.ObfsHMACSHA1Len]
+	return sha1Data[:ssr.ObfsHMACSHA1Len]
 }
 
 func (t *TLS12TicketAuth) sni(u string) []byte {

@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"strings"
 
-	"common"
+	"outbound/ss/ssr"
 )
 
 var (
@@ -38,7 +38,7 @@ var (
 
 // HttpSimple http_simple obfs encapsulate
 type HttpSimplePost struct {
-	common.ServerInfoForObfs
+	ssr.ServerInfoForObfs
 	rawTransSent     bool
 	rawTransReceived bool
 	userAgentIndex   int
@@ -56,11 +56,11 @@ func NewHttpSimple() *HttpSimplePost {
 	return t
 }
 
-func (t *HttpSimplePost) SetServerInfo(s *common.ServerInfoForObfs) {
+func (t *HttpSimplePost) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	t.ServerInfoForObfs = *s
 }
 
-func (t *HttpSimplePost) GetServerInfo() (s *common.ServerInfoForObfs) {
+func (t *HttpSimplePost) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &t.ServerInfoForObfs
 }
 
