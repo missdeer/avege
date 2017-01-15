@@ -1,6 +1,7 @@
 package local
 
 import (
+	"encoding/binary"
 	"errors"
 	"math/rand"
 	"net"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	"common"
-	"encoding/binary"
 )
 
 const (
@@ -35,7 +35,7 @@ var (
 	forceUpdateSmartLastUsedBackendInfo bool
 )
 
-func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string) (err error) {
+func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *common.Buffer) (err error) {
 	needChangeUsedServerInfo := (smartLastUsedBackendInfo == nil)
 	var port uint16
 	switch rawaddr[0] {
@@ -74,7 +74,7 @@ func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string) (err err
 			}
 
 			if remote, err := smartLastUsedBackendInfo.connect(rawaddr, addr); err == nil {
-				if err, inboundSideError := smartLastUsedBackendInfo.pipe(local, remote); err == nil {
+				if err, inboundSideError := smartLastUsedBackendInfo.pipe(local, remote, buffer); err == nil {
 					return nil
 				} else if inboundSideError {
 					common.Info("inbound side error")
@@ -132,7 +132,7 @@ pick_server:
 		common.Debugf("try %s with failed count %d, %v\n", bi.address, stat.GetFailedCount(), bi)
 
 		if remote, err := bi.connect(rawaddr, addr); err == nil {
-			if err, inboundSideError := bi.pipe(local, remote); err == nil || inboundSideError {
+			if err, inboundSideError := bi.pipe(local, remote, buffer); err == nil || inboundSideError {
 				if needChangeUsedServerInfo {
 					smartLastUsedBackendInfo = bi
 				}
@@ -155,7 +155,7 @@ pick_server:
 			}
 			common.Debugf("try %s with failed count %d for an additional optunity, %v\n", bi.address, stat.GetFailedCount(), bi)
 			if remote, err := bi.connect(rawaddr, addr); err == nil {
-				if err, inboundSideError := bi.pipe(local, remote); err == nil || inboundSideError {
+				if err, inboundSideError := bi.pipe(local, remote, buffer); err == nil || inboundSideError {
 					if needChangeUsedServerInfo {
 						smartLastUsedBackendInfo = bi
 					}
@@ -173,9 +173,10 @@ pick_server:
 }
 
 func smartLoadBalance(local net.Conn, rawaddr []byte, addr string) {
+	var buffer *common.Buffer
 	maxTryCount := Backends.Len()
 	for i := 0; i < maxTryCount; i++ {
-		err := smartCreateServerConn(local, rawaddr, addr)
+		err := smartCreateServerConn(local, rawaddr, addr, buffer)
 		if err != nil {
 			continue
 		}
@@ -213,11 +214,12 @@ func indexSpecifiedCreateServerConn(local net.Conn, rawaddr []byte, addr string)
 }
 
 func indexSpecifiedLoadBalance(local net.Conn, rawaddr []byte, addr string) {
+	var buffer *common.Buffer
 	remote, bi, err := indexSpecifiedCreateServerConn(local, rawaddr, addr)
 	if err != nil {
 		return
 	}
-	bi.pipe(local, remote)
+	bi.pipe(local, remote, buffer)
 	common.Debug("closed connection to", addr)
 }
 
@@ -227,11 +229,12 @@ func roundRobinCreateServerConn(local net.Conn, rawaddr []byte, addr string) (re
 }
 
 func roundRobinLoadBalance(local net.Conn, rawaddr []byte, addr string) {
+	var buffer *common.Buffer
 	remote, bi, err := roundRobinCreateServerConn(local, rawaddr, addr)
 	if err != nil {
 		return
 	}
-	bi.pipe(local, remote)
+	bi.pipe(local, remote, buffer)
 	common.Debug("closed connection to", addr)
 }
 
@@ -241,14 +244,14 @@ func handleOutbound(conn net.Conn, rawaddr []byte, addr string) {
 	case 1:
 		// IPv4
 		targetIP := net.IPv4(rawaddr[1], rawaddr[2], rawaddr[3], rawaddr[4])
-		port := binary.BigEndian.Uint16(rawaddr[5:])
+		port := int(binary.BigEndian.Uint16(rawaddr[5:]))
 		ipAddr := binary.BigEndian.Uint32(rawaddr[1:5])
-		if _, ok := deniedPort[int(port)]; ok {
+		if _, ok := deniedPort[port]; ok {
 			common.Warning(conn.RemoteAddr(), "is trying to access denied port", port)
 			return
 		}
 		if config.Target.Port.Deny == "all" {
-			if _, ok := allowedPort[int(port)]; !ok {
+			if _, ok := allowedPort[port]; !ok {
 				common.Warning(conn.RemoteAddr(), "is trying to access not allowed port", port)
 				return
 			}
@@ -263,7 +266,7 @@ func handleOutbound(conn net.Conn, rawaddr []byte, addr string) {
 				return
 			}
 		}
-		if p, ok := serverIP[ipAddr]; ok && int(port) == p {
+		if p, ok := serverIP[ipAddr]; ok && port == p {
 			common.Warningf("%v is trying to access proxy server %v:%d",
 				conn.RemoteAddr(), targetIP, port)
 			Backends.RLock()

@@ -78,7 +78,8 @@ func (bi *BackendInfo) testLatency(rawaddr []byte, addr string, wg *sync.WaitGro
 	}
 }
 
-func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn) (err error, inboundSideError bool) {
+func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buffer) (err error, inboundSideError bool) {
+	sig := make(chan bool)
 	result := make(chan error)
 	stat, ok := Statistics.Get(bi)
 	if !ok || stat == nil {
@@ -90,13 +91,16 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn) (err error, inbound
 			remote,
 			time.Duration(config.InBoundConfig.Timeout)*time.Second,
 			time.Duration(bi.timeout)*time.Second,
-			stat)
+			stat,
+			sig,
+			&buffer)
 	}()
 	err = PipeOutboundToInbound(remote,
 		local,
 		time.Duration(bi.timeout)*time.Second,
 		time.Duration(config.InBoundConfig.Timeout)*time.Second,
-		stat)
+		stat,
+		sig)
 	if err == ERR_WRITE {
 		inboundSideError = true
 	}
