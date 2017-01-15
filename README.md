@@ -93,7 +93,7 @@ GOPATH=$GOPATH:$PWD/../.. go build
 
 #### Dependencies
 
-* redis-server
+* redis-server (not necessary if you use other cache service such as **gocache** instead)
 
 #### Steps
 
