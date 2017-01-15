@@ -30,6 +30,7 @@ type GeneralConfig struct {
 	LoadBalance              string `json:"load_balance"`
 	API                      string `json:"api"`
 	Token                    string `json:"token"`
+	CacheService             string `json:"cache_service"`
 	MaxOpenFiles             uint64 `json:"max_openfiles"`
 	LogLevel                 int    `json:"log_level"`
 	Timeout                  int    `json:"timeout"`
@@ -249,6 +250,10 @@ func parseMultiServersConfig(data []byte) error {
 	if err := json.Unmarshal(data, config); err != nil {
 		common.Error("Failed unmarshalling config file", err, len(data))
 		return err
+	}
+
+	if len(config.Generals.CacheService) == 0 {
+		config.Generals.CacheService = "redis"
 	}
 
 	consoleHost = config.Generals.ConsoleHost

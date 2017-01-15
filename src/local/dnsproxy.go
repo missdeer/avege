@@ -1,9 +1,6 @@
 package local
 
 import (
-	"common"
-	"common/domain"
-	iputil "common/ip"
 	"crypto/tls"
 	"fmt"
 	"strconv"
@@ -11,6 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"common"
+	"common/cache"
+	"common/domain"
+	iputil "common/ip"
 	"github.com/garyburd/redigo/redis"
 	"github.com/miekg/dns"
 )
@@ -33,8 +34,8 @@ func exchange(server string, c *dns.Client, r *dns.Msg, resp chan *dns.Msg) {
 }
 
 func isAbroadOnly(r *dns.Msg, cacheKey string) bool {
-	if key := cacheKey + "ca"; common.Rd.IsExist(key) {
-		if b, err := redis.Bool(common.Rd.Get(key)); err == nil {
+	if key := cacheKey + "ca"; cache.Instance.IsExist(key) {
+		if b, err := redis.Bool(cache.Instance.Get(key)); err == nil {
 			return !b
 		}
 	}
@@ -51,8 +52,8 @@ func isAbroadOnly(r *dns.Msg, cacheKey string) bool {
 }
 
 func isChinaOnly(r *dns.Msg, cacheKey string) bool {
-	if key := cacheKey + "ca"; common.Rd.IsExist(key) {
-		if b, err := redis.Bool(common.Rd.Get(key)); err == nil {
+	if key := cacheKey + "ca"; cache.Instance.IsExist(key) {
+		if b, err := redis.Bool(cache.Instance.Get(key)); err == nil {
 			return b
 		}
 	}
@@ -98,8 +99,8 @@ func isBlocked(r *dns.Msg) (rs *dns.Msg) {
 }
 
 func hitCache(r *dns.Msg, cacheKey string) (rs *dns.Msg) {
-	if config.DNSProxy.CacheEnabled && common.Rd.IsExist(cacheKey) {
-		if cacheValue, err := common.Rd.Get(cacheKey); err == nil {
+	if config.DNSProxy.CacheEnabled && cache.Instance.IsExist(cacheKey) {
+		if cacheValue, err := cache.Instance.Get(cacheKey); err == nil {
 			if b, ok := cacheValue.([]byte); ok {
 				rs = &dns.Msg{}
 				if err = rs.Unpack(b); err == nil {
@@ -131,12 +132,12 @@ func saveToCache(r *dns.Msg, rs *dns.Msg, cacheKey string, m []byte) {
 			common.Debug(r.Question[0].Name, "not from cache, save to cache")
 			if config.DNSProxy.CacheTTL {
 				if ttl <= 60 {
-					common.Rd.PutWithTimeout(cacheKey, m, ttl)
+					cache.Instance.PutWithTimeout(cacheKey, m, ttl)
 				} else {
-					common.Rd.PutWithTimeout(cacheKey, m, 60)
+					cache.Instance.PutWithTimeout(cacheKey, m, 60)
 				}
 			} else {
-				common.Rd.PutWithTimeout(cacheKey, m, int64(config.DNSProxy.CacheTimeout))
+				cache.Instance.PutWithTimeout(cacheKey, m, int64(config.DNSProxy.CacheTimeout))
 			}
 		}
 	}
@@ -244,7 +245,7 @@ func querySpecificServer(r *dns.Msg) (rs *dns.Msg) {
 }
 
 func cacheDNSResultLocation(cacheKey string, inChina bool) {
-	common.Rd.PutWithTimeout(cacheKey+"ca", inChina, 30*24*3600) // for 1 month
+	cache.Instance.PutWithTimeout(cacheKey+"ca", inChina, 30*24*3600) // for 1 month
 }
 
 func serveDNS(w dns.ResponseWriter, r *dns.Msg) {

@@ -1,4 +1,4 @@
-package common
+package cache
 
 import (
 	"encoding/json"
@@ -15,15 +15,16 @@ var (
 	// the collection name of redis for cache adapter.
 	DefaultRedisKey = "avegeConsole"
 	RedisServer     = "127.0.0.1:6379"
-	Rd              *RedisCache
+	rd              *RedisCache
 )
 
-func RedisInit() {
-	Rd = NewRedisCache()
-	if err := Rd.StartAndGC(fmt.Sprintf("{\"conn\" : \"%s\"}", RedisServer)); err != nil {
+func redisInit() *RedisCache {
+	rd = newRedisCache()
+	if err := rd.StartAndGC(fmt.Sprintf("{\"conn\" : \"%s\"}", RedisServer)); err != nil {
 		log.Panic("connecting to redis failed")
 		os.Exit(1)
 	}
+	return rd
 }
 
 // Redis cache adapter.
@@ -36,7 +37,7 @@ type RedisCache struct {
 }
 
 // create new redis cache with default collection name.
-func NewRedisCache() *RedisCache {
+func newRedisCache() *RedisCache {
 	return &RedisCache{key: DefaultRedisKey}
 }
 

@@ -1,7 +1,6 @@
 package local
 
 import (
-	"common"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -11,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	"common"
+	"common/cache"
 	"github.com/gin-gonic/gin"
 	"github.com/kardianos/osext"
 )
@@ -33,7 +34,7 @@ func clearDNSCache(c *gin.Context) {
 		})
 		return
 	}
-	if err := common.Rd.Delete(fmt.Sprintf("dns:%s.:cachekey", domain)); err != nil {
+	if err := cache.Instance.Delete(fmt.Sprintf("dns:%s.:cachekey", domain)); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"Result": "Error",
 			"Error":  err,

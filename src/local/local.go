@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"common"
+	"common/cache"
 	"common/domain"
 	iputil "common/ip"
 	"github.com/DeanThompson/ginpprof"
@@ -234,11 +235,14 @@ func Main() {
 
 	ApplyGeneralConfig()
 
-	common.DefaultRedisKey = "avegeClient"
-	common.RedisInit()
+	switch config.Generals.CacheService {
+	case "redis":
+		cache.DefaultRedisKey = "avegeClient"
+	}
+	cache.Init(config.Generals.CacheService)
 
 	startDNSProxy()
-	Statistics.LoadFromRedis()
+	Statistics.LoadFromCache()
 	go consoleWS()
 	go updateRules()
 	go getQuote()

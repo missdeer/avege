@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"common"
+	"common/cache"
 	"common/semaphore"
 )
 
@@ -131,11 +132,11 @@ func (m *StatisticWrapper) UpdateLatency() {
 	m.SaveToRedis()
 }
 
-func (m *StatisticWrapper) LoadFromRedis() {
+func (m *StatisticWrapper) LoadFromCache() {
 	m.Lock()
 	defer m.Unlock()
 	for server, stat := range m.StatisticMap {
-		statistic, _ := common.Rd.Get(server.address)
+		statistic, _ := cache.Instance.Get(server.address)
 		b, ok := statistic.([]byte)
 		if !ok {
 			common.Error("to []byte failed")
@@ -165,7 +166,7 @@ func (m *StatisticWrapper) LoadFromRedis() {
 		stat.SetLastSecondBps(s.LastSecondBps)
 		stat.SetLastTenMinutesBps(s.LastTenMinutesBps)
 	}
-	totalDownload, _ := common.Rd.Get("totaldownload")
+	totalDownload, _ := cache.Instance.Get("totaldownload")
 	rawb, ok := totalDownload.([]byte)
 	if !ok {
 		common.Error("total download to []byte failed")
@@ -181,7 +182,7 @@ func (m *StatisticWrapper) LoadFromRedis() {
 	}
 	common.TotalStat.SetDownload(b)
 
-	totalUpload, _ := common.Rd.Get("totalupload")
+	totalUpload, _ := cache.Instance.Get("totalupload")
 	rawu, ok := totalUpload.([]byte)
 	if !ok {
 		common.Error("total upload to []byte failed")
@@ -223,7 +224,7 @@ func (m *StatisticWrapper) SaveToRedis() {
 		if err := encoder.Encode(s); err != nil {
 			continue
 		}
-		common.Rd.Put(server.address, interface{}(buf.Bytes()))
+		cache.Instance.Put(server.address, interface{}(buf.Bytes()))
 	}
 	var bufDownload bytes.Buffer
 	encoderDownload := gob.NewEncoder(&bufDownload)
@@ -231,7 +232,7 @@ func (m *StatisticWrapper) SaveToRedis() {
 		common.Error("encoding total download failed", err)
 		return
 	}
-	common.Rd.Put("totaldownload", interface{}(bufDownload.Bytes()))
+	cache.Instance.Put("totaldownload", interface{}(bufDownload.Bytes()))
 
 	var bufUpload bytes.Buffer
 	encoderUpload := gob.NewEncoder(&bufUpload)
@@ -239,5 +240,5 @@ func (m *StatisticWrapper) SaveToRedis() {
 		common.Error("encoding total upload failed", err)
 		return
 	}
-	common.Rd.Put("totalupload", interface{}(bufUpload.Bytes()))
+	cache.Instance.Put("totalupload", interface{}(bufUpload.Bytes()))
 }
