@@ -44,11 +44,14 @@ try env CGO_ENABLED=1 CC=$ANDROID_ARM_CC GOOS=android GOARCH=arm GOARM=7 go buil
 echo "Cross compile $basename for Android x86"
 try env CGO_ENABLED=1 CC=$ANDROID_X86_CC GOOS=android GOARCH=386 go build -ldflags="-s -w" -o $basename.android.x86
 
-echo "Cross compile $basename for Linux (Raspberry Pi 1) armv5"
-try env GOOS=linux GOARCH=arm GOARM=5 go build -ldflags="-s -w" -o $basename.rpi1
+echo "Cross compile $basename for Linux (Raspberry Pi 1) armv6"
+try env GOOS=linux GOARCH=arm GOARM=6 go build -ldflags="-s -w" -o $basename.rpi1
 
-echo "Cross compile $basename for Linux (Raspberry Pi 2/3) armv7"
+echo "Cross compile $basename for Linux (Raspberry Pi 2) armv7"
 try env GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o $basename.rpi2
+
+echo "Cross compile $basename for Linux (Raspberry Pi 3) armv8"
+try env GOOS=linux GOARCH=arm64 GOARM=8 go build -ldflags="-s -w" -o $basename.rpi3
 
 echo "Cross compile $basename for Linux AMD64"
 try env GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o $basename.linux.amd64

@@ -31,6 +31,7 @@ type GeneralConfig struct {
 	API                      string `json:"api"`
 	Token                    string `json:"token"`
 	CacheService             string `json:"cache_service"`
+	ProtectSocketPathPrefix  string `json:"protect_socket_path_prefix"`
 	MaxOpenFiles             uint64 `json:"max_openfiles"`
 	LogLevel                 int    `json:"log_level"`
 	Timeout                  int    `json:"timeout"`

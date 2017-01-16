@@ -201,6 +201,7 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 		u += bi.address
 		return bi.connectToProxy(u, addr)
 	case "shadowsocks", "ss":
+		ss.ProtectSocketPathPrefix = config.Generals.ProtectSocketPathPrefix
 		if bi.firewalled == true && time.Now().Sub(bi.lastCheckTimePoint) < 1*time.Hour {
 			err = ERR_NOT_FILTERED
 			common.Warningf("server %s is not filtered out by firewall.\n", bi.address)
@@ -216,6 +217,7 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 		if ssconn, err = ss.DialShadowsocks(bi.address, bi.cipher.Copy(), priorityInterfaceAddress); err != nil {
 			return nil, err
 		}
+		ss.ProtectSocket(ssconn)
 
 		// should initialize obfs/protocol now
 		rs := strings.Split(ssconn.RemoteAddr().String(), ":")

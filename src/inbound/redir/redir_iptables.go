@@ -49,10 +49,15 @@ func getOriginalDst(clientConn *net.TCPConn) (rawaddr []byte, host string, newTC
 	// this is the only syscall in the Golang libs that I can find that returns 16 bytes
 	// Example result: &{Multiaddr:[2 0 31 144 206 190 36 45 0 0 0 0 0 0 0 0] Interface:0}
 	// port starts at the 3rd byte and is 2 bytes long (31 144 = port 8080)
+	ipv6 := false
 	// IPv6 version, didn't find a way to detect network family
-	//addr, err := syscall.GetsockoptIPv6Mreq(int(clientConnFile.Fd()), syscall.IPPROTO_IPV6, IP6T_SO_ORIGINAL_DST)
-	// IPv4 address starts at the 5th byte, 4 bytes long (206 190 36 45)
-	addr, err := syscall.GetsockoptIPv6Mreq(int(clientConnFile.Fd()), syscall.IPPROTO_IP, SO_ORIGINAL_DST)
+	addr, err := syscall.GetsockoptIPv6Mreq(int(clientConnFile.Fd()), syscall.IPPROTO_IPV6, IP6T_SO_ORIGINAL_DST)
+	if err == nil {
+		ipv6 = true
+	} else {
+		// IPv4 address starts at the 5th byte, 4 bytes long (206 190 36 45)
+		addr, err = syscall.GetsockoptIPv6Mreq(int(clientConnFile.Fd()), syscall.IPPROTO_IP, SO_ORIGINAL_DST)
+	}
 	common.Debugf("getOriginalDst(): SO_ORIGINAL_DST=%+v\n", addr)
 	if err != nil {
 		common.Errorf("GETORIGINALDST|%v->?->FAILEDTOBEDETERMINED|ERR: getsocketopt(SO_ORIGINAL_DST) failed: %v", srcipport, err)
@@ -73,24 +78,31 @@ func getOriginalDst(clientConn *net.TCPConn) (rawaddr []byte, host string, newTC
 		return
 	}
 
-	// \attention: IPv4 only!!!
-	// address type, 1 - IPv4, 4 - IPv6, 3 - hostname, only IPv4 is supported now
-	rawaddr = append(rawaddr, byte(1))
-	// raw IP address, 4 bytes for IPv4 or 16 bytes for IPv6, only IPv4 is supported now
-	rawaddr = append(rawaddr, addr.Multiaddr[4])
-	rawaddr = append(rawaddr, addr.Multiaddr[5])
-	rawaddr = append(rawaddr, addr.Multiaddr[6])
-	rawaddr = append(rawaddr, addr.Multiaddr[7])
-	// port
-	rawaddr = append(rawaddr, addr.Multiaddr[2])
-	rawaddr = append(rawaddr, addr.Multiaddr[3])
+	if ipv6 {
+		rawaddr = make([]byte, 19)
+		// address type, 1 - IPv4, 4 - IPv6, 3 - hostname
+		rawaddr[0] = 4
+		//! \attention seemly won't work
+		// raw IP address, 4 bytes for IPv4 or 16 bytes for IPv6
+		copy(rawaddr[1:], addr.Multiaddr[4:])
+		// port
+		copy(rawaddr[1 + 16:], addr.Multiaddr[2:2 + 2])
+	} else {
+		rawaddr = make([]byte, 7)
+		// address type, 1 - IPv4, 4 - IPv6, 3 - hostname
+		rawaddr[0] = 1
+		// raw IP address, 4 bytes for IPv4 or 16 bytes for IPv6
+		copy(rawaddr[1:], addr.Multiaddr[4:4 + 4])
+		// port
+		copy(rawaddr[1 + 4:], addr.Multiaddr[2:2 + 2])
 
-	host = fmt.Sprintf("%d.%d.%d.%d:%d",
-		addr.Multiaddr[4],
-		addr.Multiaddr[5],
-		addr.Multiaddr[6],
-		addr.Multiaddr[7],
-		uint16(addr.Multiaddr[2])<<8+uint16(addr.Multiaddr[3]))
+		host = fmt.Sprintf("%d.%d.%d.%d:%d",
+			addr.Multiaddr[4],
+			addr.Multiaddr[5],
+			addr.Multiaddr[6],
+			addr.Multiaddr[7],
+			uint16(addr.Multiaddr[2])<<8+uint16(addr.Multiaddr[3]))
+	}
 
 	return
 }

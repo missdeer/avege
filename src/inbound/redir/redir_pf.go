@@ -1,4 +1,4 @@
-// +build openbsd netbsd freebsd dragonfly darwin
+// +build openbsd netbsd darwin
 
 package redir
 
