@@ -257,6 +257,7 @@ func parseMultiServersConfig(data []byte) error {
 		config.Generals.CacheService = "redis"
 	}
 
+	ss.ProtectSocketPathPrefix = config.Generals.ProtectSocketPathPrefix
 	consoleHost = config.Generals.ConsoleHost
 	consoleVer = config.Generals.ConsoleVersion
 	consoleWSUrl = config.Generals.ConsoleWebSocketURL
