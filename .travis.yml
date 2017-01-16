@@ -35,7 +35,7 @@ install:
   - go get github.com/ftrvxmtrx/fd
   - pwd && ls -l && cd src/avege && ./makeall.sh
 script:
-  - pwd && cd ../.. && go build main.go
+  - pwd && cd ../.. && go build dummy.go && cd src/avege
 deploy:
   provider: releases
   api_key:
