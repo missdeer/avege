@@ -2,6 +2,8 @@
 
 Socks5/Transparent Proxy Client
 
+[![Build Status](https://secure.travis-ci.org/missdeer/avege.png)](https://travis-ci.org/missdeer/avege)
+
 ## Feature
 
 * socks5 frontend
