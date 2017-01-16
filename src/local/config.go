@@ -106,12 +106,10 @@ type OutBound struct {
 	Username string `json:"username"`
 	// Password auth for http/https/socks
 	Password string `json:"password"`
-	// StandardHeader   http/https only
-	StandardHeader bool `json:"standardheader"`
-	// InsecureSkipVerify  https only
-	InsecureSkipVerify bool `json:"insecureskipverify"`
-	// Domain https only
-	Domain string `json:"domain"`
+	// TLSInsecureSkipVerify  https only
+	TLSInsecureSkipVerify bool `json:"insecureskipverify"`
+	// TLSDomain https only
+	TLSDomain string `json:"domain"`
 	// Timeout connecting timeout
 	Timeout int `json:"timeout"`
 	// Restrict == true if only 80/443 ports are allowed, otherwise all ports are allowed
@@ -375,9 +373,8 @@ func parseMultiServersConfig(data []byte) error {
 				protocolParam:      outboundConfig.ProtocolParam,
 				username:           outboundConfig.Username,
 				password:           outboundConfig.Password,
-				standardHeader:     outboundConfig.StandardHeader,
-				insecureSkipVerify: outboundConfig.InsecureSkipVerify,
-				domain:             outboundConfig.Domain,
+				insecureSkipVerify: outboundConfig.TLSInsecureSkipVerify,
+				domain:             outboundConfig.TLSDomain,
 				tcpFastOpen:        outboundConfig.TCPFastOpen,
 			}
 			if outboundConfig.Timeout != 0 {

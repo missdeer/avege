@@ -30,7 +30,6 @@ type BackendInfo struct {
 	protocolType       string
 	username           string      // auth for http/https/socks
 	password           string      // auth for http/https/socks
-	standardHeader     bool        // http/https only
 	insecureSkipVerify bool        // https only
 	domain             string      // https only
 	obfs               string      // shadowsocksr only
@@ -157,58 +156,24 @@ func (bi *BackendInfo) connectToProxy(u string, addr string) (remote net.Conn, e
 
 func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, err error) {
 	switch bi.protocolType {
-	case "http":
-		u := url.URL{
-			Scheme:bi.protocolType,
-			User:  url.UserPassword(bi.username, bi.password),
-			Host:  bi.address,
-		}
-		if bi.standardHeader {
-			q := u.Query()
-			q.Set("standardheader", "true")
-			u.RawQuery = q.Encode()
-		}
-		return bi.connectToProxy(u.String(), addr)
-	case "https":
+	case "https", "socks5+tls":
 		u := url.URL{
 			Scheme:bi.protocolType,
 			User:  url.UserPassword(bi.username, bi.password),
 			Host:  bi.address,
 		}
 		v := u.Query()
-		if bi.standardHeader {
-			v.Add("standardheader", "true")
-		}
 		if bi.insecureSkipVerify {
-			v.Add("insecureskipverify", "true")
+			v.Set("tls-insecure-skip-verify", "true")
 		}
 		if len(bi.domain) > 0 {
-			v.Add("domain", bi.domain)
+			v.Set("tls-domain", bi.domain)
 		}
 		if len(v) > 0 {
 			u.RawQuery = v.Encode()
 		}
 		return bi.connectToProxy(u.String(), addr)
-	case "socks4":
-		u := url.URL{
-			Scheme:bi.protocolType,
-			Host:  bi.address,
-		}
-		return bi.connectToProxy(u.String(), addr)
-	case "socks4a":
-		u := url.URL{
-			Scheme:bi.protocolType,
-			Host:  bi.address,
-		}
-		return bi.connectToProxy(u.String(), addr)
-	case "socks5":
-		u := url.URL{
-			Scheme:bi.protocolType,
-			User:  url.UserPassword(bi.username, bi.password),
-			Host:  bi.address,
-		}
-		return bi.connectToProxy(u.String(), addr)
-	case "socks5+tls":
+	case "http", "socks4", "socks4a", "socks5":
 		u := url.URL{
 			Scheme:bi.protocolType,
 			User:  url.UserPassword(bi.username, bi.password),

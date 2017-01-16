@@ -67,21 +67,21 @@ Socks5/Transparent Proxy Client
 #### Dependencies
 
 ```shell
-go get github.com/op/go-logging
-go get github.com/garyburd/redigo/redis
-go get github.com/go-fsnotify/fsnotify
-go get github.com/kardianos/osext
-go get github.com/gin-gonic/gin
-go get github.com/gorilla/websocket
-go get github.com/DeanThompson/ginpprof
-go get github.com/miekg/dns
-go get github.com/aead/chacha20
-go get github.com/codahale/chacha20
-go get github.com/dgryski/go-camellia
-go get github.com/dgryski/go-idea
-go get github.com/dgryski/go-rc2
-go get github.com/patrickmn/go-cache
-go get github.com/RouterScript/ProxyClient
+go get -u -f -v github.com/op/go-logging
+go get -u -f -v github.com/garyburd/redigo/redis
+go get -u -f -v github.com/go-fsnotify/fsnotify
+go get -u -f -v github.com/kardianos/osext
+go get -u -f -v github.com/gin-gonic/gin
+go get -u -f -v github.com/gorilla/websocket
+go get -u -f -v github.com/DeanThompson/ginpprof
+go get -u -f -v github.com/miekg/dns
+go get -u -f -v github.com/aead/chacha20
+go get -u -f -v github.com/codahale/chacha20
+go get -u -f -v github.com/dgryski/go-camellia
+go get -u -f -v github.com/dgryski/go-idea
+go get -u -f -v github.com/dgryski/go-rc2
+go get -u -f -v github.com/patrickmn/go-cache
+go get -u -f -v github.com/RouterScript/ProxyClient
 ```
 
 #### Steps
