@@ -158,22 +158,24 @@ func (bi *BackendInfo) connectToProxy(u string, addr string) (remote net.Conn, e
 func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, err error) {
 	switch bi.protocolType {
 	case "http":
-		u := bi.protocolType + "://"
-		if len(bi.username) > 0 && len(bi.password) > 0 {
-			u += bi.username + ":" + bi.password + "@"
+		u := url.URL{
+			Scheme:bi.protocolType,
+			User:  url.UserPassword(bi.username, bi.password),
+			Host:  bi.address,
 		}
-		u += bi.address
 		if bi.standardHeader {
-			u += "?standardheader=true"
+			q := u.Query()
+			q.Set("standardheader", "true")
+			u.RawQuery = q.Encode()
 		}
-		return bi.connectToProxy(u, addr)
+		return bi.connectToProxy(u.String(), addr)
 	case "https":
-		u := bi.protocolType + "://"
-		if len(bi.username) > 0 && len(bi.password) > 0 {
-			u += bi.username + ":" + bi.password + "@"
+		u := url.URL{
+			Scheme:bi.protocolType,
+			User:  url.UserPassword(bi.username, bi.password),
+			Host:  bi.address,
 		}
-		u += bi.address
-		v := url.Values{}
+		v := u.Query()
 		if bi.standardHeader {
 			v.Add("standardheader", "true")
 		}
@@ -184,22 +186,35 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 			v.Add("domain", bi.domain)
 		}
 		if len(v) > 0 {
-			u += "?" + v.Encode()
+			u.RawQuery = v.Encode()
 		}
-		return bi.connectToProxy(u, addr)
+		return bi.connectToProxy(u.String(), addr)
 	case "socks4":
-		u := bi.protocolType + "://" + bi.address
-		return bi.connectToProxy(u, addr)
-	case "socks4a":
-		u := bi.protocolType + "://" + bi.address
-		return bi.connectToProxy(u, addr)
-	case "socks5":
-		u := bi.protocolType + "://"
-		if len(bi.username) > 0 && len(bi.password) > 0 {
-			u += bi.username + ":" + bi.password + "@"
+		u := url.URL{
+			Scheme:bi.protocolType,
+			Host:  bi.address,
 		}
-		u += bi.address
-		return bi.connectToProxy(u, addr)
+		return bi.connectToProxy(u.String(), addr)
+	case "socks4a":
+		u := url.URL{
+			Scheme:bi.protocolType,
+			Host:  bi.address,
+		}
+		return bi.connectToProxy(u.String(), addr)
+	case "socks5":
+		u := url.URL{
+			Scheme:bi.protocolType,
+			User:  url.UserPassword(bi.username, bi.password),
+			Host:  bi.address,
+		}
+		return bi.connectToProxy(u.String(), addr)
+	case "socks5+tls":
+		u := url.URL{
+			Scheme:bi.protocolType,
+			User:  url.UserPassword(bi.username, bi.password),
+			Host:  bi.address,
+		}
+		return bi.connectToProxy(u.String(), addr)
 	case "shadowsocks", "ss":
 		if bi.firewalled == true && time.Now().Sub(bi.lastCheckTimePoint) < 1*time.Hour {
 			err = ERR_NOT_FILTERED
