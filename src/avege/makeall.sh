@@ -39,80 +39,77 @@ export GOPATH=$GOPATH:$PWD/../..
 basename=${PWD##*/}
 
 echo "Cross compile $basename for Android armv7"
-try env CGO_ENABLED=1 CC=$ANDROID_ARM_CC GOOS=android GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o $basename.android.armv7
+try env CGO_ENABLED=1 CC=$ANDROID_ARM_CC GOOS=android GOARCH=arm GOARM=7 go build -ldflags="-s -w" && tar czvf $basename-android-armv7.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.android.armv7
 
 echo "Cross compile $basename for Android x86"
-try env CGO_ENABLED=1 CC=$ANDROID_X86_CC GOOS=android GOARCH=386 go build -ldflags="-s -w" -o $basename.android.x86
+try env CGO_ENABLED=1 CC=$ANDROID_X86_CC GOOS=android GOARCH=386 go build -ldflags="-s -w"  && tar czvf $basename-android-x86.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.android.x86
 
 echo "Cross compile $basename for Linux (Raspberry Pi 1) armv6"
-try env GOOS=linux GOARCH=arm GOARM=6 go build -ldflags="-s -w" -o $basename.rpi1
+try env GOOS=linux GOARCH=arm GOARM=6 go build -ldflags="-s -w"  && tar czvf $basename-linux-armv6.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.rpi1
 
-echo "Cross compile $basename for Linux (Raspberry Pi 2) armv7"
-try env GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o $basename.rpi2
-
-echo "Cross compile $basename for Linux (Raspberry Pi 3) armv8"
-try env GOOS=linux GOARCH=arm64 GOARM=8 go build -ldflags="-s -w" -o $basename.rpi3
+echo "Cross compile $basename for Linux (Raspberry Pi 2/3) armv7"
+try env GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w"  && tar czvf $basename-linux-armv7.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.rpi2
 
 echo "Cross compile $basename for Linux AMD64"
-try env GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o $basename.linux.amd64
+try env GOOS=linux GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf $basename-linux-amd64.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.linux.amd64
 
 echo "Cross compile $basename for Linux ARM64"
-try env GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o $basename.linux.arm64
+try env GOOS=linux GOARCH=arm64 go build -ldflags="-s -w"  && tar czvf $basename-linux-arm64.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.linux.arm64
 
 echo "Cross compile $basename for Linux x86"
-try env GOOS=linux GOARCH=386 go build -ldflags="-s -w" -o $basename.linux.x86
+try env GOOS=linux GOARCH=386 go build -ldflags="-s -w"  && tar czvf $basename-linux-x86.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.linux.x86
 
 echo "Cross compile $basename for Linux PPC64"
-try env GOOS=linux GOARCH=ppc64 go build -ldflags="-s -w" -o $basename.linux.ppc64
+try env GOOS=linux GOARCH=ppc64 go build -ldflags="-s -w"  && tar czvf $basename-linux-ppc64.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.linux.ppc64
 
 echo "Cross compile $basename for Linux PPC64LE"
-try env GOOS=linux GOARCH=ppc64le go build -ldflags="-s -w" -o $basename.linux.ppc64le
+try env GOOS=linux GOARCH=ppc64le go build -ldflags="-s -w"  && tar czvf $basename-linux-ppc64le.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.linux.ppc64le
 
 echo "Cross compile $basename for Linux MIPS64"
-try env GOOS=linux GOARCH=mips64 go build -ldflags="-s -w" -o $basename.linux.mips64
+try env GOOS=linux GOARCH=mips64 go build -ldflags="-s -w"  && tar czvf $basename-linux-mips64.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.linux.mips64
 
 echo "Cross compile $basename for Linux MIPS64LE"
-try env GOOS=linux GOARCH=mips64le go build -ldflags="-s -w" -o $basename.linux.mips64le
+try env GOOS=linux GOARCH=mips64le go build -ldflags="-s -w"  && tar czvf $basename-linux-mips64le.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.linux.mips64le
 
 echo "Cross compile $basename for Windows AMD64"
-try env GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o $basename.win.amd64.exe
+try env GOOS=windows GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf $basename-win-amd64.tar.gz $basename.exe conf resources templates config-sample.json && mv $basename.exe $basename.win.amd64.exe
 
 echo "Cross compile $basename for Windows x86"
-try env GOOS=windows GOARCH=386 go build -ldflags="-s -w" -o $basename.win.x86.exe
+try env GOOS=windows GOARCH=386 go build -ldflags="-s -w"  && tar czvf $basename-win-x86.tar.gz $basename.exe conf resources templates config-sample.json && mv $basename.exe $basename.win.x86.exe
 
 echo "Cross compile $basename for Darwin AMD64"
-try env GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o $basename.darwin.amd64
+try env GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf $basename-darwin-amd64.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.darwin.amd64
 
 echo "Cross compile $basename for FreeBSD AMD64"
-try env GOOS=freebsd GOARCH=amd64 go build -ldflags="-s -w" -o $basename.freebsd.amd64
+try env GOOS=freebsd GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf $basename-freebsd-amd64.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.freebsd.amd64
 
 echo "Cross compile $basename for FreeBSD x86"
-try env GOOS=freebsd GOARCH=386 go build -ldflags="-s -w" -o $basename.freebsd.x86
+try env GOOS=freebsd GOARCH=386 go build -ldflags="-s -w"  && tar czvf $basename-freebsd-x86.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.freebsd.x86
 
 echo "Cross compile $basename for FreeBSD ARM"
-try env GOOS=freebsd GOARCH=arm go build -ldflags="-s -w" -o $basename.freebsd.arm
+try env GOOS=freebsd GOARCH=arm go build -ldflags="-s -w"  && tar czvf $basename-freebsd-arm.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.freebsd.arm
 
 echo "Cross compile $basename for NetBSD AMD64"
-try env GOOS=netbsd GOARCH=amd64 go build -ldflags="-s -w" -o $basename.netbsd.amd64
+try env GOOS=netbsd GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf $basename-netbsd-amd64.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.netbsd.amd64
 
 echo "Cross compile $basename for NetBSD x86"
-try env GOOS=netbsd GOARCH=386 go build -ldflags="-s -w" -o $basename.netbsd.x86
+try env GOOS=netbsd GOARCH=386 go build -ldflags="-s -w"  && tar czvf $basename-netbsd-x86.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.netbsd.x86
 
 echo "Cross compile $basename for NetBSD ARM"
-try env GOOS=netbsd GOARCH=arm go build -ldflags="-s -w" -o $basename.netbsd.arm
+try env GOOS=netbsd GOARCH=arm go build -ldflags="-s -w"  && tar czvf $basename-netbsd-arm.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.netbsd.arm
 
 echo "Cross compile $basename for OpenBSD AMD64"
-try env GOOS=openbsd GOARCH=amd64 go build -ldflags="-s -w" -o $basename.openbsd.amd64
+try env GOOS=openbsd GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf $basename-openbsd-amd64.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.openbsd.amd64
 
 echo "Cross compile $basename for OpenBSD x86"
-try env GOOS=openbsd GOARCH=386 go build -ldflags="-s -w" -o $basename.openbsd.x86
+try env GOOS=openbsd GOARCH=386 go build -ldflags="-s -w"  && tar czvf $basename-openbsd-x86.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.openbsd.x86
 
 echo "Cross compile $basename for OpenBSD ARM"
-try env GOOS=openbsd GOARCH=arm go build -ldflags="-s -w" -o $basename.openbsd.arm
+try env GOOS=openbsd GOARCH=arm go build -ldflags="-s -w"  && tar czvf $basename-openbsd-arm.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.openbsd.arm
 
 echo "Cross compile $basename for DragonflyBSD AMD64"
-try env GOOS=dragonfly GOARCH=amd64 go build -ldflags="-s -w" -o $basename.dragonflybsd
+try env GOOS=dragonfly GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf $basename-dragonflybsd-amd64.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.dragonflybsd
 
 echo "Cross compile $basename for Solaris AMD64"
-try env GOOS=solaris GOARCH=amd64 go build -ldflags="-s -w" -o $basename.solaris
+try env GOOS=solaris GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf $basename-solaris.tar.gz $basename conf resources templates config-sample.json && mv $basename $basename.solaris
 
