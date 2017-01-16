@@ -1,7 +1,7 @@
 language: go
 go:
   - tip
-script:
+install:
   - go get github.com/op/go-logging
   - go get github.com/garyburd/redigo/redis
   - go get github.com/go-fsnotify/fsnotify
