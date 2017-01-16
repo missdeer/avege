@@ -1,8 +1,6 @@
 language: go
 go:
   - tip
-
-
 env:
   global:
       - NDK_VERSION=r13b
@@ -37,7 +35,7 @@ install:
   - go get github.com/ftrvxmtrx/fd
   - pwd && ls -l && cd src/avege && ./makeall.sh
 script:
-  - pwd && cd $TRAVIS_BUILD_DIR && go build main.go
+  - pwd && cd ../.. && go build main.go
 deploy:
   provider: releases
   api_key:
