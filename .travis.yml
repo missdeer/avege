@@ -1,7 +1,24 @@
 language: go
 go:
   - tip
+
+
+env:
+  global:
+      - NDK_VERSION=r13b
+      - ANDROID_NDK_HOME=$HOME/.android/android-ndk-${NDK_VERSION}
+      - PATH=${ANDROID_NDK_HOME}:${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools:${PATH}
+
 install:
+  - >
+    if [ ! -d "$ANDROID_NDK_HOME" ]; then
+        mkdir -p $ANDROID_NDK_HOME;
+        pushd $HOME/.android;
+        export ARCH=`uname -m`;
+        wget -q http://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux-${ARCH}.zip;
+        unzip -q android-ndk-${NDK_VERSION}-linux-${ARCH}.zip;
+        popd;
+    fi
   - go get github.com/op/go-logging
   - go get github.com/garyburd/redigo/redis
   - go get github.com/go-fsnotify/fsnotify
@@ -17,6 +34,7 @@ install:
   - go get github.com/dgryski/go-rc2
   - go get github.com/patrickmn/go-cache
   - go get github.com/RouterScript/ProxyClient
+  - go get github.com/ftrvxmtrx/fd
   - pwd && ls -l && cd src/avege && ./makeall.sh
 deploy:
   provider: releases
