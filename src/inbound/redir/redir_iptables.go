@@ -79,10 +79,10 @@ func getOriginalDst(clientConn *net.TCPConn) (rawaddr []byte, host string, newTC
 	}
 
 	if ipv6 {
+		//! \attention seemly won't work, iptables supports IPv4 only
 		rawaddr = make([]byte, 19)
 		// address type, 1 - IPv4, 4 - IPv6, 3 - hostname
 		rawaddr[0] = 4
-		//! \attention seemly won't work
 		// raw IP address, 4 bytes for IPv4 or 16 bytes for IPv6
 		copy(rawaddr[1:], addr.Multiaddr[4:])
 		// port

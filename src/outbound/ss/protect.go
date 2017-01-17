@@ -3,7 +3,9 @@
 package ss
 
 import (
+	"errors"
 	"net"
+
 	"common"
 )
 
@@ -11,19 +13,28 @@ var (
 	ProtectSocketPathPrefix string
 )
 
-func ProtectSocket(clientConn net.Conn) error {
+func ProtectSocket(clientConn net.Conn) (newTCPConn *net.TCPConn, err error) {
 	tcpConn, ok := clientConn.(*net.TCPConn)
 	if !ok {
 		common.Warning("not a *net.TCPConn")
-		return nil
+		return nil, errors.New("not a *net.TCPConn")
 	}
 	clientConnFile, err := tcpConn.File()
 	if err != nil {
 		common.Warning("can't get the File Handle of a *net.TCPConn")
-		return nil
+		return tcpConn, err
 	} else {
 		tcpConn.Close()
 	}
 	common.Debug("fd=", int(clientConnFile.Fd()))
-	return nil
+
+	newConn, err := net.FileConn(clientConnFile)
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := newConn.(*net.TCPConn); ok {
+		newTCPConn = newConn.(*net.TCPConn)
+		clientConnFile.Close()
+	}
+	return
 }
