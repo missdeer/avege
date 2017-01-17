@@ -59,8 +59,9 @@ type ACL struct {
 }
 
 type DNSConfig struct {
-	Address  string `json:"address"`
-	Protocol string `json:"protocol"`
+	Address                 string `json:"address"`
+	Protocol                string `json:"protocol"`
+	EDNSClientSubnetEnabled bool   `json:"edns_client_subnet_enabled"`
 }
 
 type DNSServerSpecific struct {
@@ -69,21 +70,23 @@ type DNSServerSpecific struct {
 }
 
 type DNS struct {
-	Enabled           bool              `json:"enabled"`
-	CacheEnabled      bool              `json:"cache"`
-	CacheTTL          bool              `json:"cache_ttl"`
-	CacheTimeout      int               `json:"cache_timeout"`
-	Timeout           int               `json:"timeout"`
-	ReadTimeout       int               `json:"read_timeout"`
-	WriteTimeout      int               `json:"write_timeout"`
-	SearchDomain      string            `json:"search_domain"`
-	ChinaServerCount  string            `json:"china_server_count"`
-	AbroadServerCount string            `json:"abroad_server_count"`
-	AbroadProtocol    string            `json:"abroad_protocol"`
-	Local             []*DNSConfig      `json:"local"`
-	China             []*DNSConfig      `json:"china"`
-	Abroad            []*DNSConfig      `json:"abroad"`
-	Server            DNSServerSpecific `json:"server"`
+	Enabled                bool              `json:"enabled"`
+	CacheEnabled           bool              `json:"cache"`
+	CacheTTL               bool              `json:"cache_ttl"`
+	CacheTimeout           int               `json:"cache_timeout"`
+	Timeout                int               `json:"timeout"`
+	ReadTimeout            int               `json:"read_timeout"`
+	WriteTimeout           int               `json:"write_timeout"`
+	SearchDomain           string            `json:"search_domain"`
+	EDNSClientSubnetPolicy string            `json:"edns_client_subnet_policy"`
+	EDNSClientSubnetIP     string            `json:"edns_client_subnet_ip"`
+	ChinaServerCount       string            `json:"china_server_count"`
+	AbroadServerCount      string            `json:"abroad_server_count"`
+	AbroadProtocol         string            `json:"abroad_protocol"`
+	Local                  []*DNSConfig      `json:"local"`
+	China                  []*DNSConfig      `json:"china"`
+	Abroad                 []*DNSConfig      `json:"abroad"`
+	Server                 DNSServerSpecific `json:"server"`
 }
 
 type OutBound struct {

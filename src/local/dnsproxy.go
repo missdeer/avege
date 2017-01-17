@@ -2,7 +2,12 @@ package local
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,19 +22,85 @@ import (
 )
 
 var (
-	tcpClient    *dns.Client
-	tcpTLSClient *dns.Client
-	udpClient    *dns.Client
-	servers      []*dns.Server
-	mutexServers sync.RWMutex
+	tcpClient         *dns.Client
+	tcpTLSClient      *dns.Client
+	udpClient         *dns.Client
+	servers           []*dns.Server
+	mutexServers      sync.RWMutex
+	externalIPAddress string
 )
 
-func exchange(server string, c *dns.Client, r *dns.Msg, resp chan *dns.Msg) {
-	if rs, _, err := c.Exchange(r, server); err == nil {
+func getExternalIPAddress() (string, error) {
+	client := &http.Client{}
+	u := "https://if.yii.li"
+	req, err := http.NewRequest("GET", u, nil)
+	req.Header.Set("User-Agent", "curl/7.41.0")
+	resp, err := client.Do(req)
+	if err != nil {
+		common.Error("request %s failed", u)
+		return "", err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		common.Error("reading ifconfig response failed")
+		return "", err
+	}
+
+	for i := len(body); i > 0 && (body[i - 1] < '0' || body[i - 1] > '9'); i = len(body) {
+		body = body[:i - 1]
+	}
+
+	if matched, err := regexp.Match(`^([0-9]{1,3}\.){3,3}[0-9]{1,3}$`, body); err == nil && matched == true {
+		return string(body), nil
+	}
+
+	return "", errors.New("invalid IP address")
+}
+
+func addEDNSClientSubnet(r *dns.Msg, ip string) {
+	if len(ip) == 0 {
+		return
+	}
+
+	option := new(dns.OPT)
+	option.Hdr.Name = "."
+	option.Hdr.Rrtype = dns.TypeOPT
+	edns0Subnet := new(dns.EDNS0_SUBNET)
+	edns0Subnet.Code = dns.EDNS0SUBNET
+	edns0Subnet.Address = net.ParseIP(ip)
+	if edns0Subnet.Address.To4() != nil {
+		edns0Subnet.Family = 1         // 1 for IPv4 source address, 2 for IPv6
+		edns0Subnet.SourceNetmask = 32 // 32 for IPV4, 128 for IPv6
+	} else {
+		edns0Subnet.Family = 2          // 1 for IPv4 source address, 2 for IPv6
+		edns0Subnet.SourceNetmask = 128 // 32 for IPV4, 128 for IPv6
+	}
+	edns0Subnet.SourceScope = 0
+	option.Option = append(option.Option, edns0Subnet)
+	r.Extra = append(r.Extra, option)
+}
+
+func ednsClientSubnetFilter(r *dns.Msg) {
+	switch config.DNSProxy.EDNSClientSubnetPolicy {
+	case "custom":
+		addEDNSClientSubnet(r, config.DNSProxy.EDNSClientSubnetIP)
+	case "auto":
+		addEDNSClientSubnet(r, externalIPAddress)
+	case "disable":
+	default:
+	}
+}
+
+func exchange(s *DNSConfig, c *dns.Client, r *dns.Msg, resp chan *dns.Msg) {
+	if s.EDNSClientSubnetEnabled {
+		ednsClientSubnetFilter(r)
+	}
+	if rs, _, err := c.Exchange(r, s.Address); err == nil {
 		resp <- rs
 	} else {
 		resp <- nil
-		common.Errorf("query dns %s from %s failed, %+v\n", r.Question[0].Name, server, err)
+		common.Errorf("query dns %s from %s failed, %+v\n", r.Question[0].Name, s.Address, err)
 	}
 }
 
@@ -157,13 +228,13 @@ func queryFromChinaServers(r *dns.Msg, do bool) (resp chan *dns.Msg) {
 		switch v.Protocol {
 		case "tcp":
 			count++
-			go exchange(v.Address, tcpClient, r, resp)
+			go exchange(v, tcpClient, r, resp)
 		case "tcp-tls":
 			count++
-			go exchange(v.Address, tcpTLSClient, r, resp)
+			go exchange(v, tcpTLSClient, r, resp)
 		default:
 			count++
-			go exchange(v.Address, udpClient, r, resp)
+			go exchange(v, udpClient, r, resp)
 		}
 
 		if count == length {
@@ -186,15 +257,15 @@ func queryFromAbroadServers(r *dns.Msg, do bool) (resp chan *dns.Msg) {
 	for _, v := range config.DNSProxy.Abroad {
 		if v.Protocol == "tcp" && (config.DNSProxy.AbroadProtocol == "tcp" || config.DNSProxy.AbroadProtocol == "all") {
 			count++
-			go exchange(v.Address, tcpClient, r, resp)
+			go exchange(v, tcpClient, r, resp)
 		}
 		if v.Protocol == "tcp-tls" && (config.DNSProxy.AbroadProtocol == "tcp-tls" || config.DNSProxy.AbroadProtocol == "all") {
 			count++
-			go exchange(v.Address, tcpTLSClient, r, resp)
+			go exchange(v, tcpTLSClient, r, resp)
 		}
 		if v.Protocol == "udp" && (config.DNSProxy.AbroadProtocol == "udp" || config.DNSProxy.AbroadProtocol == "all") {
 			count++
-			go exchange(v.Address, udpClient, r, resp)
+			go exchange(v, udpClient, r, resp)
 		}
 		if count == length {
 			break
@@ -220,11 +291,11 @@ func querySpecificServer(r *dns.Msg) (rs *dns.Msg) {
 	for _, v := range config.DNSProxy.Server.Servers {
 		switch v.Protocol {
 		case "tcp":
-			go exchange(v.Address, tcpClient, r, resp)
+			go exchange(v, tcpClient, r, resp)
 		case "tcp-tls":
-			go exchange(v.Address, tcpTLSClient, r, resp)
+			go exchange(v, tcpTLSClient, r, resp)
 		default:
-			go exchange(v.Address, udpClient, r, resp)
+			go exchange(v, udpClient, r, resp)
 		}
 	}
 
@@ -265,7 +336,7 @@ func serveDNS(w dns.ResponseWriter, r *dns.Msg) {
 		for i := len(rs.Answer) - 1; i >= 0; i-- {
 			if rs.Answer[i] == nil {
 				common.Warningf("found nil answer in %s's %V\nresult: %V\n%s", r.Question[0].Name, r, rs, rs)
-				rs.Answer = append(rs.Answer[:i], rs.Answer[i+1:]...)
+				rs.Answer = append(rs.Answer[:i], rs.Answer[i + 1:]...)
 			}
 		}
 		if m, err := rs.Pack(); err == nil {
@@ -468,7 +539,7 @@ func startDNSProxy() {
 		createClients()
 		dns.HandleFunc(".", serveDNS)
 		for _, v := range config.DNSProxy.Local {
-			common.Debug("starting dns on", v.Address, v.Protocol)
+			common.Debug("starting dns on", v, v.Protocol)
 			listenAndServe(v.Address, v.Protocol)
 		}
 
@@ -478,5 +549,10 @@ func startDNSProxy() {
 		go domain.LoadDomainNameInChina()
 		go domain.LoadDomainNameToBlock()
 		go domain.LoadDomainNameGFWed()
+		go func() {
+			for i := 0; len(externalIPAddress) == 0 && i < 10; i++ {
+				externalIPAddress, _ = getExternalIPAddress()
+			}
+		}()
 	}
 }
