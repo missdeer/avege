@@ -193,7 +193,7 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 			priorityInterfaceAddress = ""
 		}
 
-		if ssconn, err = ss.DialShadowsocks(bi.address, bi.cipher.Copy(), priorityInterfaceAddress); err != nil {
+		if ssconn, err = ss.Dial(bi.address, bi.cipher.Copy(), priorityInterfaceAddress); err != nil {
 			return nil, err
 		}
 		ss.ProtectSocket(ssconn)
