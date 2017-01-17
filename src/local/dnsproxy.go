@@ -93,14 +93,18 @@ func ednsClientSubnetFilter(r *dns.Msg) {
 }
 
 func exchange(s *DNSConfig, c *dns.Client, r *dns.Msg, resp chan *dns.Msg) {
+	req := *r
 	if s.EDNSClientSubnetEnabled {
-		ednsClientSubnetFilter(r)
+		ednsClientSubnetFilter(&req)
 	}
-	if rs, _, err := c.Exchange(r, s.Address); err == nil {
+	if rs, _, err := c.Exchange(&req, s.Address); err == nil {
 		resp <- rs
 	} else {
 		resp <- nil
-		common.Errorf("query dns %s from %s failed, %+v\n", r.Question[0].Name, s.Address, err)
+		if err == dns.ErrTruncated && s.EDNSClientSubnetEnabled == true {
+			s.EDNSClientSubnetEnabled = false
+		}
+		common.Errorf("query dns %s from %s failed, %+v\n", req.Question[0].Name, s.Address, err)
 	}
 }
 
@@ -415,7 +419,7 @@ func serveDNS(w dns.ResponseWriter, r *dns.Msg) {
 			}
 
 			for _, v := range rr.Answer {
-				if v.Header().Rrtype != dns.TypeA {
+				if v.Header().Rrtype != dns.TypeA && v.Header().Rrtype != dns.TypeAAAA {
 					continue
 				}
 
@@ -469,7 +473,7 @@ func serveDNS(w dns.ResponseWriter, r *dns.Msg) {
 			}
 
 			for _, v := range rr.Answer {
-				if v.Header().Rrtype != dns.TypeA {
+				if v.Header().Rrtype != dns.TypeA && v.Header().Rrtype != dns.TypeAAAA {
 					continue
 				}
 

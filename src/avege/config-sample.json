@@ -40,12 +40,12 @@
       { "address": "[::1]:35353", "protocol": "udp"}
     ],
     "china" : [
+      { "address": "119.29.29.29:53", "protocol": "udp", "edns_client_subnet_enabled": true},
+      { "address": "182.254.116.116:53", "protocol": "udp", "edns_client_subnet_enabled": true},
       { "address": "114.114.114.114:53", "protocol": "udp"},
       { "address": "223.6.6.6:53", "protocol": "udp"},
-      { "address": "119.29.29.29:53", "protocol": "udp", "edns_client_subnet_enabled": true},
       { "address": "114.114.115.115:53", "protocol": "udp"},
       { "address": "223.5.5.5:53", "protocol": "udp"},
-      { "address": "182.254.116.116:53", "protocol": "udp", "edns_client_subnet_enabled": true},
       { "address": "[2001:da8:202:10::36]:53", "protocol": "udp"},
       { "address": "[2001:da8:202:10::37]:53", "protocol": "udp"},
       { "address": "[2001:cc0:2fff:2::6]:53", "protocol": "udp"}
