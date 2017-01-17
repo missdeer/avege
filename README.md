@@ -82,6 +82,7 @@ go get -u -f -v github.com/dgryski/go-idea
 go get -u -f -v github.com/dgryski/go-rc2
 go get -u -f -v github.com/patrickmn/go-cache
 go get -u -f -v github.com/RouterScript/ProxyClient
+go get -u -f -v github.com/ftrvxmtrx/fd
 ```
 
 #### Steps
