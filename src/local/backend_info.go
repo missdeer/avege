@@ -196,7 +196,7 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 		if ssconn, err = ss.Dial(bi.address, bi.cipher.Copy(), priorityInterfaceAddress); err != nil {
 			return nil, err
 		}
-		ss.ProtectSocket(ssconn)
+		ss.ProtectSocket(ssconn.Conn)
 
 		// should initialize obfs/protocol now
 		rs := strings.Split(ssconn.RemoteAddr().String(), ":")
