@@ -56,11 +56,11 @@ Socks5/Transparent Proxy Client
 ## Todo (help wanted)
 
 * UDP forwarding
-* IPv6 supported
 * tun based system wide proxy
 * Adblock Plus rules based filter for http
 * TCP Fast Open on Linux with 3.7+ kernel
-* Transparent proxy on Mac OS X and variant BSDs(ipfw/pf/fw mode)
+* Transparent proxy aka. redir mode on Mac OS X and variant BSDs(ipfw/pf/fw mode)
+* IPv6 supported for redir mode
 
 ## Build
 
