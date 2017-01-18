@@ -14,7 +14,6 @@ import (
 var (
 	ProtectSocketPathPrefix string
 	ErrNotTCPConn           = errors.New("not a *net.TCPConn")
-	ErrCantGetFileOfTCPConn = errors.New("can't get the File Handle of a *net.TCPConn")
 	ErrNotUnixConn          = errors.New("not a *net.UnixConn")
 )
 
@@ -27,7 +26,7 @@ func ProtectSocket(clientConn net.Conn) (newTCPConn *net.TCPConn, err error) {
 	clientConnFile, err := tcpConn.File()
 	if err != nil {
 		common.Warning("can't get the File Handle of a *net.TCPConn")
-		return tcpConn, ErrCantGetFileOfTCPConn
+		return tcpConn, err
 	} else {
 		tcpConn.Close()
 	}
