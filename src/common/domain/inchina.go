@@ -2,16 +2,19 @@ package domain
 
 import (
 	"bufio"
-	"common"
 	"io"
 	"os"
 	"regexp"
 	"time"
+
+	"common"
+	"common/ds"
+	"common/netutil"
 )
 
 var (
-	//domainNameInChina    = common.NewItemTree("china-domain.lst", true)
-	domainNameInChina    = common.NewItemMapWithCap("china-domain.lst", true, 30000)
+	//domainNameInChina    = ds.NewItemTree("china-domain.lst", true)
+	domainNameInChina    = ds.NewItemMapWithCap("china-domain.lst", true, 30000)
 	domainNameInChinaUrl = "https://raw.githubusercontent.com/felixonmars/dnsmasq-china-list/master/accelerated-domains.china.conf"
 )
 
@@ -30,7 +33,7 @@ func UpdateDomainNameInChina() {
 	var content io.ReadCloser
 	for err := os.ErrNotExist; err != nil; time.Sleep(5 * time.Second) {
 		common.Warning("try to download content from", domainNameInChinaUrl)
-		content, err = common.DownloadRemoteContent(domainNameInChinaUrl)
+		content, err = netutil.DownloadRemoteContent(domainNameInChinaUrl)
 	}
 	defer content.Close()
 

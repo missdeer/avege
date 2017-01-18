@@ -1,11 +1,11 @@
 package ip
 
 import (
-	"common"
+	"common/ds"
 )
 
 var (
-	ipBlacklist = common.NewItemMapWithCap("ipblacklist.lst", true, 512)
+	ipBlacklist = ds.NewItemMapWithCap("ipblacklist.lst", true, 512)
 )
 
 // InBlacklist returns true if the given IP is in the black list

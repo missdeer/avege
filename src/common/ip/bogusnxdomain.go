@@ -1,11 +1,11 @@
 package ip
 
 import (
-	"common"
+	"common/ds"
 )
 
 var (
-	bogusNXDomain = common.NewItemMapWithCap("bogus-nxdomain.lst", true, 64)
+	bogusNXDomain = ds.NewItemMapWithCap("bogus-nxdomain.lst", true, 64)
 )
 
 // IsBogusNXDomain returns true if the given IP is bogus nxdomain

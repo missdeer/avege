@@ -9,7 +9,9 @@ import (
 	"crypto/rc4"
 	"encoding/binary"
 	"errors"
+
 	"common"
+	"common/ds"
 	chacha20IETF "github.com/aead/chacha20"
 	"github.com/codahale/chacha20"
 	"github.com/dgryski/go-camellia"
@@ -126,9 +128,9 @@ func (c *salsaStreamCipher) XORKeyStream(dst, src []byte) {
 	dataSize := len(src) + padLen
 	if cap(dst) >= dataSize {
 		buf = dst[:dataSize]
-	} else if common.GlobalLeakyBufSize >= dataSize {
-		buf = common.GlobalLeakyBuf.Get()
-		defer common.GlobalLeakyBuf.Put(buf)
+	} else if ds.GlobalLeakyBufSize >= dataSize {
+		buf = ds.GlobalLeakyBuf.Get()
+		defer ds.GlobalLeakyBuf.Put(buf)
 		buf = buf[:dataSize]
 	} else {
 		buf = make([]byte, dataSize)

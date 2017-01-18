@@ -11,6 +11,7 @@ import (
 	"common"
 	"common/cache"
 	"common/domain"
+	"common/fs"
 	iputil "common/ip"
 	"github.com/DeanThompson/ginpprof"
 	"github.com/gin-gonic/gin"
@@ -160,7 +161,7 @@ func Main() {
 
 	// read config file
 	var err error
-	configFile, err = common.GetConfigPath(configFile)
+	configFile, err = fs.GetConfigPath(configFile)
 	if err != nil {
 		common.Panic("config file not found")
 	}
@@ -182,7 +183,7 @@ func Main() {
 			}
 		}
 	}()
-	go common.MonitorFileChanegs(configFile, configFileChanged)
+	go fs.MonitorFileChanegs(configFile, configFileChanged)
 	// end reading config file
 
 	common.DebugLevel = common.DebugLog(config.Generals.LogLevel)

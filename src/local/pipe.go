@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 	"common"
+	"common/ds"
 )
 
 var (
@@ -60,8 +61,8 @@ func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 		}
 	}
 
-	buf := common.GlobalLeakyBuf.Get()
-	defer common.GlobalLeakyBuf.Put(buf)
+	buf := ds.GlobalLeakyBuf.Get()
+	defer ds.GlobalLeakyBuf.Put(buf)
 	for {
 		//common.Debugf("try to read something from inbound with timeout %v at %v\n", rto, time.Now().Add(rto))
 		src.SetReadDeadline(time.Now().Add(rto))
@@ -130,8 +131,8 @@ func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 		return ERR_SIGFALSE
 	}
 
-	buf := common.GlobalLeakyBuf.Get()
-	defer common.GlobalLeakyBuf.Put(buf)
+	buf := ds.GlobalLeakyBuf.Get()
+	defer ds.GlobalLeakyBuf.Put(buf)
 	for {
 		//common.Debugf("try to read something from outbound with timeout %v at %v\n", rto, time.Now().Add(rto))
 		src.SetReadDeadline(time.Now().Add(rto))

@@ -2,17 +2,20 @@ package domain
 
 import (
 	"bufio"
-	"common"
 	"encoding/base64"
 	"io"
 	"os"
 	"regexp"
 	"time"
+
+	"common"
+	"common/ds"
+	"common/netutil"
 )
 
 var (
-	//gfwlist    = common.NewItemTree("gfwlist.lst", true)
-	gfwlist    = common.NewItemMapWithCap("gfwlist.lst", true, 4000)
+	//gfwlist    = ds.NewItemTree("gfwlist.lst", true)
+	gfwlist    = ds.NewItemMapWithCap("gfwlist.lst", true, 4000)
 	gfwlistUrl = "https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt"
 )
 
@@ -34,7 +37,7 @@ func UpdateGFWList() {
 	var content io.ReadCloser
 	for err := os.ErrNotExist; err != nil; time.Sleep(5 * time.Second) {
 		common.Warning("try to download content from", gfwlistUrl)
-		content, err = common.DownloadRemoteContent(gfwlistUrl)
+		content, err = netutil.DownloadRemoteContent(gfwlistUrl)
 	}
 	defer content.Close()
 

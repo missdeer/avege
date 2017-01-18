@@ -2,17 +2,20 @@ package domain
 
 import (
 	"bufio"
-	"common"
 	"io"
 	"os"
 	"regexp"
 	"strings"
 	"time"
+
+	"common"
+	"common/ds"
+	"common/netutil"
 )
 
 var (
-	//domainNameToBlock    = common.NewItemTree("toblock.lst", true)
-	domainNameToBlock    = common.NewItemMapWithCap("toblock.lst", true, 200000)
+	//domainNameToBlock    = ds.NewItemTree("toblock.lst", true)
+	domainNameToBlock    = ds.NewItemMapWithCap("toblock.lst", true, 200000)
 	domainNameToBlockURL = "https://raw.githubusercontent.com/missdeer/blocklist/master/toblock.lst"
 )
 
@@ -31,7 +34,7 @@ func UpdateDomainNameToBlock() {
 	var content io.ReadCloser
 	for err := os.ErrNotExist; err != nil; time.Sleep(5 * time.Second) {
 		common.Warning("try to download content from", domainNameToBlockURL)
-		content, err = common.DownloadRemoteContent(domainNameToBlockURL)
+		content, err = netutil.DownloadRemoteContent(domainNameToBlockURL)
 	}
 	defer content.Close()
 

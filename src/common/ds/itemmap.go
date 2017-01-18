@@ -1,10 +1,13 @@
-package common
+package ds
 
 import (
 	"bufio"
 	"os"
 	"sort"
 	"sync"
+
+	"common"
+	"common/fs"
 )
 
 type itemMap map[string]bool
@@ -24,7 +27,7 @@ func NewItemMapWithCap(file string, autoApplyChanges bool, cap int) *ItemMap {
 		cap:              cap,
 	}
 
-	if exists, _ := IsFileExists(file); exists == true && autoApplyChanges == true {
+	if exists, _ := fs.IsFileExists(file); exists == true && autoApplyChanges == true {
 		il.MonitorFileChange()
 	}
 
@@ -37,7 +40,7 @@ func NewItemMap(file string, autoApplyChanges bool) *ItemMap {
 		autoApplyChanges: autoApplyChanges,
 	}
 
-	if exists, _ := IsFileExists(file); exists == true && autoApplyChanges == true {
+	if exists, _ := fs.IsFileExists(file); exists == true && autoApplyChanges == true {
 		il.MonitorFileChange()
 	}
 
@@ -50,12 +53,12 @@ func (this *ItemMap) MonitorFileChange() {
 		for {
 			select {
 			case <-configFileChanged:
-				Debug(this.fileName, "changes, reload now...")
+				common.Debug(this.fileName, "changes, reload now...")
 				this.Load()
 			}
 		}
 	}()
-	go MonitorFileChanegs(this.fileName, configFileChanged)
+	go fs.MonitorFileChanegs(this.fileName, configFileChanged)
 }
 
 func (this *ItemMap) Hit(item string) bool {
@@ -68,7 +71,7 @@ func (this *ItemMap) Hit(item string) bool {
 func (this *ItemMap) Save() bool {
 	outFile, err := os.OpenFile(this.fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		Errorf("opening file %s for writing failed %v", this.fileName, err)
+		common.Errorf("opening file %s for writing failed %v", this.fileName, err)
 		return false
 	}
 	defer outFile.Close()
@@ -87,14 +90,14 @@ func (this *ItemMap) Save() bool {
 }
 
 func (this *ItemMap) Load() bool {
-	configFile, err := GetConfigPath(this.fileName)
+	configFile, err := fs.GetConfigPath(this.fileName)
 
 	if err != nil {
-		Errorf("%s not found, give up loading content", this.fileName)
+		common.Errorf("%s not found, give up loading content", this.fileName)
 		return false
 	}
 
-	Debugf("%s exists, loading...", configFile)
+	common.Debugf("%s exists, loading...", configFile)
 	if this.fileName != configFile {
 		this.fileName = configFile
 	}

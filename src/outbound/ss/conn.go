@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"common"
+	"common/ds"
 	"outbound/ss/obfs"
 	"outbound/ss/protocol"
 )
@@ -154,8 +155,8 @@ func ParseHeader(addr net.Addr) []byte {
 }
 
 func Pipeloop(ss *UDPConn, srcaddr *net.UDPAddr, remote UDP) {
-	buf := common.GlobalLeakyBuf.Get()
-	defer common.GlobalLeakyBuf.Put(buf)
+	buf := ds.GlobalLeakyBuf.Get()
+	defer ds.GlobalLeakyBuf.Put(buf)
 	defer nl.Delete(srcaddr.String())
 	for {
 		n, raddr, err := remote.ReadFrom(buf)
@@ -194,8 +195,8 @@ var ReqListLock sync.RWMutex
 var ReqList = map[string]*ReqNode{}
 
 func HandleUDPConnection(c *UDPConn, openvpn string) {
-	buf := common.GlobalLeakyBuf.Get()
-	defer common.GlobalLeakyBuf.Put(buf)
+	buf := ds.GlobalLeakyBuf.Get()
+	defer ds.GlobalLeakyBuf.Put(buf)
 	for {
 		n, src, err := c.ReadFromUDP(buf)
 		if err != nil {
@@ -262,8 +263,8 @@ func HandleUDPConnection(c *UDPConn, openvpn string) {
 
 //n is the size of the payload
 func (c *UDPConn) ReadFromUDP(b []byte) (n int, src *net.UDPAddr, err error) {
-	buf := common.GlobalLeakyBuf.Get()
-	defer common.GlobalLeakyBuf.Put(buf)
+	buf := ds.GlobalLeakyBuf.Get()
+	defer ds.GlobalLeakyBuf.Put(buf)
 
 	n, src, err = c.UDP.ReadFromUDP(buf)
 	if err != nil {
@@ -280,8 +281,8 @@ func (c *UDPConn) ReadFromUDP(b []byte) (n int, src *net.UDPAddr, err error) {
 }
 
 func (c *UDPConn) Read(b []byte) (n int, err error) {
-	buf := common.GlobalLeakyBuf.Get()
-	defer common.GlobalLeakyBuf.Put(buf)
+	buf := ds.GlobalLeakyBuf.Get()
+	defer ds.GlobalLeakyBuf.Put(buf)
 
 	n, err = c.UDP.Read(buf)
 	if err != nil {
@@ -354,13 +355,13 @@ func NewSSConn(c net.Conn, cipher *Cipher) *SSTCPConn {
 	return &SSTCPConn{
 		Conn:     c,
 		Cipher:   cipher,
-		readBuf:  common.GlobalLeakyBuf.Get(),
-		writeBuf: common.GlobalLeakyBuf.Get()}
+		readBuf:  ds.GlobalLeakyBuf.Get(),
+		writeBuf: ds.GlobalLeakyBuf.Get()}
 }
 
 func (c *SSTCPConn) Close() error {
-	common.GlobalLeakyBuf.Put(c.readBuf)
-	common.GlobalLeakyBuf.Put(c.writeBuf)
+	ds.GlobalLeakyBuf.Put(c.readBuf)
+	ds.GlobalLeakyBuf.Put(c.writeBuf)
 	return c.Conn.Close()
 }
 
