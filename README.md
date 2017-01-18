@@ -6,13 +6,14 @@ Socks5/Transparent Proxy Client
 
 ## Feature
 
+* Windows/macOS/Linux/variant BSDs support
 * socks5 frontend
 * redir mode frontend on Linux (iptables compatible)
 * http/https backend
 * socks4/socks4a/socks5 backend
 * Shadowsocks(R) backend
 
-#### Encrypting algorithm
+#### SS Encrypting algorithm
 
 * aes-128-cfb
 * aes-192-cfb
@@ -103,13 +104,22 @@ GOPATH=$GOPATH:$PWD/../.. go build
 
 #### Steps
 
-for macOS/Linux/BSDs
+for macOS/Linux/BSDs, open terminal as you like, input:
 
 ```shell
 cd avege/src/avege
 cp config-sample.json config.json
 # modify config.json as you like
 ./avege
+```
+
+for Windows, open cmd.exe, input:
+
+```shell
+cd avege\src\avege
+copy config-sample.json config.json
+# modify config.json as you like
+avege.exe
 ```
 
 ## Reference
