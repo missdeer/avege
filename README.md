@@ -2,7 +2,7 @@
 
 Socks5/Transparent Proxy Client
 
-[![Build Status](https://secure.travis-ci.org/missdeer/avege.png)](https://travis-ci.org/missdeer/avege)
+[![Build Status](https://secure.travis-ci.org/missdeer/avege.png)](https://travis-ci.org/missdeer/avege)[![GitHub release](https://img.shields.io/github/release/missdeer/avege.svg?maxAge=2592000)](https://github.com/missdeer/avege/releases) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/missdeer/avege/master/LICENSE.md)
 
 ## Feature
 
