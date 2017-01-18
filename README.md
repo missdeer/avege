@@ -87,6 +87,8 @@ go get -u -f -v github.com/ftrvxmtrx/fd
 
 #### Steps
 
+for macOS/Linux/BSDs
+
 ```shell
 git clone https://github.com/missdeer/avege.git
 cd avege/src/avege
@@ -100,6 +102,8 @@ GOPATH=$GOPATH:$PWD/../.. go build
 * redis-server (not necessary if you use other cache service such as **gocache** instead)
 
 #### Steps
+
+for macOS/Linux/BSDs
 
 ```shell
 cd avege/src/avege
