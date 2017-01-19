@@ -6,12 +6,13 @@ Socks5/Transparent Proxy Client
 
 ## Feature
 
-* Windows/macOS/Linux/variant BSDs support
-* socks5 frontend
-* redir mode frontend on Linux (iptables compatible)
+* Windows/macOS/Linux/variant BSDs supported
+* socks5 frontend, IPv4/IPv6/remote DNS resolving supported
+* redir mode frontend on Linux (iptables compatible), IPv4 only
 * http/https backend
 * socks4/socks4a/socks5 backend
 * Shadowsocks(R) backend
+* DNS proxy that protects user against DNS poisoning but is CDN friendly in China
 
 #### SS Encrypting algorithm
 
@@ -56,11 +57,11 @@ Socks5/Transparent Proxy Client
 
 ## Todo (help wanted)
 
-* UDP forwarding
+* UDP forwarding, include original Shadowsocks compatible UDP relay and ShadowsocksR compatible UDP over TCP relay
 * tun based system wide proxy
 * Adblock Plus rules based filter for http
 * TCP Fast Open on Linux with 3.7+ kernel
-* Transparent proxy aka. redir mode on Mac OS X and variant BSDs(ipfw/pf/fw mode)
+* Transparent proxy aka. redir mode on Mac OS X and variant BSDs(ipfw/pf mode)
 * IPv6 supported for redir mode
 
 ## Build
