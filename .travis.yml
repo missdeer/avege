@@ -5,6 +5,13 @@ env:
   global:
       - NDK_VERSION=r13b
       - ANDROID_NDK_HOME=$HOME/.android/android-ndk-${NDK_VERSION}
+      - DEPS=$HOME/.deps
+      - ANDROID_ARM_TOOLCHAIN=$DEPS/android-toolchain-16-arm
+      - ANDROID_X86_TOOLCHAIN=$DEPS/android-toolchain-16-x86
+      - ANDROID_ARM_CC=$ANDROID_ARM_TOOLCHAIN/bin/arm-linux-androideabi-gcc
+      - ANDROID_ARM_STRIP=$ANDROID_ARM_TOOLCHAIN/bin/arm-linux-androideabi-strip
+      - ANDROID_X86_CC=$ANDROID_X86_TOOLCHAIN/bin/i686-linux-android-gcc
+      - ANDROID_X86_STRIP=$ANDROID_X86_TOOLCHAIN/bin/i686-linux-android-strip
       - PATH=${ANDROID_NDK_HOME}:${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools:${PATH}
 
 install:
@@ -16,6 +23,22 @@ install:
         wget -q http://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux-${ARCH}.zip;
         unzip -q android-ndk-${NDK_VERSION}-linux-${ARCH}.zip;
         popd;
+    fi
+  - >
+    if [ ! -d "$DEPS" ]; then
+        mkdir -p $DEPS 
+    fi
+  - >
+    if [ ! -d "$ANDROID_ARM_TOOLCHAIN" ]; then
+        echo "Make standalone toolchain for ARM arch"
+        $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch arm \
+            --api 16 --install-dir $ANDROID_ARM_TOOLCHAIN
+    fi
+  - >
+    if [ ! -d "$ANDROID_X86_TOOLCHAIN" ]; then
+        echo "Make standalone toolchain for X86 arch"
+        $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch x86 \
+            --api 16 --install-dir $ANDROID_X86_TOOLCHAIN
     fi
   - go get github.com/op/go-logging
   - go get github.com/garyburd/redigo/redis
@@ -35,6 +58,8 @@ install:
   - go get github.com/ftrvxmtrx/fd
 script:
   - pwd && ls -l && cd src/avege
+  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_ARM_CC GOOS=android GOARCH=arm GOARM=7 go build -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_X86_CC GOOS=android GOARCH=386 go build -ldflags="-s -w"
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=linux go install -ldflags="-s -w"
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=linux go install -ldflags="-s -w"
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOARM=5 GOOS=linux go install -ldflags="-s -w"
@@ -58,7 +83,6 @@ script:
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOOS=netbsd go install
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=dragonfly go install
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=solaris go install
-  - ./makeall.sh
 deploy:
   provider: releases
   api_key:
