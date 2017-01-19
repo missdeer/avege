@@ -4,7 +4,6 @@ package local
 
 import (
 	"bufio"
-	"common"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,6 +15,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"common"
+	"common/fs"
 )
 
 var (
@@ -26,12 +28,12 @@ var (
 
 func init() {
 	var err error
-	if ruleFile, err = common.GetConfigPath(ruleFile); err != nil {
+	if ruleFile, err = fs.GetConfigPath(ruleFile); err != nil {
 		ruleFile = `rules.v4.latest`
 	}
 
 	templateFile := `rules.v4.template`
-	if templateFile, err = common.GetConfigPath(templateFile); err != nil {
+	if templateFile, err = fs.GetConfigPath(templateFile); err != nil {
 		templateFile = `rules.v4.template`
 	}
 
@@ -54,7 +56,7 @@ func monitorFileChange(fileName string) {
 			}
 		}
 	}()
-	go common.MonitorFileChanegs(fileName, configFileChanged)
+	go fs.MonitorFileChanegs(fileName, configFileChanged)
 }
 
 func updateRules() {
@@ -67,7 +69,7 @@ func updateRules() {
 func getSSServerDomainList() (res []string) {
 	retry := 0
 doRequest:
-	req, err := http.NewRequest("GET", config.Generals.ConsoleHost +"/admin/servers", nil)
+	req, err := http.NewRequest("GET", config.Generals.ConsoleHost+"/admin/servers", nil)
 	if err != nil {
 		common.Error("Could not parse get ss server list request:", err)
 		return
@@ -122,7 +124,7 @@ doRequest:
 }
 
 func getExceptionDomainList() (res []string) {
-	exceptionFile, err := common.GetConfigPath(`exception.txt`)
+	exceptionFile, err := fs.GetConfigPath(`exception.txt`)
 	if err != nil {
 		exceptionFile = `exception.txt`
 	}
@@ -195,7 +197,7 @@ func doUpdateRules() {
 	}
 
 	// china IPs
-	apnicFile, err := common.GetConfigPath("apnic.txt")
+	apnicFile, err := fs.GetConfigPath("apnic.txt")
 	if err != nil {
 		apnicFile = "apnic.txt"
 	}
