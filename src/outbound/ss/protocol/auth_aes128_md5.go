@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"math/rand"
+	"strconv"
+	"strings"
 	"time"
 
 	"common"
@@ -14,13 +16,15 @@ import (
 )
 
 type hmacMethod func(key []byte, data []byte) []byte
+type hashDigestMethod func(data []byte) []byte
 
 func NewAuthAES128MD5() *AuthAES128 {
 	a := &AuthAES128{
-		salt:  "auth_aes128_md5",
-		hmac:  common.HmacMD5,
-		packID:1,
-		recvID:1,
+		salt:       "auth_aes128_md5",
+		hmac:       common.HmacMD5,
+		hashDigest: common.MD5Sum,
+		packID:     1,
+		recvID:     1,
 	}
 	return a
 }
@@ -36,6 +40,7 @@ type AuthAES128 struct {
 	recvBufferLength int
 	salt             string
 	hmac             hmacMethod
+	hashDigest       hashDigestMethod
 }
 
 func (a *AuthAES128) SetServerInfo(s *ssr.ServerInfoForObfs) {
@@ -144,8 +149,24 @@ func (a *AuthAES128) packAuthData(data []byte) (outData []byte) {
 	binary.LittleEndian.PutUint16(encrypt[12:], uint16(outLength & 0xFFFF))
 	binary.LittleEndian.PutUint16(encrypt[14:], uint16(randLength & 0xFFFF))
 
-	a.userKey = make([]byte, a.KeyLen)
-	copy(a.userKey, a.Key)
+	params := strings.Split(a.Param, ":")
+	uid := make([]byte, 4)
+	if len(params) >= 2 {
+		if userID, err := strconv.ParseUint(params[0], 10, 32); err != nil {
+			common.Warning("parsing uint failed", params[0], err)
+			rand.Read(uid)
+		} else {
+			binary.LittleEndian.PutUint32(uid, uint32(userID))
+			a.userKey = a.hashDigest([]byte(params[1]))
+		}
+	} else {
+		rand.Read(uid)
+	}
+
+	if a.userKey == nil {
+		a.userKey = make([]byte, a.KeyLen)
+		copy(a.userKey, a.Key)
+	}
 
 	encryptKey := make([]byte, len(a.userKey))
 	copy(encryptKey, a.userKey)
@@ -162,7 +183,7 @@ func (a *AuthAES128) packAuthData(data []byte) (outData []byte) {
 	cbc := cipher.NewCBCEncrypter(block, iv)
 	cbc.CryptBlocks(encryptData, encrypt[0:16])
 	copy(encrypt[4:4 + 16], encryptData)
-	rand.Read(encrypt[0:4])
+	copy(encrypt[0:4], uid)
 
 	h := a.hmac(key, encrypt[0:20])
 	copy(encrypt[20:], h[:4])

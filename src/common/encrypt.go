@@ -18,8 +18,14 @@ func HmacSHA1(key []byte, data []byte) []byte {
 	return hmacSHA1.Sum(nil)[:10]
 }
 
-func Md5Sum(d []byte) []byte {
+func MD5Sum(d []byte) []byte {
 	h := md5.New()
+	h.Write(d)
+	return h.Sum(nil)
+}
+
+func SHA1Sum(d []byte) []byte {
+	h := sha1.New()
 	h.Write(d)
 	return h.Sum(nil)
 }
@@ -29,7 +35,7 @@ func EVPBytesToKey(password string, keyLen int) (key []byte) {
 
 	cnt := (keyLen-1)/md5Len + 1
 	m := make([]byte, cnt * md5Len)
-	copy(m, Md5Sum([]byte(password)))
+	copy(m, MD5Sum([]byte(password)))
 
 	// Repeatedly call md5 until bytes generated is enough.
 	// Each call to md5 uses data: prev md5 sum + password.
@@ -39,7 +45,7 @@ func EVPBytesToKey(password string, keyLen int) (key []byte) {
 		start += md5Len
 		copy(d, m[start - md5Len:start])
 		copy(d[md5Len:], password)
-		copy(m[start:], Md5Sum(d))
+		copy(m[start:], MD5Sum(d))
 	}
 	return m[:keyLen]
 }
