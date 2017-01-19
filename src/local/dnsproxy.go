@@ -93,18 +93,19 @@ func ednsClientSubnetFilter(r *dns.Msg) {
 }
 
 func exchange(s *DNSConfig, c *dns.Client, r *dns.Msg, resp chan *dns.Msg) {
-	req := *r
 	if s.EDNSClientSubnetEnabled {
-		ednsClientSubnetFilter(&req)
+		req := *r
+		r = &req
+		ednsClientSubnetFilter(r)
 	}
-	if rs, _, err := c.Exchange(&req, s.Address); err == nil {
+	if rs, _, err := c.Exchange(r, s.Address); err == nil {
 		resp <- rs
 	} else {
 		resp <- nil
 		if err == dns.ErrTruncated && s.EDNSClientSubnetEnabled == true {
 			s.EDNSClientSubnetEnabled = false
 		}
-		common.Errorf("query dns %s from %s failed, %+v\n", req.Question[0].Name, s.Address, err)
+		common.Errorf("query dns %s from %s failed, %+v\n", r.Question[0].Name, s.Address, err)
 	}
 }
 
