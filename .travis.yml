@@ -33,16 +33,32 @@ install:
   - go get github.com/patrickmn/go-cache
   - go get github.com/RouterScript/ProxyClient
   - go get github.com/ftrvxmtrx/fd
-  - pwd && ls -l && cd src/avege && ./makeall.sh
 script:
-  - env GOPATH=$GOPATH:$PWD/../.. GOOS=linux go install -ldflags="-s -w"
-  - env GOPATH=$GOPATH:$PWD/../.. GOOS=darwin go install
-  - env GOPATH=$GOPATH:$PWD/../.. GOOS=windows go install
-  - env GOPATH=$GOPATH:$PWD/../.. GOOS=freebsd go install
-  - env GOPATH=$GOPATH:$PWD/../.. GOOS=openbsd go install
-  - env GOPATH=$GOPATH:$PWD/../.. GOOS=netbsd go install
-  - env GOPATH=$GOPATH:$PWD/../.. GOOS=dragonfly go install
-  - pwd && cd ../.. && go build dummy.go && cd src/avege
+  - pwd && ls -l && cd src/avege
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOARM=5 GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOARM=6 GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOARM=7 GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm64 GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=ppc64 GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=ppc64le GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=mips64 GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=mips64le GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=darwin go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=windows go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=windows go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=freebsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=freebsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOOS=freebsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=openbsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=openbsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=netbsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=netbsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOOS=netbsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=dragonfly go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=solaris go install
+  - ./makeall.sh
 deploy:
   provider: releases
   api_key:
