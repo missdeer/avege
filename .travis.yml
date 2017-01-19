@@ -35,13 +35,13 @@ install:
   - go get github.com/ftrvxmtrx/fd
   - pwd && ls -l && cd src/avege && ./makeall.sh
 script:
-  - env GOOS=linux go install -ldflags="-s -w"
-  - env GOOS=darwin go install
-  - env GOOS=windows go install
-  - env GOOS=freebsd go install
-  - env GOOS=openbsd go install
-  - env GOOS=netbsd go install
-  - env GOOS=dragonfly go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOOS=linux go install -ldflags="-s -w"
+  - env GOPATH=$GOPATH:$PWD/../.. GOOS=darwin go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOOS=windows go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOOS=freebsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOOS=openbsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOOS=netbsd go install
+  - env GOPATH=$GOPATH:$PWD/../.. GOOS=dragonfly go install
   - pwd && cd ../.. && go build dummy.go && cd src/avege
 deploy:
   provider: releases
