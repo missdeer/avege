@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"common"
-	"common/semaphore"
 	"github.com/RouterScript/ProxyClient"
 	"outbound/ss"
 	"outbound/ss/obfs"
@@ -48,10 +47,8 @@ type BackendInfo struct {
 	ips                []net.IP
 }
 
-func (bi *BackendInfo) testLatency(rawaddr []byte, addr string, wg *sync.WaitGroup, sem *semaphore.Semaphore) {
-	sem.Acquire()
+func (bi *BackendInfo) testLatency(rawaddr []byte, addr string, wg *sync.WaitGroup) {
 	defer func() {
-		sem.Release()
 		wg.Done()
 	}()
 	startTime := time.Now()

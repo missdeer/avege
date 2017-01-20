@@ -1,10 +1,10 @@
 package local
 
 import (
-	"common"
 	"encoding/json"
 	"time"
 
+	"common"
 	"github.com/gorilla/websocket"
 )
 
@@ -47,7 +47,9 @@ func (c *Connection) handleWS(msg []byte) []byte {
 	case common.CMD_STOP_REVERSE_SSH:
 		m.Cmd = common.CMD_REVERSE_SSH_STOPPED
 	case common.CMD_NEW_RULES:
-		go updateRules()
+		if config.InBoundConfig.Type == "redir" {
+			go updateRedirFirewallRules()
+		}
 		m.Cmd = common.CMD_RESPONSE
 		m.WParam = "ok"
 	case common.CMD_ADD_SERVER:

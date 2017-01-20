@@ -90,7 +90,6 @@ func timers() {
 	}
 
 	secondTicker := time.NewTicker(1 * time.Second)
-	fifteenSecondsTicker := time.NewTicker(15 * time.Second)
 	minuteTicker := time.NewTicker(1 * time.Minute)
 	hourTicker := time.NewTicker(1 * time.Hour)
 	dayTicker := time.NewTicker(24 * time.Hour)
@@ -114,14 +113,15 @@ func timers() {
 					conn, _ = dialUDP()
 				}
 			}
-		case <-fifteenSecondsTicker.C:
-			go Statistics.UpdateLatency()
 		case <-minuteTicker.C:
+			go Statistics.UpdateLatency()
 			go uploadStatistic()
 		case <-hourTicker.C:
 			go Statistics.UpdateServerIP()
 		case <-dayTicker.C:
-			go updateRules()
+			if config.InBoundConfig.Type == "redir" {
+				go updateRedirFirewallRules()
+			}
 		case <-weekTicker.C:
 			go iputil.LoadChinaIPList(true)
 			go domain.UpdateDomainNameInChina()
@@ -245,7 +245,9 @@ func Main() {
 	startDNSProxy()
 	Statistics.LoadFromCache()
 	go consoleWS()
-	go updateRules()
+	if config.InBoundConfig.Type == "redir" {
+		go updateRedirFirewallRules()
+	}
 	go getQuote()
 	go Statistics.UpdateLatency()
 	go Statistics.UpdateServerIP()

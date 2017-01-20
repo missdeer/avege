@@ -4,7 +4,7 @@ function try () {
 "$@" #|| exit -1
 }
 
-[ -z "$ANDROID_NDK_HOME" ] && ANDROID_NDK_HOME=$HOME/android-ndk-r13
+[ -z "$ANDROID_NDK_HOME" ] && ANDROID_NDK_HOME=$HOME/android-ndk-r13b
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DEPS=$DIR/.deps

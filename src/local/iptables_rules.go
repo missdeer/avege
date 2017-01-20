@@ -59,7 +59,7 @@ func monitorFileChange(fileName string) {
 	go fs.MonitorFileChanegs(fileName, configFileChanged)
 }
 
-func updateRules() {
+func updateRedirFirewallRules() {
 	if oneUpdateIptablesRules == nil {
 		oneUpdateIptablesRules = &sync.Once{}
 	}

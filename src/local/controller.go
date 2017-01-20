@@ -14,6 +14,7 @@ import (
 	"common/cache"
 	"github.com/gin-gonic/gin"
 	"github.com/kardianos/osext"
+	"runtime"
 )
 
 var (
@@ -47,10 +48,22 @@ func clearDNSCache(c *gin.Context) {
 }
 
 func updateIptablesRulesHandler(c *gin.Context) {
-	go updateRules()
-	c.JSON(http.StatusOK, gin.H{
-		"Result": "OK",
-	})
+	if runtime.GOOS == "linux" {
+		if config.InBoundConfig.Type == "redir" {
+			go updateRedirFirewallRules()
+			c.JSON(http.StatusOK, gin.H{
+				"Result": "OK",
+			})
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"Result": "not redir mode, can't generate iptables rules",
+			})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"Result": "host is not Linux, can't generate iptables rules",
+		})
+	}
 }
 
 func getTokenHandler(c *gin.Context) {

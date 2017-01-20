@@ -2,6 +2,6 @@
 
 package local
 
-func updateRules() {
+func updateRedirFirewallRules() {
 
 }

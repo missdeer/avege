@@ -10,7 +10,6 @@ import (
 
 	"common"
 	"common/cache"
-	"common/semaphore"
 )
 
 type remoteAddr struct {
@@ -121,11 +120,10 @@ func (m *StatisticWrapper) UpdateLatency() {
 		addr = remoteAddresses[index].addr
 	}
 	var wg sync.WaitGroup
-	sem := semaphore.New(5)
 	m.RLock()
 	wg.Add(len(m.StatisticMap))
 	for si := range m.StatisticMap {
-		go si.testLatency(rawAddr, addr, &wg, sem)
+		go si.testLatency(rawAddr, addr, &wg)
 	}
 	m.RUnlock()
 	wg.Wait()
