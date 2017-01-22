@@ -37,6 +37,7 @@ var (
 
 func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *common.Buffer) (err error) {
 	needChangeUsedServerInfo := (smartLastUsedBackendInfo == nil)
+	ipv6 := false
 	var port uint16
 	switch rawaddr[0] {
 	case 1:
@@ -45,6 +46,7 @@ func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *
 		port = binary.BigEndian.Uint16(rawaddr[2 + rawaddr[1]:])
 	case 4:
 		port = binary.BigEndian.Uint16(rawaddr[17:])
+		ipv6 = true
 	}
 	if forceUpdateSmartLastUsedBackendInfo {
 		forceUpdateSmartLastUsedBackendInfo = false
@@ -73,6 +75,11 @@ func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *
 				goto pick_server
 			}
 
+			if ipv6 && !smartLastUsedBackendInfo.ipv6 {
+				common.Warning("ipv6 is not supported")
+				goto pick_server
+			}
+
 			if remote, err := smartLastUsedBackendInfo.connect(rawaddr, addr); err == nil {
 				if err, inboundSideError := smartLastUsedBackendInfo.pipe(local, remote, buffer); err == nil {
 					return nil
@@ -97,6 +104,10 @@ pick_server:
 		Backends.RLock()
 		for _, bi := range Backends.BackendsInformation {
 			if bi == smartLastUsedBackendInfo {
+				continue
+			}
+
+			if ipv6 && !bi.ipv6 {
 				continue
 			}
 
@@ -153,6 +164,11 @@ pick_server:
 			if !ok || stat == nil {
 				continue
 			}
+
+			if ipv6 && !bi.ipv6 {
+				continue
+			}
+			
 			common.Debugf("try %s with failed count %d for an additional optunity, %v\n", bi.address, stat.GetFailedCount(), bi)
 			if remote, err := bi.connect(rawaddr, addr); err == nil {
 				if err, inboundSideError := bi.pipe(local, remote, buffer); err == nil || inboundSideError {

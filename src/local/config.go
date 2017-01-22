@@ -43,6 +43,7 @@ type GeneralConfig struct {
 	Tun2SocksEnabled         bool   `json:"tun2socks_enabled"`
 	PriorityInterfaceEnabled bool   `json:"priority_interface_enabled"`
 	PriorityInterfaceAddress string `json:"priority_interface_address"`
+	ConsoleReportEnabled     bool   `json:"console_report_enabled"`
 	ConsoleHost              string `json:"console_host"`
 	ConsoleVersion           string `json:"console_version"`
 	ConsoleWebSocketURL      string `json:"console_websocket_url"`

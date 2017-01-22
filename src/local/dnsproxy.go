@@ -540,24 +540,22 @@ func createClients() {
 }
 
 func startDNSProxy() {
-	if config.DNSProxy.Enabled {
-		createClients()
-		dns.HandleFunc(".", serveDNS)
-		for _, v := range config.DNSProxy.Local {
-			common.Debug("starting dns on", v, v.Protocol)
-			listenAndServe(v.Address, v.Protocol)
-		}
-
-		go iputil.LoadBogusNXDomain()
-		go iputil.LoadIPBlacklist()
-		go iputil.LoadChinaIPList(false)
-		go domain.LoadDomainNameInChina()
-		go domain.LoadDomainNameToBlock()
-		go domain.LoadDomainNameGFWed()
-		go func() {
-			for i := 0; len(externalIPAddress) == 0 && i < 10; i++ {
-				externalIPAddress, _ = getExternalIPAddress()
-			}
-		}()
+	createClients()
+	dns.HandleFunc(".", serveDNS)
+	for _, v := range config.DNSProxy.Local {
+		common.Debug("starting dns on", v, v.Protocol)
+		listenAndServe(v.Address, v.Protocol)
 	}
+
+	go iputil.LoadBogusNXDomain()
+	go iputil.LoadIPBlacklist()
+	go iputil.LoadChinaIPList(false)
+	go domain.LoadDomainNameInChina()
+	go domain.LoadDomainNameToBlock()
+	go domain.LoadDomainNameGFWed()
+	go func() {
+		for i := 0; len(externalIPAddress) == 0 && i < 10; i++ {
+			externalIPAddress, _ = getExternalIPAddress()
+		}
+	}()
 }

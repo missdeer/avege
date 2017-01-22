@@ -28,16 +28,6 @@ var (
 )
 
 func run() {
-	ln, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   net.ParseIP(config.InBoundConfig.Address),
-		Port: config.InBoundConfig.Port,
-		Zone: "",
-	})
-	if err != nil {
-		common.Panic("Failed listening", err)
-		return
-	}
-
 	var inboundHandler func(*net.TCPConn, common.OutboundHandler)
 	switch config.InBoundConfig.Type {
 	case "socks5", "socks":
@@ -46,6 +36,24 @@ func run() {
 	case "redir":
 		common.Infof("starting redir mode at %s:%d ...\n", config.InBoundConfig.Address, config.InBoundConfig.Port)
 		inboundHandler = redir.HandleInbound
+	default:
+		// just wait for ever
+		common.Info("no inbound")
+		if config.DNSProxy.Enabled {
+			select {}
+		} else {
+			return
+		}
+	}
+
+	ln, err := net.ListenTCP("tcp", &net.TCPAddr{
+		IP:   net.ParseIP(config.InBoundConfig.Address),
+		Port: config.InBoundConfig.Port,
+		Zone: "",
+	})
+	if err != nil {
+		common.Panic("Failed listening", err)
+		return
 	}
 
 	for {
@@ -97,7 +105,11 @@ func timers() {
 	for {
 		select {
 		case <-secondTicker.C:
-			go Statistics.UpdateBps()
+			switch config.InBoundConfig.Type {
+			case "redir", "socks", "socks5":
+			default:
+				go Statistics.UpdateBps()
+			}
 			if config.Generals.BroadcastEnabled {
 				if conn == nil {
 					common.Warning("broadcast UDP conn is nil")
@@ -114,10 +126,18 @@ func timers() {
 				}
 			}
 		case <-minuteTicker.C:
-			go Statistics.UpdateLatency()
-			go uploadStatistic()
+			switch config.InBoundConfig.Type {
+			case "redir", "socks", "socks5":
+				go Statistics.UpdateLatency()
+			}
+			if config.Generals.ConsoleReportEnabled {
+				go uploadStatistic()
+			}
 		case <-hourTicker.C:
-			go Statistics.UpdateServerIP()
+			switch config.InBoundConfig.Type {
+			case "redir", "socks", "socks5":
+				go Statistics.UpdateServerIP()
+			}
 		case <-dayTicker.C:
 			if config.InBoundConfig.Type == "redir" {
 				go updateRedirFirewallRules()
@@ -242,15 +262,23 @@ func Main() {
 	}
 	cache.Init(config.Generals.CacheService)
 
-	startDNSProxy()
-	Statistics.LoadFromCache()
-	go consoleWS()
-	if config.InBoundConfig.Type == "redir" {
-		go updateRedirFirewallRules()
+	if config.DNSProxy.Enabled {
+		startDNSProxy()
 	}
-	go getQuote()
-	go Statistics.UpdateLatency()
-	go Statistics.UpdateServerIP()
+	Statistics.LoadFromCache()
+	if config.Generals.ConsoleReportEnabled {
+		go consoleWS()
+		go getQuote()
+	}
+	switch config.InBoundConfig.Type {
+	case "redir":
+		go updateRedirFirewallRules()
+		fallthrough
+	case "socks", "socks5":
+		go Statistics.UpdateLatency()
+		go Statistics.UpdateServerIP()
+	default:
+	}
 	go timers()
 
 	run()

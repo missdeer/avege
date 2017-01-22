@@ -43,6 +43,7 @@ type BackendInfo struct {
 	restrict           bool
 	local              bool
 	firewalled         bool
+	ipv6               bool
 	lastCheckTimePoint time.Time
 	ips                []net.IP
 }

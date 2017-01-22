@@ -27,6 +27,13 @@ func resolvServer(bi *BackendInfo) {
 	if ips, err := net.LookupIP(host); err == nil {
 		Backends.Lock()
 		bi.ips = ips
+		bi.ipv6 = false
+		for _, ip := range ips {
+			if ip.To16() != nil {
+				bi.ipv6 = true
+				break
+			}
+		}
 		Backends.Unlock()
 	}
 }
