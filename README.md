@@ -2,13 +2,14 @@
 
 Socks5/Transparent Proxy Client
 
-[![Build Status](https://secure.travis-ci.org/missdeer/avege.png)](https://travis-ci.org/missdeer/avege) [![GitHub release](https://img.shields.io/github/release/missdeer/avege.svg?maxAge=2592000)](https://github.com/missdeer/avege/releases) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/missdeer/avege/master/LICENSE)
+[![Build Status](https://secure.travis-ci.org/missdeer/avege.png)](https://travis-ci.org/missdeer/avege) [![GitHub release](https://img.shields.io/github/release/missdeer/avege.svg?maxAge=2592000)](https://github.com/missdeer/avege/releases) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/missdeer/avege/master/LICENSE) [![Github Releases Downloads Total](https://img.shields.io/github/downloads/missdeer/avege/total.svg)](https://github.com/missdeer/avege/releases)
 
 ## Feature
 
 * Windows/macOS/Linux/variant BSDs supported
 * socks5 frontend, IPv4/IPv6/remote DNS resolving supported
 * redir mode frontend on Linux (iptables compatible), IPv4 only
+* tunnel mode frontend, IPv4/IPv6 supported
 * http/https backend
 * socks4/socks4a/socks5 backend
 * Shadowsocks(R) backend
