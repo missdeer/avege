@@ -37,6 +37,7 @@ type GeneralConfig struct {
 	MaxOpenFiles             uint64 `json:"max_openfiles"`
 	LogLevel                 int    `json:"log_level"`
 	Timeout                  int    `json:"timeout"`
+	InBoundTimeout           int    `json:"inbound_timeout"`
 	PProfEnabled             bool   `json:"pprof"`
 	GenRelease               bool   `json:"gen_release"`
 	UDPEnabled               bool   `json:"udp_enabled"`
@@ -97,7 +98,7 @@ type LocalConfig struct {
 	DNSProxy        *DNS                 `json:"dns"`
 	Target          *ACL                 `json:"target"`
 	InBoundConfig   *inbound.InBound     `json:"inbound"`
-	InBoundsConfig  *inbound.InBound     `json:"inbounds"`
+	InBoundsConfig  []*inbound.InBound     `json:"inbounds"`
 	OutBoundsConfig []*outbound.OutBound `json:"outbounds"`
 }
 
@@ -142,7 +143,7 @@ func removeServer(address string) {
 	for i, outbound := range config.OutBoundsConfig {
 		host, _, _ := net.SplitHostPort(outbound.Address)
 		if host == address && outbound.Local == false {
-			config.OutBoundsConfig = append(config.OutBoundsConfig[:i], config.OutBoundsConfig[i+1:]...)
+			config.OutBoundsConfig = append(config.OutBoundsConfig[:i], config.OutBoundsConfig[i + 1:]...)
 			// save to redis
 			break
 		}
@@ -212,8 +213,8 @@ func parseMultiServersConfig(data []byte) error {
 	consoleVer = config.Generals.ConsoleVersion
 	consoleWSUrl = config.Generals.ConsoleWebSocketURL
 
-	if config.InBoundConfig.Timeout == 0 {
-		config.InBoundConfig.Timeout = config.Generals.Timeout
+	if config.Generals.InBoundTimeout == 0 {
+		config.Generals.InBoundTimeout = config.Generals.Timeout
 	}
 
 	if len(config.Target.Port.Allow) > 0 && config.Target.Port.Allow != "all" {

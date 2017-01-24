@@ -15,6 +15,7 @@ import (
 	iputil "common/ip"
 	"github.com/DeanThompson/ginpprof"
 	"github.com/gin-gonic/gin"
+	"inbound"
 	"inbound/redir"
 	"inbound/socks"
 	"inbound/tunnel"
@@ -29,49 +30,60 @@ var (
 )
 
 func run() {
-	var inboundHandler func(*net.TCPConn, common.OutboundHandler)
-	switch config.InBoundConfig.Type {
-	case "socks5", "socks":
-		common.Infof("starting socks server at %s:%d ...\n", config.InBoundConfig.Address, config.InBoundConfig.Port)
-		inboundHandler = socks.GetInboundHandler(config.InBoundConfig)
-	case "redir":
-		common.Infof("starting redir mode at %s:%d ...\n", config.InBoundConfig.Address, config.InBoundConfig.Port)
-		inboundHandler = redir.GetInboundHandler(config.InBoundConfig)
-	case "tunnel":
-		common.Infof("starting tunnel mode at %s:%d ...\n", config.InBoundConfig.Address, config.InBoundConfig.Port)
-		inboundHandler = tunnel.GetInboundHandler(config.InBoundConfig)
-	default:
-		// just wait for ever
-		common.Info("no inbound")
-		if config.DNSProxy.Enabled {
-			select {}
-		} else {
+	wait := false
+	serveInbound := func(ib *inbound.InBound, ibHandler inbound.InBoundHander) {
+		ln, err := net.ListenTCP("tcp", &net.TCPAddr{
+			IP:   net.ParseIP(ib.Address),
+			Port: ib.Port,
+			Zone: "",
+		})
+		if err != nil {
+			common.Panic("Failed listening", err)
 			return
 		}
+
+		for {
+			conn, err := ln.AcceptTCP()
+			if err != nil {
+				common.Error("accept err: ", err)
+				continue
+			}
+			go ibHandler(conn, handleOutbound)
+		}
 	}
 
-	ln, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   net.ParseIP(config.InBoundConfig.Address),
-		Port: config.InBoundConfig.Port,
-		Zone: "",
-	})
-	if err != nil {
-		common.Panic("Failed listening", err)
-		return
+	runInbound := func(ib *inbound.InBound) {
+		switch ib.Type {
+		case "socks5", "socks":
+			go serveInbound(ib, socks.GetInboundHandler(ib))
+		case "redir":
+			if leftQuote <= 0 {
+				common.Fatal("no quote now, please charge in time")
+				break
+			}
+			go serveInbound(ib, redir.GetInboundHandler(ib))
+		case "tunnel":
+			go serveInbound(ib, tunnel.GetInboundHandler(ib))
+		}
 	}
 
-	for {
-		conn, err := ln.AcceptTCP()
-		if err != nil {
-			common.Error("accept err: ", err)
-			continue
-		}
-		if leftQuote <= 0 {
-			common.Fatal("no quote now, please charge in time")
-			conn.Close()
-			continue
-		}
-		go inboundHandler(conn, handleOutbound)
+	if config.InBoundConfig != nil {
+		wait = true
+		inbound.InBoundModeEnable(config.InBoundConfig.Type)
+		go runInbound(config.InBoundConfig)
+	}
+	for _, i := range config.InBoundsConfig {
+		wait = true
+		inbound.InBoundModeEnable(i.Type)
+		go runInbound(i)
+	}
+
+	if config.DNSProxy.Enabled {
+		wait = true
+	}
+
+	if wait {
+		select {}
 	}
 }
 
@@ -109,8 +121,7 @@ func timers() {
 	for {
 		select {
 		case <-secondTicker.C:
-			switch config.InBoundConfig.Type {
-			case "redir", "socks", "socks5", "tunnel":
+			if inbound.HasInBound() {
 				go Statistics.UpdateBps()
 			}
 			if config.Generals.BroadcastEnabled {
@@ -129,20 +140,18 @@ func timers() {
 				}
 			}
 		case <-minuteTicker.C:
-			switch config.InBoundConfig.Type {
-			case "redir", "socks", "socks5", "tunnel":
+			if inbound.HasInBound() {
 				go Statistics.UpdateLatency()
 			}
 			if config.Generals.ConsoleReportEnabled {
 				go uploadStatistic()
 			}
 		case <-hourTicker.C:
-			switch config.InBoundConfig.Type {
-			case "redir", "socks", "socks5", "tunnel":
+			if inbound.HasInBound() {
 				go Statistics.UpdateServerIP()
 			}
 		case <-dayTicker.C:
-			if config.InBoundConfig.Type == "redir" {
+			if inbound.IsInBoundModeEnabled("redir") {
 				go updateRedirFirewallRules()
 			}
 		case <-weekTicker.C:
@@ -273,14 +282,12 @@ func Main() {
 		go consoleWS()
 		go getQuote()
 	}
-	switch config.InBoundConfig.Type {
-	case "redir":
+	if inbound.IsInBoundModeEnabled("redir") {
 		go updateRedirFirewallRules()
-		fallthrough
-	case "socks", "socks5", "tunnel":
+	}
+	if inbound.HasInBound() {
 		go Statistics.UpdateLatency()
 		go Statistics.UpdateServerIP()
-	default:
 	}
 	go timers()
 

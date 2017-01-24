@@ -7,6 +7,7 @@
     "pprof": false,
     "gen_release": true,
     "timeout": 10,
+    "inbound_timeout": 60,
     "load_balance": "smart",
     "udp_enabled": false,
     "api": "127.0.0.1:58098",
@@ -108,12 +109,19 @@
       "deny": ""
     }
   },
-  "inbound": {
-    "address": "127.0.0.1",
-    "port": 1080,
-    "timeout": 60,
-	"type": "socks5"
-  },
+  "inbounds": [
+    {
+      "address": "0.0.0.0",
+      "port": 58096,
+      "type": "tunnel",
+      "parameter": "8.8.8.8:53"
+    },
+    {
+      "address": "0.0.0.0",
+      "port": 58097,
+      "type": "socks5",
+    }
+  ],
   "outbounds": [
     {
       "address": "s1.domain.com:3389",

@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kardianos/osext"
 	"runtime"
+	"inbound"
 )
 
 var (
@@ -49,7 +50,7 @@ func clearDNSCache(c *gin.Context) {
 
 func updateIptablesRulesHandler(c *gin.Context) {
 	if runtime.GOOS == "linux" {
-		if config.InBoundConfig.Type == "redir" {
+		if inbound.IsInBoundModeEnabled("redir") {
 			go updateRedirFirewallRules()
 			c.JSON(http.StatusOK, gin.H{
 				"Result": "OK",

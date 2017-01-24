@@ -6,6 +6,7 @@ import (
 
 	"common"
 	"github.com/gorilla/websocket"
+	"inbound"
 )
 
 var (
@@ -47,7 +48,7 @@ func (c *Connection) handleWS(msg []byte) []byte {
 	case common.CMD_STOP_REVERSE_SSH:
 		m.Cmd = common.CMD_REVERSE_SSH_STOPPED
 	case common.CMD_NEW_RULES:
-		if config.InBoundConfig.Type == "redir" {
+		if inbound.IsInBoundModeEnabled("redir") {
 			go updateRedirFirewallRules()
 		}
 		m.Cmd = common.CMD_RESPONSE
