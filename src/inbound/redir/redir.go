@@ -3,8 +3,10 @@
 package redir
 
 import (
-	"common"
 	"net"
+
+	"common"
+	"inbound"
 )
 
 func handleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {

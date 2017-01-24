@@ -3,11 +3,13 @@
 package redir
 
 import (
-	"common"
 	"errors"
 	"fmt"
 	"net"
 	"syscall"
+
+	"common"
+	"inbound"
 )
 
 const (

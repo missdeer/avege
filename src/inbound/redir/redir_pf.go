@@ -4,7 +4,6 @@ package redir
 
 import (
 	"bytes"
-	"common"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -12,6 +11,8 @@ import (
 	"strconv"
 	"syscall"
 	"unsafe"
+
+	"common"
 	"inbound"
 )
 
