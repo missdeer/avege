@@ -110,8 +110,8 @@ deploy:
     - avege-openbsd-amd64.tar.gz          
     - avege-openbsd-x86.tar.gz            
     - avege-solaris-amd64.tar.gz                
-    - avege-win-amd64.tar.gz              
-    - avege-win-x86.tar.gz                
+    - avege-windows-amd64.tar.gz              
+    - avege-windows-x86.tar.gz                
   on:
     repo: missdeer/avege
     tags: true
