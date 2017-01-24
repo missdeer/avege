@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"inbound/redir"
 	"inbound/socks"
+	"inbound/tunnel"
 )
 
 const (
@@ -32,10 +33,13 @@ func run() {
 	switch config.InBoundConfig.Type {
 	case "socks5", "socks":
 		common.Infof("starting socks server at %s:%d ...\n", config.InBoundConfig.Address, config.InBoundConfig.Port)
-		inboundHandler = socks.HandleInbound
+		inboundHandler = socks.GetInboundHandler(config.InBoundConfig)
 	case "redir":
 		common.Infof("starting redir mode at %s:%d ...\n", config.InBoundConfig.Address, config.InBoundConfig.Port)
-		inboundHandler = redir.HandleInbound
+		inboundHandler = redir.GetInboundHandler(config.InBoundConfig)
+	case "tunnel":
+		common.Infof("starting tunnel mode at %s:%d ...\n", config.InBoundConfig.Address, config.InBoundConfig.Port)
+		inboundHandler = tunnel.GetInboundHandler(config.InBoundConfig)
 	default:
 		// just wait for ever
 		common.Info("no inbound")
@@ -106,8 +110,7 @@ func timers() {
 		select {
 		case <-secondTicker.C:
 			switch config.InBoundConfig.Type {
-			case "redir", "socks", "socks5":
-			default:
+			case "redir", "socks", "socks5", "tunnel":
 				go Statistics.UpdateBps()
 			}
 			if config.Generals.BroadcastEnabled {
@@ -127,7 +130,7 @@ func timers() {
 			}
 		case <-minuteTicker.C:
 			switch config.InBoundConfig.Type {
-			case "redir", "socks", "socks5":
+			case "redir", "socks", "socks5", "tunnel":
 				go Statistics.UpdateLatency()
 			}
 			if config.Generals.ConsoleReportEnabled {
@@ -135,7 +138,7 @@ func timers() {
 			}
 		case <-hourTicker.C:
 			switch config.InBoundConfig.Type {
-			case "redir", "socks", "socks5":
+			case "redir", "socks", "socks5", "tunnel":
 				go Statistics.UpdateServerIP()
 			}
 		case <-dayTicker.C:
@@ -274,7 +277,7 @@ func Main() {
 	case "redir":
 		go updateRedirFirewallRules()
 		fallthrough
-	case "socks", "socks5":
+	case "socks", "socks5", "tunnel":
 		go Statistics.UpdateLatency()
 		go Statistics.UpdateServerIP()
 	default:

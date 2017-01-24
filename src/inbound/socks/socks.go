@@ -7,9 +7,10 @@ import (
 	"common"
 	"common/domain"
 	iputil "common/ip"
+	"inbound"
 )
 
-func HandleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
+func handleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 	common.Debugf("socks connect from %s\n", conn.RemoteAddr().String())
 	conf := &SocksServerConfig{}
 	s, err := NewSocks5Server(conf)
@@ -69,4 +70,8 @@ func HandleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 	}
 	addr := req.DestAddr.Address()
 	outboundHander(conn, rawaddr, addr)
+}
+
+func GetInboundHandler(inbound *inbound.InBound) inbound.InBoundHander {
+	return handleInbound
 }

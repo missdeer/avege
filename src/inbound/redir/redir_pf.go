@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"syscall"
 	"unsafe"
+	"inbound"
 )
 
 type Natlook struct {
@@ -140,7 +141,7 @@ func getOriginalDst(clientConn *net.TCPConn) (rawaddr []byte, host string, newTC
 	return
 }
 
-func HandleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
+func handleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 	common.Debugf("redir connect from %s, BSD is detected, use pf now.\n",
 		conn.RemoteAddr().String())
 
@@ -163,4 +164,8 @@ func HandleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 	}
 
 	outboundHander(conn, rawaddr, addr)
+}
+
+func GetInboundHandler(inbound *inbound.InBound) inbound.InBoundHander {
+	return handleInbound
 }

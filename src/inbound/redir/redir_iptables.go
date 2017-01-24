@@ -107,7 +107,7 @@ func getOriginalDst(clientConn *net.TCPConn) (rawaddr []byte, host string, newTC
 	return
 }
 
-func HandleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
+func handleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 	common.Debugf("redir connect from %s, Linux is detected, use iptables now.\n",
 		conn.RemoteAddr().String())
 
@@ -130,4 +130,8 @@ func HandleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 	}
 
 	outboundHander(conn, rawaddr, addr)
+}
+
+func GetInboundHandler(inbound *inbound.InBound) inbound.InBoundHander {
+	return handleInbound
 }
