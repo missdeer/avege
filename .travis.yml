@@ -109,7 +109,7 @@ deploy:
     - avege-netbsd-x86.tar.gz             
     - avege-openbsd-amd64.tar.gz          
     - avege-openbsd-x86.tar.gz            
-    - avege-solaris.tar.gz                
+    - avege-solaris-amd64.tar.gz                
     - avege-win-amd64.tar.gz              
     - avege-win-x86.tar.gz                
   on:
