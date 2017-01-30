@@ -2,7 +2,7 @@
 
 Socks5/Transparent Proxy Client
 
-[![Build Status](https://secure.travis-ci.org/missdeer/avege.png)](https://travis-ci.org/missdeer/avege) [![GitHub release](https://img.shields.io/github/release/missdeer/avege.svg?maxAge=2592000)](https://github.com/missdeer/avege/releases) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/missdeer/avege/master/LICENSE) [![Github Releases Downloads Total](https://img.shields.io/github/downloads/missdeer/avege/total.svg)](https://github.com/missdeer/avege/releases)
+[![Build Status](https://secure.travis-ci.org/avege/avege.png)](https://travis-ci.org/avege/avege) [![GitHub release](https://img.shields.io/github/release/avege/avege.svg?maxAge=2592000)](https://github.com/avege/avege/releases) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/avege/avege/master/LICENSE) [![Github Releases Downloads Total](https://img.shields.io/github/downloads/avege/avege/total.svg)](https://github.com/avege/avege/releases)
 
 ## Feature
 
@@ -93,7 +93,7 @@ go get -u -f -v github.com/ftrvxmtrx/fd
 for macOS/Linux/BSDs
 
 ```shell
-git clone https://github.com/missdeer/avege.git
+git clone https://github.com/avege/avege.git
 cd avege/src/avege
 GOPATH=$GOPATH:$PWD/../.. go build 
 ```
