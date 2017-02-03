@@ -15,10 +15,12 @@ type InBound struct {
 type InBoundHander func(conn *net.TCPConn, outboundHander common.OutboundHandler)
 
 const (
-	inBoundNone   = 0
-	inBoundSocks5 = 1
-	inBoundRedir  = 2
-	inBoundTunnel = 4
+	inBoundNone = 0
+)
+const (
+	inBoundSocks5 = 1 << iota
+	inBoundRedir
+	inBoundTunnel
 )
 
 var (

@@ -305,10 +305,10 @@ func querySpecificServer(r *dns.Msg) (rs *dns.Msg) {
 	}
 
 	timeout := config.DNSProxy.Timeout
-	if timeout < 15 {
-		timeout = 15
+	if timeout < 15*time.Second {
+		timeout = 15 * time.Second
 	}
-	timeoutTicker := time.NewTicker(time.Duration(timeout) * time.Second)
+	timeoutTicker := time.NewTicker(timeout)
 	defer timeoutTicker.Stop()
 	for {
 		select {
@@ -392,10 +392,10 @@ func serveDNS(w dns.ResponseWriter, r *dns.Msg) {
 
 	giveUpChinaResult := false
 	timeout := config.DNSProxy.Timeout
-	if timeout < 15 {
-		timeout = 15
+	if timeout < 15*time.Second {
+		timeout = 15 * time.Second
 	}
-	timeoutTicker := time.NewTicker(time.Duration(timeout) * time.Second)
+	timeoutTicker := time.NewTicker(timeout)
 	defer timeoutTicker.Stop()
 	var rc *dns.Msg
 	for {
@@ -523,18 +523,18 @@ func listenAndServe(address string, protocol string) {
 func createClients() {
 	tcpClient = &dns.Client{
 		Net:          "tcp",
-		ReadTimeout:  time.Duration(config.DNSProxy.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(config.DNSProxy.WriteTimeout) * time.Second,
+		ReadTimeout:  config.DNSProxy.ReadTimeout,
+		WriteTimeout: config.DNSProxy.WriteTimeout,
 	}
 	udpClient = &dns.Client{
 		Net:          "udp",
-		ReadTimeout:  time.Duration(config.DNSProxy.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(config.DNSProxy.WriteTimeout) * time.Second,
+		ReadTimeout:  config.DNSProxy.ReadTimeout,
+		WriteTimeout: config.DNSProxy.WriteTimeout,
 	}
 	tcpTLSClient = &dns.Client{
 		Net:          "tcp-tls",
-		ReadTimeout:  time.Duration(config.DNSProxy.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(config.DNSProxy.WriteTimeout) * time.Second,
+		ReadTimeout:  config.DNSProxy.ReadTimeout,
+		WriteTimeout: config.DNSProxy.WriteTimeout,
 		TLSConfig:    &tls.Config{InsecureSkipVerify: true},
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"common"
 	"inbound"
@@ -36,8 +37,8 @@ type GeneralConfig struct {
 	ProtectSocketPathPrefix  string `json:"protect_socket_path_prefix"`
 	MaxOpenFiles             uint64 `json:"max_openfiles"`
 	LogLevel                 int    `json:"log_level"`
-	Timeout                  int    `json:"timeout"`
-	InBoundTimeout           int    `json:"inbound_timeout"`
+	Timeout                  time.Duration
+	InBoundTimeout           time.Duration
 	PProfEnabled             bool   `json:"pprof"`
 	GenRelease               bool   `json:"gen_release"`
 	UDPEnabled               bool   `json:"udp_enabled"`
@@ -50,6 +51,30 @@ type GeneralConfig struct {
 	ConsoleHost              string `json:"console_host"`
 	ConsoleVersion           string `json:"console_version"`
 	ConsoleWebSocketURL      string `json:"console_websocket_url"`
+}
+
+func (g *GeneralConfig) UnmarshalJSON(b []byte) error {
+	type Alias GeneralConfig
+	aux := &struct {
+		Timeout        string `json:"timeout"`
+		InBoundTimeout string `json:"inbound_timeout"`
+		*Alias
+	}{
+		Alias: (*Alias)(g),
+	}
+	err := json.Unmarshal(b, &aux)
+	if err != nil {
+		return err
+	}
+	g.Timeout, err = time.ParseDuration(aux.Timeout)
+	if err != nil {
+		return err
+	}
+	g.InBoundTimeout, err = time.ParseDuration(aux.InBoundTimeout)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type AllowDeny struct {
@@ -74,13 +99,13 @@ type DNSServerSpecific struct {
 }
 
 type DNS struct {
-	Enabled                bool              `json:"enabled"`
-	CacheEnabled           bool              `json:"cache"`
-	CacheTTL               bool              `json:"cache_ttl"`
-	CacheTimeout           int               `json:"cache_timeout"`
-	Timeout                int               `json:"timeout"`
-	ReadTimeout            int               `json:"read_timeout"`
-	WriteTimeout           int               `json:"write_timeout"`
+	Enabled                bool `json:"enabled"`
+	CacheEnabled           bool `json:"cache"`
+	CacheTTL               bool `json:"cache_ttl"`
+	CacheTimeout           time.Duration
+	Timeout                time.Duration
+	ReadTimeout            time.Duration
+	WriteTimeout           time.Duration
 	SearchDomain           string            `json:"search_domain"`
 	EDNSClientSubnetPolicy string            `json:"edns_client_subnet_policy"`
 	EDNSClientSubnetIP     string            `json:"edns_client_subnet_ip"`
@@ -93,12 +118,46 @@ type DNS struct {
 	Server                 DNSServerSpecific `json:"server"`
 }
 
+func (g *DNS) UnmarshalJSON(b []byte) error {
+	type Alias DNS
+	aux := &struct {
+		CacheTimeout string `json:"cache_timeout"`
+		Timeout      string `json:"timeout"`
+		ReadTimeout  string `json:"read_timeout"`
+		WriteTimeout string `json:"write_timeout"`
+		*Alias
+	}{
+		Alias: (*Alias)(g),
+	}
+	err := json.Unmarshal(b, &aux)
+	if err != nil {
+		return err
+	}
+	g.Timeout, err = time.ParseDuration(aux.Timeout)
+	if err != nil {
+		return err
+	}
+	g.CacheTimeout, err = time.ParseDuration(aux.CacheTimeout)
+	if err != nil {
+		return err
+	}
+	g.ReadTimeout, err = time.ParseDuration(aux.ReadTimeout)
+	if err != nil {
+		return err
+	}
+	g.WriteTimeout, err = time.ParseDuration(aux.WriteTimeout)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type LocalConfig struct {
 	Generals        *GeneralConfig       `json:"general"`
 	DNSProxy        *DNS                 `json:"dns"`
 	Target          *ACL                 `json:"target"`
 	InBoundConfig   *inbound.InBound     `json:"inbound"`
-	InBoundsConfig  []*inbound.InBound     `json:"inbounds"`
+	InBoundsConfig  []*inbound.InBound   `json:"inbounds"`
 	OutBoundsConfig []*outbound.OutBound `json:"outbounds"`
 }
 

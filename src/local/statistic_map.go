@@ -142,6 +142,10 @@ func (m *StatisticWrapper) LoadFromCache() {
 	defer m.Unlock()
 	for server, stat := range m.StatisticMap {
 		statistic, _ := cache.Instance.Get(server.address)
+		if statistic == nil {
+			common.Info("no cache item for", server.address)
+			continue
+		}
 		b, ok := statistic.([]byte)
 		if !ok {
 			common.Error("to []byte failed")
@@ -153,6 +157,7 @@ func (m *StatisticWrapper) LoadFromCache() {
 		var s Stat
 		if err := decoder.Decode(&s); err != nil {
 			common.Error("to Stat failed")
+			continue
 		}
 		if len(s.Id) == 0 {
 			s.Id = common.GenerateRandomString(4)

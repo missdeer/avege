@@ -2,6 +2,7 @@ package outbound
 
 import (
 	"encoding/json"
+	"time"
 )
 
 type OutBound struct {
@@ -29,7 +30,7 @@ type OutBound struct {
 	// TLSDomain https only
 	TLSDomain string `json:"domain"`
 	// Timeout connecting timeout
-	Timeout int `json:"timeout"`
+	Timeout time.Duration `json:"timeout"`
 	// Restrict == true if only 80/443 ports are allowed, otherwise all ports are allowed
 	Restrict bool `json:"restrict"`
 	// Local == true if this configuration item is from local config file, otherwise it's from remote console server's pushing
@@ -39,15 +40,20 @@ type OutBound struct {
 }
 
 func (o *OutBound) UnmarshalJSON(b []byte) error {
-	type xob OutBound
-	xo := &xob{
-		Obfs:     "plain",
-		Protocol: "origin",
-		Type:     "shadowsocks",
+	type Alias OutBound
+	aux := &struct {
+		Timeout string `json:"timeout"`
+		*Alias
+	}{
+		Alias: (*Alias)(o),
 	}
-	if err := json.Unmarshal(b, xo); err != nil {
+	aux.Obfs = "plain"
+	aux.Protocol = "origin"
+	aux.Type = "shadowsocks"
+	err := json.Unmarshal(b, &aux)
+	if err != nil {
 		return err
 	}
-	*o = OutBound(*xo)
+	o.Timeout, _ = time.ParseDuration(aux.Timeout)
 	return nil
 }

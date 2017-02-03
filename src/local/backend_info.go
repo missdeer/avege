@@ -39,7 +39,7 @@ type BackendInfo struct {
 	protocolData       interface{} // shadowsocksr only
 	cipher             *ss.Cipher  // shadowsocks/shadowsocksr only
 	tcpFastOpen        bool        // shadowsocks/shadowsocksr only
-	timeout            int
+	timeout            time.Duration
 	restrict           bool
 	local              bool
 	firewalled         bool
@@ -87,16 +87,16 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 	go func() {
 		result <- PipeInboundToOutbound(local,
 			remote,
-			time.Duration(config.Generals.InBoundTimeout)*time.Second,
-			time.Duration(bi.timeout)*time.Second,
+			config.Generals.InBoundTimeout,
+			bi.timeout,
 			stat,
 			sig,
 			&buffer)
 	}()
 	err = PipeOutboundToInbound(remote,
 		local,
-		time.Duration(bi.timeout)*time.Second,
-		time.Duration(config.Generals.InBoundTimeout)*time.Second,
+		bi.timeout,
+		config.Generals.InBoundTimeout,
 		stat,
 		sig)
 	if err == ERR_WRITE {
@@ -136,7 +136,7 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 func (bi *BackendInfo) connectToProxy(u string, addr string) (remote net.Conn, err error) {
 	dialer := net.Dial
 	if bi.timeout != 0 {
-		dialer = proxyclient.DialWithTimeout(time.Duration(bi.timeout) * time.Second)
+		dialer = proxyclient.DialWithTimeout(bi.timeout)
 	}
 	p, err := proxyclient.NewProxyClientWithDial(u, dialer)
 
