@@ -105,7 +105,7 @@ func exchange(s *DNSConfig, c *dns.Client, r *dns.Msg, resp chan *dns.Msg) {
 		if err == dns.ErrTruncated && s.EDNSClientSubnetEnabled == true {
 			s.EDNSClientSubnetEnabled = false
 		}
-		common.Errorf("query dns %s from %s failed, %+v\n", r.Question[0].Name, s.Address, err)
+		common.Warningf("query dns %s from %s failed, %+v\n", r.Question[0].Name, s.Address, err)
 	}
 }
 

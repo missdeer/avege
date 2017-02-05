@@ -30,9 +30,9 @@ var (
 	// Statistics collections contains all remote servers statistics
 	Statistics                          = NewStatisticWrapper()
 	outboundLoadBalanceHandler          loadBalanceMethod
-	outboundIndex                       int
+	outboundIndex                       = 0
 	smartLastUsedBackendInfo            *BackendInfo
-	forceUpdateSmartLastUsedBackendInfo bool
+	forceUpdateSmartLastUsedBackendInfo = false
 )
 
 func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *common.Buffer) (err error) {
@@ -43,7 +43,7 @@ func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *
 	case 1:
 		port = binary.BigEndian.Uint16(rawaddr[5:])
 	case 3:
-		port = binary.BigEndian.Uint16(rawaddr[2 + rawaddr[1]:])
+		port = binary.BigEndian.Uint16(rawaddr[2+rawaddr[1]:])
 	case 4:
 		port = binary.BigEndian.Uint16(rawaddr[17:])
 		ipv6 = true
@@ -51,50 +51,48 @@ func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *
 	if forceUpdateSmartLastUsedBackendInfo {
 		forceUpdateSmartLastUsedBackendInfo = false
 		needChangeUsedServerInfo = true
-	} else {
-		if smartLastUsedBackendInfo != nil {
-			if smartLastUsedBackendInfo.restrict == true && port != 80 && port != 443 {
-				common.Warning("restrict policy not matched")
-				goto pick_server
-			}
+	} else if smartLastUsedBackendInfo != nil {
+		if smartLastUsedBackendInfo.restrict == true && port != 80 && port != 443 {
+			common.Warning("restrict policy not matched")
+			goto pick_server
+		}
 
-			if smartLastUsedBackendInfo.firewalled == true && time.Now().Sub(smartLastUsedBackendInfo.lastCheckTimePoint) < 1*time.Hour {
-				common.Warning("firewall dropped")
-				goto pick_server
-			}
-			stat, ok := Statistics.Get(smartLastUsedBackendInfo)
-			if !ok || stat == nil {
-				common.Warning("no statistic record")
-				needChangeUsedServerInfo = true
-				goto pick_server
-			}
+		if smartLastUsedBackendInfo.firewalled == true && time.Now().Sub(smartLastUsedBackendInfo.lastCheckTimePoint) < 1*time.Hour {
+			common.Warning("firewall dropped")
+			goto pick_server
+		}
+		stat, ok := Statistics.Get(smartLastUsedBackendInfo)
+		if !ok || stat == nil {
+			common.Warning("no statistic record")
+			needChangeUsedServerInfo = true
+			goto pick_server
+		}
 
-			if stat.GetFailedCount() == maxFailCount {
-				common.Warning("too many failed count")
-				needChangeUsedServerInfo = true
-				goto pick_server
-			}
+		if stat.GetFailedCount() == maxFailCount {
+			common.Warning("too many failed count")
+			needChangeUsedServerInfo = true
+			goto pick_server
+		}
 
-			if ipv6 && !smartLastUsedBackendInfo.ipv6 {
-				common.Warning("ipv6 is not supported")
-				goto pick_server
-			}
+		if ipv6 && !smartLastUsedBackendInfo.ipv6 {
+			common.Warning("ipv6 is not supported")
+			goto pick_server
+		}
 
-			if remote, err := smartLastUsedBackendInfo.connect(rawaddr, addr); err == nil {
-				if err, inboundSideError := smartLastUsedBackendInfo.pipe(local, remote, buffer); err == nil {
-					return nil
-				} else if inboundSideError {
-					common.Info("inbound side error")
-					return errors.New("Inbound side error")
-				}
-				common.Warning("piping failed")
-			} else {
-				common.Warning("connecting failed")
+		if remote, err := smartLastUsedBackendInfo.connect(rawaddr, addr); err == nil {
+			if err, inboundSideError := smartLastUsedBackendInfo.pipe(local, remote, buffer); err == nil {
+				return nil
+			} else if inboundSideError {
+				common.Info("inbound side error")
+				return errors.New("Inbound side error")
 			}
-			if stat.GetFailedCount() < maxFailCount {
-				stat.IncreaseFailedCount()
-				return errors.New("Smart last used server connecting failed")
-			}
+			common.Warning("piping failed")
+		} else {
+			common.Warning("connecting failed")
+		}
+		if stat.GetFailedCount() < maxFailCount {
+			stat.IncreaseFailedCount()
+			return errors.New("Smart last used server connecting failed")
 		}
 	}
 pick_server:
@@ -130,17 +128,12 @@ pick_server:
 		if !ok || stat == nil {
 			continue
 		}
-		if stat.GetLatency() < 10000000 {
-			skipped = append(skipped, bi)
-			common.Debugf("too small latency, skip %s\n", bi.address)
-			continue
-		}
-		if stat.GetFailedCount() == maxFailCount || (stat.GetFailedCount() > 0 && rand.Intn(int(stat.GetFailedCount() + baseFailCount)) != 0) {
+		if stat.GetFailedCount() == maxFailCount || (stat.GetFailedCount() > 0 && rand.Intn(int(stat.GetFailedCount()+baseFailCount)) != 0) {
 			skipped = append(skipped, bi)
 			common.Debugf("too large failed count, skip %s\n", bi.address)
 			continue
 		}
-		common.Debugf("try %s with failed count %d, %v\n", bi.address, stat.GetFailedCount(), bi)
+		common.Debugf("try %s with failed count %d, %v, smartLastUsedBackendInfo=%v\n", bi.address, stat.GetFailedCount(), bi, smartLastUsedBackendInfo)
 
 		if remote, err := bi.connect(rawaddr, addr); err == nil {
 			if err, inboundSideError := bi.pipe(local, remote, buffer); err == nil || inboundSideError {
@@ -168,7 +161,7 @@ pick_server:
 			if ipv6 && !bi.ipv6 {
 				continue
 			}
-			
+
 			common.Debugf("try %s with failed count %d for an additional optunity, %v\n", bi.address, stat.GetFailedCount(), bi)
 			if remote, err := bi.connect(rawaddr, addr); err == nil {
 				if err, inboundSideError := bi.pipe(local, remote, buffer); err == nil || inboundSideError {

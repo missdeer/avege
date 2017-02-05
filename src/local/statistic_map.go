@@ -51,10 +51,10 @@ func NewStatisticWrapper() *StatisticWrapper {
 	return sw
 }
 
-func (m *StatisticWrapper) Get(si *BackendInfo) (s *common.Statistic, ok bool) {
+func (m *StatisticWrapper) Get(bi *BackendInfo) (s *common.Statistic, ok bool) {
 	m.RLock()
 	defer m.RUnlock()
-	s, ok = m.StatisticMap[si]
+	s, ok = m.StatisticMap[bi]
 	return s, ok
 }
 
@@ -126,14 +126,13 @@ func (m *StatisticWrapper) UpdateLatency() {
 		rawAddr = remoteAddresses[index].rawAddr
 		addr = remoteAddresses[index].addr
 	}
-	var wg sync.WaitGroup
+
 	m.RLock()
-	wg.Add(len(m.StatisticMap))
-	for si := range m.StatisticMap {
-		go si.testLatency(rawAddr, addr, &wg)
+	for bi := range m.StatisticMap {
+		go bi.testLatency(rawAddr, addr)
 	}
 	m.RUnlock()
-	wg.Wait()
+
 	m.SaveToRedis()
 }
 

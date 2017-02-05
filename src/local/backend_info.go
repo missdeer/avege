@@ -48,10 +48,7 @@ type BackendInfo struct {
 	ips                []net.IP
 }
 
-func (bi *BackendInfo) testLatency(rawaddr []byte, addr string, wg *sync.WaitGroup) {
-	defer func() {
-		wg.Done()
-	}()
+func (bi *BackendInfo) testLatency(rawaddr []byte, addr string) {
 	startTime := time.Now()
 	remote, err := bi.connect(rawaddr, addr)
 	if err == nil {
@@ -197,6 +194,10 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 
 		if ssconn.Conn, err = ss.ProtectSocket(ssconn.Conn); err != nil {
 			return nil, err
+		}
+
+		if ssconn.Conn == nil || ssconn.RemoteAddr() == nil {
+			return nil, errors.New("nil connection")
 		}
 
 		// should initialize obfs/protocol now
