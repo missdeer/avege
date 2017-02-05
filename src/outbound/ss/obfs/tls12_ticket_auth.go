@@ -94,7 +94,7 @@ func (t *TLS12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 			copy(encodedData[outLength:], []byte{0x17, 0x3, 0x3})
 			binary.BigEndian.PutUint16(encodedData[outLength + 3:], uint16(length & 0xFFFF))
 			copy(encodedData[outLength + 5:], data[start:start + length])
-			start += length
+			// not necessary to update variable *start* any more
 			outLength += length + 5
 			t.sendID++
 		}

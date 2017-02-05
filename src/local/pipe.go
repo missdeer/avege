@@ -88,7 +88,7 @@ func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 					result = ERR_WRITE
 					return
 				}
-				common.Error("writting to outbound err: ", err)
+				common.Error("writing to outbound err: ", err)
 				result = err
 				return
 			}
