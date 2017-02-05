@@ -2,7 +2,12 @@
 
 Socks5/Transparent Proxy Client
 
-[![Build Status](https://secure.travis-ci.org/avege/avege.png)](https://travis-ci.org/avege/avege) [![GitHub release](https://img.shields.io/github/release/avege/avege.svg?maxAge=2592000)](https://github.com/avege/avege/releases) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/avege/avege/master/LICENSE) [![Github Releases Downloads Total](https://img.shields.io/github/downloads/avege/avege/total.svg)](https://github.com/avege/avege/releases)
+[![Build Status](https://travis-ci.org/avege/avege.svg?branch=master)](https://travis-ci.org/avege/avege) 
+[![GitHub release](https://img.shields.io/github/release/avege/avege.svg?maxAge=2592000)](https://github.com/avege/avege/releases) 
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/avege/avege/master/LICENSE) 
+[![Github Releases Downloads Total](https://img.shields.io/github/downloads/avege/avege/total.svg)](https://github.com/avege/avege/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/avege/avege)](https://goreportcard.com/report/github.com/avege/avege)
+[![codebeat badge](https://codebeat.co/badges/630a79a4-2ebf-4e23-8dbd-eb81ae6b078e)](https://codebeat.co/projects/github-com-avege-avege)
 
 ## Feature
 
