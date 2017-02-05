@@ -1,6 +1,6 @@
 language: go
 go:
-  - tip
+  - 1.7
 env:
   global:
       - NDK_VERSION=r13b
