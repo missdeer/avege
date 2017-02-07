@@ -12,8 +12,8 @@ import (
 
 	"common"
 	"common/ds"
-	chacha20IETF "github.com/aead/chacha20"
-	"github.com/codahale/chacha20"
+
+	"github.com/Yawning/chacha20"
 	"github.com/dgryski/go-camellia"
 	"github.com/dgryski/go-idea"
 	"github.com/dgryski/go-rc2"
@@ -96,24 +96,11 @@ func newRC4MD5Stream(key, iv []byte, _ DecOrEnc) (cipher.Stream, error) {
 }
 
 func newChaCha20Stream(key, iv []byte, _ DecOrEnc) (cipher.Stream, error) {
-	return chacha20.New(key, iv)
+	return chacha20.NewCipher(key, iv)
 }
 
 func newChacha20IETFStream(key, iv []byte, _ DecOrEnc) (cipher.Stream, error) {
-	if len(key) != 32 {
-		return nil, errors.New("invlaid key size")
-	}
-	if len(iv) != chacha20IETF.NonceSize {
-		return nil, errors.New("invlaid iv size")
-	}
-	var (
-		Key   [32]byte
-		nonce [chacha20IETF.NonceSize]byte
-	)
-	copy(Key[:], key)
-	copy(nonce[:], iv)
-
-	return chacha20IETF.NewCipher(&nonce, &Key), nil
+	return chacha20.NewCipher(key, iv)
 }
 
 type salsaStreamCipher struct {
@@ -138,7 +125,7 @@ func (c *salsaStreamCipher) XORKeyStream(dst, src []byte) {
 
 	var subNonce [16]byte
 	copy(subNonce[:], c.nonce[:])
-	binary.LittleEndian.PutUint64(subNonce[len(c.nonce):], uint64(c.counter / 64))
+	binary.LittleEndian.PutUint64(subNonce[len(c.nonce):], uint64(c.counter/64))
 
 	// It's difficult to avoid data copy here. src or dst maybe slice from
 	// Conn.Read/Write, which can't have padding.

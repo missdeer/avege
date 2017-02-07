@@ -48,8 +48,7 @@ install:
   - go get github.com/gorilla/websocket
   - go get github.com/DeanThompson/ginpprof
   - go get github.com/miekg/dns
-  - go get github.com/aead/chacha20
-  - go get github.com/codahale/chacha20
+  - go get github.com/Yawning/chacha20
   - go get github.com/dgryski/go-camellia
   - go get github.com/dgryski/go-idea
   - go get github.com/dgryski/go-rc2

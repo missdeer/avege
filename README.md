@@ -83,8 +83,7 @@ go get -u -f -v github.com/gin-gonic/gin
 go get -u -f -v github.com/gorilla/websocket
 go get -u -f -v github.com/DeanThompson/ginpprof
 go get -u -f -v github.com/miekg/dns
-go get -u -f -v github.com/aead/chacha20
-go get -u -f -v github.com/codahale/chacha20
+go get -u -f -v github.com/Yawning/chacha20
 go get -u -f -v github.com/dgryski/go-camellia
 go get -u -f -v github.com/dgryski/go-idea
 go get -u -f -v github.com/dgryski/go-rc2
