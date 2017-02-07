@@ -13,7 +13,7 @@ Socks5/Transparent Proxy Client
 
 * Windows/macOS/Linux/variant BSDs supported
 * socks5 frontend, IPv4/IPv6/remote DNS resolving supported
-* redir mode frontend on Linux (iptables compatible), IPv4 only
+* redir mode frontend on Linux (iptables compatible), IPv4/IPv6(not tested) supported
 * tunnel mode frontend, IPv4/IPv6 supported
 * http/https backend
 * socks4/socks4a/socks5 backend
@@ -68,7 +68,6 @@ Socks5/Transparent Proxy Client
 * Adblock Plus rules based filter for http
 * TCP Fast Open on Linux with 3.7+ kernel
 * Transparent proxy aka. redir mode on Mac OS X and variant BSDs(ipfw/pf mode)
-* IPv6 supported for redir mode
 
 ## Build
 

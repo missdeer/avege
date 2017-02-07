@@ -162,7 +162,7 @@ type LocalConfig struct {
 }
 
 func changeKeyMethod() {
-	cipher, err := ss.NewCipher(defaultMethod, defaultKey)
+	cipher, err := ss.NewStreamCipher(defaultMethod, defaultKey)
 	if err != nil {
 		common.Error("Failed generating ciphers:", err)
 		return
@@ -210,7 +210,7 @@ func removeServer(address string) {
 }
 
 func addServer(address string) {
-	cipher, err := ss.NewCipher(defaultMethod, defaultKey)
+	cipher, err := ss.NewStreamCipher(defaultMethod, defaultKey)
 	if err != nil {
 		common.Error("Failed generating ciphers:", err)
 		return
@@ -345,10 +345,10 @@ func parseMultiServersConfig(data []byte) error {
 
 	// add or update the ones that is included in the config
 	for _, outboundConfig := range config.OutBoundsConfig {
-		var cipher *ss.Cipher
+		var cipher *ss.StreamCipher
 		var err error
 		if outboundConfig.Type == "shadowsocks" || outboundConfig.Type == "ss" {
-			cipher, err = ss.NewCipher(outboundConfig.Method, outboundConfig.Key)
+			cipher, err = ss.NewStreamCipher(outboundConfig.Method, outboundConfig.Key)
 			if err != nil {
 				common.Error("Failed generating ciphers:", err)
 				continue

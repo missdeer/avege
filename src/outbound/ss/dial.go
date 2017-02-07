@@ -52,7 +52,7 @@ func setLocalAddress(priorityInterfaceAddress string) {
 
 // rawaddr shoud contain part of the data in socks request, starting from the
 // ATYP field. (Refer to rfc1928 for more information.)
-func Dial(host string, cipher *Cipher, priorityInterfaceAddress string) (c *SSTCPConn, err error) {
+func Dial(host string, cipher *StreamCipher, priorityInterfaceAddress string) (c *SSTCPConn, err error) {
 	setLocalAddress(priorityInterfaceAddress)
 
 	var conn net.Conn

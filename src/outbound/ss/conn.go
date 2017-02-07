@@ -95,10 +95,10 @@ type UDP interface {
 
 type UDPConn struct {
 	UDP
-	*Cipher
+	*StreamCipher
 }
 
-func NewUDPConn(cn UDP, cipher *Cipher) *UDPConn {
+func NewUDPConn(cn UDP, cipher *StreamCipher) *UDPConn {
 	return &UDPConn{cn, cipher}
 }
 
@@ -342,7 +342,7 @@ func (c *UDPConn) Write(b []byte) (n int, err error) {
 type SSTCPConn struct {
 	net.Conn
 	sync.RWMutex
-	*Cipher
+	*StreamCipher
 	IObfs         obfs.IObfs
 	IProtocol     protocol.IProtocol
 	left          []byte
@@ -351,12 +351,12 @@ type SSTCPConn struct {
 	lastReadError error
 }
 
-func NewSSConn(c net.Conn, cipher *Cipher) *SSTCPConn {
+func NewSSConn(c net.Conn, cipher *StreamCipher) *SSTCPConn {
 	return &SSTCPConn{
-		Conn:     c,
-		Cipher:   cipher,
-		readBuf:  ds.GlobalLeakyBuf.Get(),
-		writeBuf: ds.GlobalLeakyBuf.Get()}
+		Conn:         c,
+		StreamCipher: cipher,
+		readBuf:      ds.GlobalLeakyBuf.Get(),
+		writeBuf:     ds.GlobalLeakyBuf.Get()}
 }
 
 func (c *SSTCPConn) Close() error {

@@ -170,7 +170,7 @@ type cipherInfo struct {
 	newStream func(key, iv []byte, doe DecOrEnc) (cipher.Stream, error)
 }
 
-var cipherMethod = map[string]*cipherInfo{
+var streamCipherMethod = map[string]*cipherInfo{
 	"aes-128-cfb":      {16, 16, newAESCFBStream},
 	"aes-192-cfb":      {24, 16, newAESCFBStream},
 	"aes-256-cfb":      {32, 16, newAESCFBStream},
@@ -197,16 +197,16 @@ var cipherMethod = map[string]*cipherInfo{
 
 func CheckCipherMethod(method string) error {
 	if method == "" {
-		method = "table"
+		method = "rc4-md5"
 	}
-	_, ok := cipherMethod[method]
+	_, ok := streamCipherMethod[method]
 	if !ok {
 		return errors.New("Unsupported encryption method: " + method)
 	}
 	return nil
 }
 
-type Cipher struct {
+type StreamCipher struct {
 	enc  cipher.Stream
 	dec  cipher.Stream
 	key  []byte
@@ -214,24 +214,24 @@ type Cipher struct {
 	iv   []byte
 }
 
-// NewCipher creates a cipher that can be used in Dial() etc.
+// NewStreamCipher creates a cipher that can be used in Dial() etc.
 // Use cipher.Copy() to create a new cipher with the same method and password
 // to avoid the cost of repeated cipher initialization.
-func NewCipher(method, password string) (c *Cipher, err error) {
+func NewStreamCipher(method, password string) (c *StreamCipher, err error) {
 	if password == "" {
 		return nil, errEmptyPassword
 	}
 	if method == "" {
 		method = "rc4-md5"
 	}
-	mi, ok := cipherMethod[method]
+	mi, ok := streamCipherMethod[method]
 	if !ok {
 		return nil, errors.New("Unsupported encryption method: " + method)
 	}
 
 	key := common.EVPBytesToKey(password, mi.keyLen)
 
-	c = &Cipher{key: key, info: mi}
+	c = &StreamCipher{key: key, info: mi}
 
 	if err != nil {
 		return nil, err
@@ -240,7 +240,7 @@ func NewCipher(method, password string) (c *Cipher, err error) {
 }
 
 // Initializes the block cipher with CFB mode, returns IV.
-func (c *Cipher) initEncrypt() (iv []byte, err error) {
+func (c *StreamCipher) initEncrypt() (iv []byte, err error) {
 	if c.iv == nil {
 		iv = make([]byte, c.info.ivLen)
 		rand.Read(iv)
@@ -252,21 +252,21 @@ func (c *Cipher) initEncrypt() (iv []byte, err error) {
 	return
 }
 
-func (c *Cipher) initDecrypt(iv []byte) (err error) {
+func (c *StreamCipher) initDecrypt(iv []byte) (err error) {
 	c.dec, err = c.info.newStream(c.key, iv, Decrypt)
 	return
 }
 
-func (c *Cipher) encrypt(dst, src []byte) {
+func (c *StreamCipher) encrypt(dst, src []byte) {
 	c.enc.XORKeyStream(dst, src)
 }
 
-func (c *Cipher) decrypt(dst, src []byte) {
+func (c *StreamCipher) decrypt(dst, src []byte) {
 	c.dec.XORKeyStream(dst, src)
 }
 
 // Copy creates a new cipher at it's initial state.
-func (c *Cipher) Copy() *Cipher {
+func (c *StreamCipher) Copy() *StreamCipher {
 	// This optimization maybe not necessary. But without this function, we
 	// need to maintain a table cache for newTableCipher and use lock to
 	// protect concurrent access to that cache.
@@ -286,10 +286,10 @@ func (c *Cipher) Copy() *Cipher {
 	return &nc
 }
 
-func (c *Cipher) Key() (key []byte, keyLen int) {
+func (c *StreamCipher) Key() (key []byte, keyLen int) {
 	return c.key, c.info.keyLen
 }
 
-func (c *Cipher) IV() ([]byte, int) {
+func (c *StreamCipher) IV() ([]byte, int) {
 	return c.iv, c.info.ivLen
 }

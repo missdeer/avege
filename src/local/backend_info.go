@@ -27,18 +27,18 @@ type BackendInfo struct {
 	id                 string
 	address            string
 	protocolType       string
-	username           string      // auth for http/https/socks
-	password           string      // auth for http/https/socks
-	insecureSkipVerify bool        // https only
-	domain             string      // https only
-	obfs               string      // shadowsocksr only
-	obfsParam          string      // shadowsocksr only
-	obfsData           interface{} // shadowsocksr only
-	protocol           string      // shadowsocksr only
-	protocolParam      string      // shadowsocksr only
-	protocolData       interface{} // shadowsocksr only
-	cipher             *ss.Cipher  // shadowsocks/shadowsocksr only
-	tcpFastOpen        bool        // shadowsocks/shadowsocksr only
+	username           string           // auth for http/https/socks
+	password           string           // auth for http/https/socks
+	insecureSkipVerify bool             // https only
+	domain             string           // https only
+	obfs               string           // shadowsocksr only
+	obfsParam          string           // shadowsocksr only
+	obfsData           interface{}      // shadowsocksr only
+	protocol           string           // shadowsocksr only
+	protocolParam      string           // shadowsocksr only
+	protocolData       interface{}      // shadowsocksr only
+	cipher             *ss.StreamCipher // shadowsocks/shadowsocksr only
+	tcpFastOpen        bool             // shadowsocks/shadowsocksr only
 	timeout            time.Duration
 	restrict           bool
 	local              bool

@@ -41,13 +41,13 @@ func TfoListen(net, addr string) (net.Listener, error) {
 // This is intended for use by users implementing a local socks proxy.
 // rawaddr shoud contain part of the data in socks request, starting from the
 // ATYP field. (Refer to rfc1928 for more information.)
-func TfoDialWithRawAddr(rawaddr []byte, server string, cipher *Cipher) (c *SSTCPConn, err error) {
+func TfoDialWithRawAddr(rawaddr []byte, server string, cipher *StreamCipher) (c *SSTCPConn, err error) {
 	if tfoDialDel != nil {
 		c := &SSTCPConn{
-			Conn:     nil, //leave it nil for now
-			Cipher:   cipher,
-			readBuf:  ds.GlobalLeakyBuf.Get(),
-			writeBuf: ds.GlobalLeakyBuf.Get(),
+			Conn:         nil, //leave it nil for now
+			StreamCipher: cipher,
+			readBuf:      ds.GlobalLeakyBuf.Get(),
+			writeBuf:     ds.GlobalLeakyBuf.Get(),
 		}
 		// get the request payload encrypted and send along with the sync packet
 		cipherData, err := c.preWrite(rawaddr)
