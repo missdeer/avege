@@ -202,7 +202,7 @@ func removeServer(address string) {
 	for i, outbound := range config.OutBoundsConfig {
 		host, _, _ := net.SplitHostPort(outbound.Address)
 		if host == address && outbound.Local == false {
-			config.OutBoundsConfig = append(config.OutBoundsConfig[:i], config.OutBoundsConfig[i + 1:]...)
+			config.OutBoundsConfig = append(config.OutBoundsConfig[:i], config.OutBoundsConfig[i+1:]...)
 			// save to redis
 			break
 		}
@@ -236,10 +236,14 @@ func addServer(address string) {
 			id:           common.GenerateRandomString(4),
 			address:      net.JoinHostPort(address, defaultPort),
 			protocolType: "shadowsocks",
-			obfs:         "plain",
-			protocol:     "origin",
-			cipher:       cipher,
 			timeout:      config.Generals.Timeout,
+			SSRInfo: SSRInfo{
+				obfs:     "plain",
+				protocol: "origin",
+				SSInfo: SSInfo{
+					cipher: cipher,
+				},
+			},
 		}
 		Backends.Append(bi)
 
@@ -375,19 +379,28 @@ func parseMultiServersConfig(data []byte) error {
 		if !find {
 			// append directly
 			backendInfo := &BackendInfo{
-				id:                 common.GenerateRandomString(4),
-				address:            outboundConfig.Address,
-				protocolType:       outboundConfig.Type,
-				cipher:             cipher,
-				obfs:               outboundConfig.Obfs,
-				obfsParam:          outboundConfig.ObfsParam,
-				protocol:           outboundConfig.Protocol,
-				protocolParam:      outboundConfig.ProtocolParam,
-				username:           outboundConfig.Username,
-				password:           outboundConfig.Password,
-				insecureSkipVerify: outboundConfig.TLSInsecureSkipVerify,
-				domain:             outboundConfig.TLSDomain,
-				tcpFastOpen:        outboundConfig.TCPFastOpen,
+				id:           common.GenerateRandomString(4),
+				address:      outboundConfig.Address,
+				protocolType: outboundConfig.Type,
+				SSRInfo: SSRInfo{
+					obfs:          outboundConfig.Obfs,
+					obfsParam:     outboundConfig.ObfsParam,
+					protocol:      outboundConfig.Protocol,
+					protocolParam: outboundConfig.ProtocolParam,
+					SSInfo: SSInfo{
+						cipher:      cipher,
+						tcpFastOpen: outboundConfig.TCPFastOpen,
+					},
+				},
+
+				HttpsProxyInfo: HttpsProxyInfo{
+					insecureSkipVerify: outboundConfig.TLSInsecureSkipVerify,
+					domain:             outboundConfig.TLSDomain,
+					CommonProxyInfo: CommonProxyInfo{
+						username: outboundConfig.Username,
+						password: outboundConfig.Password,
+					},
+				},
 			}
 			if outboundConfig.Timeout != 0 {
 				backendInfo.timeout = outboundConfig.Timeout

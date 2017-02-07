@@ -23,22 +23,41 @@ var (
 	ERR_NOT_FILTERED = errors.New("server is not filtered out by firewall")
 )
 
+// CommonProxyInfo fields that auth for http/https/socks
+type CommonProxyInfo struct {
+	username string // auth for http/https/socks
+	password string // auth for http/https/socks
+}
+
+// HttpsProxyInfo fields that https used only
+type HttpsProxyInfo struct {
+	CommonProxyInfo
+	insecureSkipVerify bool   // https only
+	domain             string // https only
+}
+
+// SSInfo fields that shadowsocks/shadowsocksr used only
+type SSInfo struct {
+	cipher      *ss.StreamCipher // shadowsocks/shadowsocksr only
+	tcpFastOpen bool             // shadowsocks/shadowsocksr only
+}
+
+// SSRInfo fields that shadowsocksr used only
+type SSRInfo struct {
+	SSInfo
+	obfs          string      // shadowsocksr only
+	obfsParam     string      // shadowsocksr only
+	obfsData      interface{} // shadowsocksr only
+	protocol      string      // shadowsocksr only
+	protocolParam string      // shadowsocksr only
+	protocolData  interface{} // shadowsocksr only
+}
+
+// BackendInfo all fields that a backend used
 type BackendInfo struct {
 	id                 string
 	address            string
 	protocolType       string
-	username           string           // auth for http/https/socks
-	password           string           // auth for http/https/socks
-	insecureSkipVerify bool             // https only
-	domain             string           // https only
-	obfs               string           // shadowsocksr only
-	obfsParam          string           // shadowsocksr only
-	obfsData           interface{}      // shadowsocksr only
-	protocol           string           // shadowsocksr only
-	protocolParam      string           // shadowsocksr only
-	protocolData       interface{}      // shadowsocksr only
-	cipher             *ss.StreamCipher // shadowsocks/shadowsocksr only
-	tcpFastOpen        bool             // shadowsocks/shadowsocksr only
 	timeout            time.Duration
 	restrict           bool
 	local              bool
@@ -46,6 +65,8 @@ type BackendInfo struct {
 	ipv6               bool
 	lastCheckTimePoint time.Time
 	ips                []net.IP
+	HttpsProxyInfo
+	SSRInfo
 }
 
 func (bi *BackendInfo) testLatency(rawaddr []byte, addr string) {
@@ -130,21 +151,21 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 	return nil, false
 }
 
-func (bi *BackendInfo) connectToProxy(u string, addr string) (remote net.Conn, err error) {
+func (bi *BackendInfo) connectToProxy(u *url.URL, addr string) (remote net.Conn, err error) {
 	dialer := net.Dial
 	if bi.timeout != 0 {
 		dialer = proxyclient.DialWithTimeout(bi.timeout)
 	}
-	p, err := proxyclient.NewProxyClientWithDial(u, dialer)
+	p, err := proxyclient.NewClientWithDial(u, dialer)
 
 	if err != nil {
-		common.Error("creating proxy client failed", u, err)
+		common.Error("creating proxy client failed", *u, err)
 		return
 	}
 
 	remote, err = p("tcp", addr)
 	if err != nil {
-		common.Error("connecting to target failed.", u, addr, err)
+		common.Error("connecting to target failed.", *u, addr, err)
 	}
 	return
 }
@@ -152,10 +173,10 @@ func (bi *BackendInfo) connectToProxy(u string, addr string) (remote net.Conn, e
 func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, err error) {
 	switch bi.protocolType {
 	case "https", "socks5+tls":
-		u := url.URL{
-			Scheme:bi.protocolType,
-			User:  url.UserPassword(bi.username, bi.password),
-			Host:  bi.address,
+		u := &url.URL{
+			Scheme: bi.protocolType,
+			User:   url.UserPassword(bi.username, bi.password),
+			Host:   bi.address,
 		}
 		v := u.Query()
 		if bi.insecureSkipVerify {
@@ -167,14 +188,14 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 		if len(v) > 0 {
 			u.RawQuery = v.Encode()
 		}
-		return bi.connectToProxy(u.String(), addr)
+		return bi.connectToProxy(u, addr)
 	case "http", "socks4", "socks4a", "socks5":
-		u := url.URL{
-			Scheme:bi.protocolType,
-			User:  url.UserPassword(bi.username, bi.password),
-			Host:  bi.address,
+		u := &url.URL{
+			Scheme: bi.protocolType,
+			User:   url.UserPassword(bi.username, bi.password),
+			Host:   bi.address,
 		}
-		return bi.connectToProxy(u.String(), addr)
+		return bi.connectToProxy(u, addr)
 	case "shadowsocks", "ss":
 		if bi.firewalled == true && time.Now().Sub(bi.lastCheckTimePoint) < 1*time.Hour {
 			err = ERR_NOT_FILTERED
@@ -206,10 +227,10 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 
 		ssconn.IObfs = obfs.NewObfs(bi.obfs)
 		obfsServerInfo := &ssr.ServerInfoForObfs{
-			Host:       rs[0],
-			Port:       uint16(port),
-			TcpMss:     1460,
-			Param:      bi.obfsParam,
+			Host:   rs[0],
+			Port:   uint16(port),
+			TcpMss: 1460,
+			Param:  bi.obfsParam,
 		}
 		ssconn.IObfs.SetServerInfo(obfsServerInfo)
 		if bi.obfsData == nil {
@@ -219,10 +240,10 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 
 		ssconn.IProtocol = protocol.NewProtocol(bi.protocol)
 		protocolServerInfo := &ssr.ServerInfoForObfs{
-			Host:       rs[0],
-			Port:       uint16(port),
-			TcpMss:     1460,
-			Param:      bi.protocolParam,
+			Host:   rs[0],
+			Port:   uint16(port),
+			TcpMss: 1460,
+			Param:  bi.protocolParam,
 		}
 		ssconn.IProtocol.SetServerInfo(protocolServerInfo)
 		if bi.protocolData == nil {
@@ -445,7 +466,7 @@ func (biw *BackendsInformationWrapper) Append(bi *BackendInfo) {
 func (biw *BackendsInformationWrapper) Remove(i int) {
 	biw.Lock()
 	defer biw.Unlock()
-	biw.BackendsInformation = append(biw.BackendsInformation[:i], biw.BackendsInformation[i + 1:]...)
+	biw.BackendsInformation = append(biw.BackendsInformation[:i], biw.BackendsInformation[i+1:]...)
 }
 
 func (biw *BackendsInformationWrapper) Get(i int) *BackendInfo {
