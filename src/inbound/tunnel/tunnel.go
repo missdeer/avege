@@ -24,11 +24,11 @@ func GetInboundHandler(inbound *inbound.InBound) inbound.InBoundHander {
 	var rawaddr []byte
 	if ip == nil {
 		// variant length domain name
-		rawaddr = make([]byte, 1 + 1 + len(host) + 2)
+		rawaddr = make([]byte, 1+1+len(host)+2)
 		rawaddr[0] = 3
 		rawaddr[1] = byte(len(host))
-		copy(rawaddr[2:2 + len(host)], []byte(host))
-		binary.BigEndian.PutUint16(rawaddr[2 + len(host):], uint16(port))
+		copy(rawaddr[2:2+len(host)], []byte(host))
+		binary.BigEndian.PutUint16(rawaddr[2+len(host):], uint16(port))
 	} else if ip.To4() != nil {
 		// IPv4
 		rawaddr = make([]byte, 7)
@@ -42,7 +42,7 @@ func GetInboundHandler(inbound *inbound.InBound) inbound.InBoundHander {
 		// IPv6
 		rawaddr = make([]byte, 19)
 		rawaddr[0] = 4
-		copy(rawaddr[1:1 + 16], ip.To16())
+		copy(rawaddr[1:1+16], ip.To16())
 		binary.BigEndian.PutUint16(rawaddr[17:], uint16(port))
 	} else {
 

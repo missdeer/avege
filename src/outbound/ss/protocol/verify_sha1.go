@@ -78,7 +78,7 @@ func (v *VerifySHA1) PreEncrypt(data []byte) (encryptedData []byte, err error) {
 	const blockSize = 4096
 	for dataLength > blockSize {
 		chunkId := v.getAndIncreaseChunkId()
-		b := v.otaReqChunkAuth(chunkId, data[offset:offset + blockSize])
+		b := v.otaReqChunkAuth(chunkId, data[offset:offset+blockSize])
 		encryptedData = append(encryptedData, b...)
 		dataLength -= blockSize
 		offset += blockSize

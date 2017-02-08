@@ -82,39 +82,41 @@ func (c *Connection) handleWS(msg []byte) []byte {
 	return r
 }
 
-func (c *Connection) readWS() error {
+func (c *Connection) readWS() (err error) {
+	var p []byte
 	for {
-		_, p, err := c.conn.ReadMessage()
+		_, p, err = c.conn.ReadMessage()
 		// don't worry, if write goroutine exits abnormally,
 		// the connection will be closed,
 		// then this read operation will be interrupted abnormally
 		if err != nil {
 			common.Error("websocket reading message failed", err)
 			c.done <- true
-			return err
+			break
 		}
 		c.msg <- p
 	}
-	return nil
+	return
 }
 
-func (c *Connection) writeWS() error {
+func (c *Connection) writeWS() (err error) {
 	for {
 		select {
 		case t := <-c.msg:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			err := c.conn.WriteMessage(websocket.BinaryMessage, c.handleWS(t))
+			err = c.conn.WriteMessage(websocket.BinaryMessage, c.handleWS(t))
 			if err != nil {
 				common.Error("websocket writing message failed", err)
-				return err
+				break
 			}
 			common.Debug("websocket message sent")
 		case <-c.done:
 			common.Debug("websocket done")
-			return websocket.ErrCloseSent
+			err = websocket.ErrCloseSent
+			break
 		}
 	}
-	return nil
+	return
 }
 
 func (c *Connection) SendMsg(cmd int, wParam string, lParam string) {

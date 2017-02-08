@@ -40,7 +40,7 @@ func getorigdst(fd uintptr) (rawaddr []byte, err error) {
 // Call ipv6_getorigdst() from linux/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
 // NOTE: I haven't tried yet but it should work since Linux 3.8.
 func ipv6_getorigdst(fd uintptr) (addr []byte, err error) {
-	mtuinfo, err := syscall.GetsockoptIPv6MTUInfo(int(fd), syscall.IPPROTO_IPV6, IP6T_SO_ORIGINAL_DST);
+	mtuinfo, err := syscall.GetsockoptIPv6MTUInfo(int(fd), syscall.IPPROTO_IPV6, IP6T_SO_ORIGINAL_DST)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func getOriginalDst(c *net.TCPConn) (rawaddr []byte, host string, newTCPConn *ne
 	}
 	rawaddr, err = ipv6_getorigdst(fd)
 	if err == nil {
-		ip := net.IP(rawaddr[1:1+net.IPv6len])
+		ip := net.IP(rawaddr[1 : 1+net.IPv6len])
 		host = fmt.Sprintf("[%s]:%d",
 			ip.To16().String(),
 			uint16(rawaddr[1+net.IPv6len])<<8+uint16(rawaddr[1+net.IPv6len+1]))

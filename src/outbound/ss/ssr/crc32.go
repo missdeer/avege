@@ -32,14 +32,14 @@ func CalcCRC32(input []byte, length int, value uint32) uint32 {
 func DoCalcCRC32(input []byte, index int, length int, value uint32) uint32 {
 	buffer := input
 	for i := index; i < length; i++ {
-		value = (value >> 8) ^ crc32Table[byte(value & 0xFF) ^ buffer[i]]
+		value = (value >> 8) ^ crc32Table[byte(value&0xFF)^buffer[i]]
 	}
 	return value ^ 0xFFFFFFFF
 }
 
 func DoSetCRC32(buffer []byte, index int, length int) {
-	crc := CalcCRC32(buffer[:length - 4], length-4, 0xFFFFFFFF)
-	binary.LittleEndian.PutUint32(buffer[length - 4:], crc^0xFFFFFFFF)
+	crc := CalcCRC32(buffer[:length-4], length-4, 0xFFFFFFFF)
+	binary.LittleEndian.PutUint32(buffer[length-4:], crc^0xFFFFFFFF)
 }
 
 func SetCRC32(buffer []byte, length int) {

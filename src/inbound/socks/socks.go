@@ -54,7 +54,7 @@ func handleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 			conn.Close()
 			return
 		}
-		rawaddr = make([]byte, 1 + 1 + len(host) + 2)
+		rawaddr = make([]byte, 1+1+len(host)+2)
 		rawaddr[0] = 3
 		rawaddr[1] = byte(len(host))
 		copy(rawaddr[2:2+len(host)], []byte(host))

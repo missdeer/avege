@@ -31,8 +31,6 @@ type OutBound struct {
 	TLSDomain string `json:"domain"`
 	// Timeout connecting timeout
 	Timeout time.Duration `json:"timeout"`
-	// Restrict == true if only 80/443 ports are allowed, otherwise all ports are allowed
-	Restrict bool `json:"restrict"`
 	// Local == true if this configuration item is from local config file, otherwise it's from remote console server's pushing
 	Local bool `json:"local"`
 	// TCPFastOpen == true if this backend supports TCP Fast Open

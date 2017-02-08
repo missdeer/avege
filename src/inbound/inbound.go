@@ -1,8 +1,8 @@
 package inbound
 
 import (
-	"net"
 	"common"
+	"net"
 )
 
 type InBound struct {
@@ -47,7 +47,7 @@ func IsInBoundModeEnabled(inboundType string) bool {
 	case "socks5", "socks":
 		return (inBoundModesEnabled & inBoundSocks5) != 0
 	case "redir":
-		return (inBoundModesEnabled & inBoundRedir ) != 0
+		return (inBoundModesEnabled & inBoundRedir) != 0
 	case "tunnel":
 		return (inBoundModesEnabled & inBoundTunnel) != 0
 	}

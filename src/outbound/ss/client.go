@@ -17,6 +17,7 @@ func init() {
 	proxyclient.RegisterScheme("ssr", newSSRClient)
 	proxyclient.RegisterScheme("ss", newSSRClient)
 	proxyclient.RegisterScheme("shadowsocks", newSSRClient)
+	proxyclient.RegisterScheme("shadowsocksr", newSSRClient)
 }
 
 func newSSRClient(u *url.URL, _ proxyclient.Dial) (proxyclient.Dial, error) {

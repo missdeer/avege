@@ -47,8 +47,8 @@ func getExternalIPAddress() (string, error) {
 		return "", err
 	}
 
-	for i := len(body); i > 0 && (body[i - 1] < '0' || body[i - 1] > '9'); i = len(body) {
-		body = body[:i - 1]
+	for i := len(body); i > 0 && (body[i-1] < '0' || body[i-1] > '9'); i = len(body) {
+		body = body[:i-1]
 	}
 
 	if matched, err := regexp.Match(`^([0-9]{1,3}\.){3,3}[0-9]{1,3}$`, body); err == nil && matched == true {
@@ -341,7 +341,7 @@ func serveDNS(w dns.ResponseWriter, r *dns.Msg) {
 		for i := len(rs.Answer) - 1; i >= 0; i-- {
 			if rs.Answer[i] == nil {
 				common.Warningf("found nil answer in %s's %V\nresult: %V\n%s", r.Question[0].Name, r, rs, rs)
-				rs.Answer = append(rs.Answer[:i], rs.Answer[i + 1:]...)
+				rs.Answer = append(rs.Answer[:i], rs.Answer[i+1:]...)
 			}
 		}
 		if m, err := rs.Pack(); err == nil {

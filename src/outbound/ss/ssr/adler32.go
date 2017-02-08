@@ -25,7 +25,7 @@ func CalcAdler32(input []byte) uint32 {
 }
 
 func CheckAdler32(input []byte, l int) bool {
-	adler32 := CalcAdler32(input[:l - 4])
-	checksum := binary.LittleEndian.Uint32(input[l - 4:])
+	adler32 := CalcAdler32(input[:l-4])
+	checksum := binary.LittleEndian.Uint32(input[l-4:])
 	return adler32 == checksum
 }

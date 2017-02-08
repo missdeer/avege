@@ -43,7 +43,7 @@ func (r *RandomHead) Encode(data []byte) (encodedData []byte, err error) {
 	dataLength := len(data)
 	if r.hasSentHeader {
 		if dataLength > 0 {
-			d := make([]byte, len(r.dataBuffer) + dataLength)
+			d := make([]byte, len(r.dataBuffer)+dataLength)
 			copy(d, r.dataBuffer)
 			copy(d[len(r.dataBuffer):], data)
 			r.dataBuffer = d

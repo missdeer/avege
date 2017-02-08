@@ -24,7 +24,7 @@ func goCacheInit() *GoCache {
 	return goCache
 }
 
-func (g*GoCache) Get(key string) (interface{}, error) {
+func (g *GoCache) Get(key string) (interface{}, error) {
 	r, b := g.i.Get(key)
 	if b {
 		return r, nil
@@ -32,7 +32,7 @@ func (g*GoCache) Get(key string) (interface{}, error) {
 	return nil, ErrObjectNotFound
 }
 
-func (g*GoCache) GetMulti(keys []string) []interface{} {
+func (g *GoCache) GetMulti(keys []string) []interface{} {
 	var res []interface{}
 	for _, key := range keys {
 		r, b := g.i.Get(key)
@@ -43,27 +43,27 @@ func (g*GoCache) GetMulti(keys []string) []interface{} {
 	return res
 }
 
-func (g*GoCache) PutWithTimeout(key string, val interface{}, timeout int64) error {
+func (g *GoCache) PutWithTimeout(key string, val interface{}, timeout int64) error {
 	g.i.Set(key, val, time.Duration(timeout)*time.Second)
 	return nil
 }
 
-func (g*GoCache) Put(key string, val interface{}) error {
+func (g *GoCache) Put(key string, val interface{}) error {
 	g.i.Set(key, val, gocache.NoExpiration)
 	return nil
 }
 
-func (g*GoCache) Delete(key string) error {
+func (g *GoCache) Delete(key string) error {
 	g.i.Delete(key)
 	return nil
 }
 
-func (g*GoCache) IsExist(key string) bool {
+func (g *GoCache) IsExist(key string) bool {
 	_, b := g.i.Get(key)
 	return b
 }
 
-func (g*GoCache) Add(key string, delta int64) error {
+func (g *GoCache) Add(key string, delta int64) error {
 	r, b := g.i.Get(key)
 	if !b {
 		return ErrObjectNotFound
@@ -77,14 +77,14 @@ func (g*GoCache) Add(key string, delta int64) error {
 	return ErrObjectNotNumber
 }
 
-func (g*GoCache) Incr(key string) error {
+func (g *GoCache) Incr(key string) error {
 	return g.Add(key, 1)
 }
 
-func (g*GoCache) Decr(key string) error {
+func (g *GoCache) Decr(key string) error {
 	return g.Add(key, -1)
 }
 
-func (g*GoCache) ClearAll() error {
+func (g *GoCache) ClearAll() error {
 	return nil
 }

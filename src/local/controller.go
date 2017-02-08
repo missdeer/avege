@@ -14,8 +14,8 @@ import (
 	"common/cache"
 	"github.com/gin-gonic/gin"
 	"github.com/kardianos/osext"
-	"runtime"
 	"inbound"
+	"runtime"
 )
 
 var (

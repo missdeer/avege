@@ -95,12 +95,12 @@ func (t *HttpSimplePost) Encode(data []byte) (encodedData []byte, err error) {
 	dataLength := len(data)
 	var headData []byte
 	if headSize := t.IVLen + t.HeadLen; dataLength-headSize > 64 {
-		headData = make([]byte, headSize + rand.Intn(64))
+		headData = make([]byte, headSize+rand.Intn(64))
 	} else {
 		headData = make([]byte, dataLength)
 	}
 	copy(headData, data[0:len(headData)])
-	requestPathIndex := rand.Intn(len(requestPath) / 2) * 2
+	requestPathIndex := rand.Intn(len(requestPath)/2) * 2
 	host := t.Host
 	var customHead string
 
@@ -127,7 +127,7 @@ func (t *HttpSimplePost) Encode(data []byte) (encodedData []byte, err error) {
 		method,
 		requestPath[requestPathIndex],
 		t.data2URLEncode(headData),
-		requestPath[requestPathIndex + 1],
+		requestPath[requestPathIndex+1],
 		host,
 		t.Port)
 	if len(customHead) > 0 {
@@ -149,7 +149,7 @@ func (t *HttpSimplePost) Encode(data []byte) (encodedData []byte, err error) {
 	}
 
 	if len(headData) < dataLength {
-		encodedData = make([]byte, len(httpBuf) + (dataLength - len(headData)))
+		encodedData = make([]byte, len(httpBuf)+(dataLength-len(headData)))
 		copy(encodedData, []byte(httpBuf))
 		copy(encodedData[len(httpBuf):], data[len(headData):])
 	} else {
@@ -167,8 +167,8 @@ func (t *HttpSimplePost) Decode(data []byte) (decodedData []byte, needSendBack b
 
 	pos := bytes.Index(data, []byte("\r\n\r\n"))
 	if pos > 0 {
-		decodedData = make([]byte, len(data) - pos - 4)
-		copy(decodedData, data[pos + 4:])
+		decodedData = make([]byte, len(data)-pos-4)
+		copy(decodedData, data[pos+4:])
 		t.rawTransReceived = true
 	}
 

@@ -115,7 +115,7 @@ func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 	return
 }
 
-func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto time.Duration, stat *common.Statistic, sig chan bool) error {
+func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto time.Duration, stat *common.Statistic, sig chan bool) (err error) {
 	bytesRead := 0
 	signaled := false
 	defer func() {
@@ -134,10 +134,11 @@ func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 
 	buf := ds.GlobalLeakyBuf.Get()
 	defer ds.GlobalLeakyBuf.Put(buf)
+	var n int
 	for {
 		//common.Debugf("try to read something from outbound with timeout %v at %v\n", rto, time.Now().Add(rto))
 		src.SetReadDeadline(time.Now().Add(rto))
-		n, err := src.Read(buf)
+		n, err = src.Read(buf)
 		bytesRead += n
 		if n > 0 {
 			stat.BytesDownload(uint64(n))
@@ -146,31 +147,32 @@ func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 			nw, err := dst.Write(buf[0:n])
 			if err != nil {
 				common.Error("write to inbound error: ", err)
-				return ERR_WRITE
+				err = ERR_WRITE
+				break
 			}
 			common.Debug("written ", nw, "bytes to inbound and", n, "bytes are expected, read", bytesRead, "bytes totally")
 		}
 		if err != nil {
 			if neterr, ok := err.(net.Error); ok && neterr.Timeout() && bytesRead == 0 {
 				common.Error("read from outbound timeout, seems the server has been null")
-				return ERR_READ
+				err = ERR_READ
+				break
 			}
 			if err == io.EOF {
 				common.Debug("read from outbound eof with", bytesRead, "bytes")
-				return nil
+				break
 			}
 			common.Error("reading from outbound error:", err)
-			return nil
+			break
 		}
 		select {
 		case result := <-sig:
 			signaled = true
 			if !result {
 				common.Debug("paired piping inbound to outbound goroutine exited, so this goroutine piping outbound to inbound just exit too")
-				return nil
-			} else {
-				common.Debug("no matter paired goroutine exiting, go on reading outbound input with", bytesRead, "bytes")
+				break
 			}
+			common.Debug("no matter paired goroutine exiting, go on reading outbound input with", bytesRead, "bytes")
 		default:
 			common.Debug("go on reading outbound input with", bytesRead, "bytes")
 		}

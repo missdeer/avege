@@ -33,22 +33,20 @@ type ServerInfoForObfs struct {
 func GetHeadSize(data []byte, defaultValue int) int {
 	if data == nil || len(data) < 2 {
 		return defaultValue
-	} else {
-		headType := data[0] & 0x07
-		switch headType {
-		case 1:
-			// IPv4 1+4+2
-			return 7
-		case 4:
-			// IPv6 1+16+2
-			return 19
-		case 3:
-			// domain name, variant length
-			return 4 + int(data[1])
-		default:
-			return defaultValue
-		}
 	}
+	headType := data[0] & 0x07
+	switch headType {
+	case 1:
+		// IPv4 1+4+2
+		return 7
+	case 4:
+		// IPv6 1+16+2
+		return 19
+	case 3:
+		// domain name, variant length
+		return 4 + int(data[1])
+	}
+
 	return defaultValue
 }
 

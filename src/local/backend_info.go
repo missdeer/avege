@@ -12,6 +12,7 @@ import (
 	"common"
 	"github.com/RouterScript/ProxyClient"
 	"outbound/ss"
+	"strings"
 )
 
 // CommonProxyInfo fields that auth for http/https/socks
@@ -162,7 +163,7 @@ func (bi *BackendInfo) connectToProxy(u *url.URL, addr string) (remote net.Conn,
 }
 
 func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, err error) {
-	switch bi.protocolType {
+	switch strings.ToLower(bi.protocolType) {
 	case "https", "socks5+tls":
 		u := &url.URL{
 			Scheme: bi.protocolType,
@@ -182,7 +183,7 @@ func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, er
 			Host:   bi.address,
 		}
 		return bi.connectToProxy(u, addr)
-	case "shadowsocks", "ss", "ssr":
+	case "shadowsocks", "shadowsocksr", "ss", "ssr":
 		u := &url.URL{
 			Scheme: bi.protocolType,
 			Host:   bi.address,
