@@ -162,7 +162,7 @@ type LocalConfig struct {
 }
 
 func changeKeyMethod() {
-	cipher, err := ss.NewStreamCipher(defaultMethod, defaultKey)
+	_, err := ss.NewStreamCipher(defaultMethod, defaultKey)
 	if err != nil {
 		common.Error("Failed generating ciphers:", err)
 		return
@@ -171,7 +171,8 @@ func changeKeyMethod() {
 	Backends.Lock()
 	for _, backendInfo := range Backends.BackendsInformation {
 		if backendInfo.local == false {
-			backendInfo.cipher = cipher
+			backendInfo.encryptMethod = defaultMethod
+			backendInfo.encryptPassword = defaultKey
 		}
 	}
 	Backends.Unlock()
@@ -210,7 +211,7 @@ func removeServer(address string) {
 }
 
 func addServer(address string) {
-	cipher, err := ss.NewStreamCipher(defaultMethod, defaultKey)
+	_, err := ss.NewStreamCipher(defaultMethod, defaultKey)
 	if err != nil {
 		common.Error("Failed generating ciphers:", err)
 		return
@@ -222,7 +223,9 @@ func addServer(address string) {
 		host, _, _ := net.SplitHostPort(backendInfo.address)
 		if host == address && backendInfo.local == false {
 			backendInfo.protocolType = "shadowsocks"
-			backendInfo.cipher = cipher
+			//backendInfo.cipher = cipher
+			backendInfo.encryptMethod = defaultMethod
+			backendInfo.encryptPassword = defaultKey
 			backendInfo.timeout = config.Generals.Timeout
 
 			find = true
@@ -241,7 +244,9 @@ func addServer(address string) {
 				obfs:     "plain",
 				protocol: "origin",
 				SSInfo: SSInfo{
-					cipher: cipher,
+					//cipher: cipher,
+					encryptMethod:   defaultMethod,
+					encryptPassword: defaultKey,
 				},
 			},
 		}
@@ -268,7 +273,7 @@ func parseMultiServersConfig(data []byte) error {
 	}
 
 	if len(config.Generals.CacheService) == 0 {
-		config.Generals.CacheService = "redis"
+		config.Generals.CacheService = "gocache"
 	}
 
 	ss.ProtectSocketPathPrefix = config.Generals.ProtectSocketPathPrefix
@@ -349,10 +354,8 @@ func parseMultiServersConfig(data []byte) error {
 
 	// add or update the ones that is included in the config
 	for _, outboundConfig := range config.OutBoundsConfig {
-		var cipher *ss.StreamCipher
-		var err error
 		if outboundConfig.Type == "shadowsocks" || outboundConfig.Type == "ss" {
-			cipher, err = ss.NewStreamCipher(outboundConfig.Method, outboundConfig.Key)
+			_, err := ss.NewStreamCipher(outboundConfig.Method, outboundConfig.Key)
 			if err != nil {
 				common.Error("Failed generating ciphers:", err)
 				continue
@@ -364,7 +367,8 @@ func parseMultiServersConfig(data []byte) error {
 		for _, backendInfo := range Backends.BackendsInformation {
 			if backendInfo.address == outboundConfig.Address {
 				backendInfo.protocolType = outboundConfig.Type
-				backendInfo.cipher = cipher
+				backendInfo.encryptMethod = outboundConfig.Method
+				backendInfo.encryptPassword = outboundConfig.Key
 				if outboundConfig.Timeout != 0 {
 					backendInfo.timeout = outboundConfig.Timeout
 				} else {
@@ -388,8 +392,9 @@ func parseMultiServersConfig(data []byte) error {
 					protocol:      outboundConfig.Protocol,
 					protocolParam: outboundConfig.ProtocolParam,
 					SSInfo: SSInfo{
-						cipher:      cipher,
-						tcpFastOpen: outboundConfig.TCPFastOpen,
+						encryptMethod:   outboundConfig.Method,
+						encryptPassword: outboundConfig.Key,
+						tcpFastOpen:     outboundConfig.TCPFastOpen,
 					},
 				},
 
@@ -407,7 +412,6 @@ func parseMultiServersConfig(data []byte) error {
 			} else {
 				backendInfo.timeout = config.Generals.Timeout
 			}
-			backendInfo.restrict = outboundConfig.Restrict
 			backendInfo.local = outboundConfig.Local
 
 			Backends.Append(backendInfo)

@@ -34,7 +34,7 @@ func setLocalAddress(priorityInterfaceAddress string) {
 		return
 	}
 
-	addrs, err := net.InterfaceAddrs();
+	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		common.Warning("can't get interface addresses", err)
 		return

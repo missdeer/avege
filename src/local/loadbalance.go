@@ -38,25 +38,13 @@ var (
 func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *common.Buffer) (err error) {
 	needChangeUsedServerInfo := (smartLastUsedBackendInfo == nil)
 	ipv6 := false
-	var port uint16
-	switch rawaddr[0] {
-	case 1:
-		port = binary.BigEndian.Uint16(rawaddr[5:])
-	case 3:
-		port = binary.BigEndian.Uint16(rawaddr[2+rawaddr[1]:])
-	case 4:
-		port = binary.BigEndian.Uint16(rawaddr[17:])
+	if rawaddr[0] == 4 {
 		ipv6 = true
 	}
 	if forceUpdateSmartLastUsedBackendInfo {
 		forceUpdateSmartLastUsedBackendInfo = false
 		needChangeUsedServerInfo = true
 	} else if smartLastUsedBackendInfo != nil {
-		if smartLastUsedBackendInfo.restrict == true && port != 80 && port != 443 {
-			common.Warning("restrict policy not matched")
-			goto pick_server
-		}
-
 		if smartLastUsedBackendInfo.firewalled == true && time.Now().Sub(smartLastUsedBackendInfo.lastCheckTimePoint) < 1*time.Hour {
 			common.Warning("firewall dropped")
 			goto pick_server
@@ -106,10 +94,6 @@ pick_server:
 			}
 
 			if ipv6 && !bi.ipv6 {
-				continue
-			}
-
-			if bi.restrict == true && port != 80 && port != 443 {
 				continue
 			}
 
@@ -293,9 +277,8 @@ func handleOutbound(conn net.Conn, rawaddr []byte, addr string) {
 		common.Debug("try to access:", targetIP, port)
 	case 3:
 	// variant length domain name
-
 	case 4:
-	// IPv6
+		// IPv6
 	}
 
 	if outboundLoadBalanceHandler == nil {

@@ -176,6 +176,10 @@ func (m *StatisticWrapper) LoadFromCache() {
 		stat.SetLastTenMinutesBps(s.LastTenMinutesBps)
 	}
 	totalDownload, _ := cache.Instance.Get("totaldownload")
+	if totalDownload == nil {
+		common.Info("no cache item for total download")
+		return
+	}
 	rawb, ok := totalDownload.([]byte)
 	if !ok {
 		common.Error("total download to []byte failed")
@@ -192,6 +196,10 @@ func (m *StatisticWrapper) LoadFromCache() {
 	common.TotalStat.SetDownload(b)
 
 	totalUpload, _ := cache.Instance.Get("totalupload")
+	if totalUpload == nil {
+		common.Info("no cache item for total upload")
+		return
+	}
 	rawu, ok := totalUpload.([]byte)
 	if !ok {
 		common.Error("total upload to []byte failed")
