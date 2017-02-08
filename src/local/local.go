@@ -29,62 +29,70 @@ var (
 	quit = make(chan bool)
 )
 
-func run() {
-	wait := false
-	serveInbound := func(ib *inbound.InBound, ibHandler inbound.InBoundHander) {
-		ln, err := net.ListenTCP("tcp", &net.TCPAddr{
-			IP:   net.ParseIP(ib.Address),
-			Port: ib.Port,
-			Zone: "",
-		})
+func serveInbound(ib *inbound.InBound, ibHandler inbound.InBoundHander) {
+	ln, err := net.ListenTCP("tcp", &net.TCPAddr{
+		IP:   net.ParseIP(ib.Address),
+		Port: ib.Port,
+		Zone: "",
+	})
+	if err != nil {
+		common.Panic("Failed listening", err)
+		return
+	}
+
+	for {
+		conn, err := ln.AcceptTCP()
 		if err != nil {
-			common.Panic("Failed listening", err)
-			return
+			common.Error("accept err: ", err)
+			continue
 		}
-
-		for {
-			conn, err := ln.AcceptTCP()
-			if err != nil {
-				common.Error("accept err: ", err)
-				continue
-			}
-			go ibHandler(conn, handleOutbound)
-		}
+		go ibHandler(conn, handleOutbound)
 	}
+}
 
-	runInbound := func(ib *inbound.InBound) {
-		switch ib.Type {
-		case "socks5", "socks":
-			go serveInbound(ib, socks.GetInboundHandler(ib))
-		case "redir":
-			if leftQuote <= 0 {
-				common.Fatal("no quote now, please charge in time")
-				break
-			}
-			go serveInbound(ib, redir.GetInboundHandler(ib))
-		case "tunnel":
-			go serveInbound(ib, tunnel.GetInboundHandler(ib))
+func runInbound(ib *inbound.InBound) {
+	switch ib.Type {
+	case "socks5", "socks":
+		go serveInbound(ib, socks.GetInboundHandler(ib))
+	case "redir":
+		if leftQuote <= 0 {
+			common.Fatal("no quote now, please charge in time")
+			break
 		}
+		go serveInbound(ib, redir.GetInboundHandler(ib))
+	case "tunnel":
+		go serveInbound(ib, tunnel.GetInboundHandler(ib))
 	}
+}
 
+func run() {
 	if config.InBoundConfig != nil {
-		wait = true
 		inbound.InBoundModeEnable(config.InBoundConfig.Type)
 		go runInbound(config.InBoundConfig)
 	}
 	for _, i := range config.InBoundsConfig {
-		wait = true
 		inbound.InBoundModeEnable(i.Type)
 		go runInbound(i)
 	}
 
 	if config.DNSProxy.Enabled {
-		wait = true
+		startDNSProxy()
+	}
+	Statistics.LoadFromCache()
+	if config.Generals.ConsoleReportEnabled {
+		go consoleWS()
+		go getQuote()
+	}
+	if inbound.IsInBoundModeEnabled("redir") {
+		go updateRedirFirewallRules()
 	}
 
-	if wait {
-		select {}
+	if inbound.HasInBound() {
+		go Statistics.UpdateLatency()
+		go Statistics.UpdateServerIP()
 	}
+
+	timers()
 }
 
 func dialUDP() (conn *net.UDPConn, err error) {
@@ -273,23 +281,6 @@ func Main() {
 		cache.DefaultRedisKey = "avegeClient"
 	}
 	cache.Init(config.Generals.CacheService)
-
-	if config.DNSProxy.Enabled {
-		startDNSProxy()
-	}
-	Statistics.LoadFromCache()
-	if config.Generals.ConsoleReportEnabled {
-		go consoleWS()
-		go getQuote()
-	}
-	if inbound.IsInBoundModeEnabled("redir") {
-		go updateRedirFirewallRules()
-	}
-	if inbound.HasInBound() {
-		go Statistics.UpdateLatency()
-		go Statistics.UpdateServerIP()
-	}
-	go timers()
 
 	run()
 }

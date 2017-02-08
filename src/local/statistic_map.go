@@ -3,7 +3,6 @@ package local
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"math/rand"
 	"net"
 	"sync"
@@ -14,7 +13,6 @@ import (
 
 type remoteAddr struct {
 	rawAddr []byte
-	addr    string
 }
 
 var (
@@ -29,7 +27,7 @@ func resolvServer(bi *BackendInfo) {
 		bi.ips = ips
 		bi.ipv6 = false
 		for _, ip := range ips {
-			if ip.To16() != nil {
+			if ip.To4() == nil {
 				bi.ipv6 = true
 				break
 			}
@@ -88,10 +86,9 @@ func (m *StatisticWrapper) UpdateBps() {
 
 func (m *StatisticWrapper) UpdateLatency() {
 	var rawAddr []byte
-	var addr string
 	if len(remoteAddresses) == 0 {
+		// addr = "104.28.31.28:443"
 		rawAddr = []byte{1, 104, 28, 31, 28, 1, 187}
-		addr = "104.28.31.28:443"
 		oneResolveRemoteAddresses.Do(func() {
 			go func() {
 				remotes := []string{
@@ -114,7 +111,6 @@ func (m *StatisticWrapper) UpdateLatency() {
 						ipv4 := []byte(ip.To4())
 						ra := remoteAddr{
 							[]byte{1, ipv4[0], ipv4[1], ipv4[2], ipv4[3], 1, 187},
-							fmt.Sprintf("%d.%d.%d.%d:443", ipv4[0], ipv4[1], ipv4[2], ipv4[3]),
 						}
 						remoteAddresses = append(remoteAddresses, ra)
 					}
@@ -124,12 +120,11 @@ func (m *StatisticWrapper) UpdateLatency() {
 	} else {
 		index := rand.Intn(len(remoteAddresses))
 		rawAddr = remoteAddresses[index].rawAddr
-		addr = remoteAddresses[index].addr
 	}
 
 	m.RLock()
 	for bi := range m.StatisticMap {
-		go bi.testLatency(rawAddr, addr)
+		go bi.testLatency(rawAddr)
 	}
 	m.RUnlock()
 

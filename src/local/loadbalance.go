@@ -22,7 +22,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-type loadBalanceMethod func(local net.Conn, rawaddr []byte, addr string)
+type loadBalanceMethod func(local net.Conn, rawaddr []byte)
 
 var (
 	// Backends collection contains remote server information
@@ -35,7 +35,7 @@ var (
 	forceUpdateSmartLastUsedBackendInfo = false
 )
 
-func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *common.Buffer) (err error) {
+func smartCreateServerConn(local net.Conn, rawaddr []byte, buffer *common.Buffer) (err error) {
 	needChangeUsedServerInfo := (smartLastUsedBackendInfo == nil)
 	ipv6 := false
 	if rawaddr[0] == 4 {
@@ -62,12 +62,12 @@ func smartCreateServerConn(local net.Conn, rawaddr []byte, addr string, buffer *
 			goto pick_server
 		}
 
-		if ipv6 && !smartLastUsedBackendInfo.ipv6 {
-			common.Warning("ipv6 is not supported")
+		if ipv6 && len(smartLastUsedBackendInfo.ips) > 0 && !smartLastUsedBackendInfo.ipv6 {
+			common.Warning("ipv6 is not supported", smartLastUsedBackendInfo.ips)
 			goto pick_server
 		}
 
-		if remote, err := smartLastUsedBackendInfo.connect(rawaddr, addr); err == nil {
+		if remote, err := smartLastUsedBackendInfo.connect(rawaddr); err == nil {
 			if err, inboundSideError := smartLastUsedBackendInfo.pipe(local, remote, buffer); err == nil {
 				return nil
 			} else if inboundSideError {
@@ -93,7 +93,8 @@ pick_server:
 				continue
 			}
 
-			if ipv6 && !bi.ipv6 {
+			if ipv6 && len(bi.ips) > 0 && !bi.ipv6 {
+				common.Warning("ipv6 is not supported", bi.ips)
 				continue
 			}
 
@@ -119,7 +120,7 @@ pick_server:
 		}
 		common.Debugf("try %s with failed count %d, %v, smartLastUsedBackendInfo=%v\n", bi.address, stat.GetFailedCount(), bi, smartLastUsedBackendInfo)
 
-		if remote, err := bi.connect(rawaddr, addr); err == nil {
+		if remote, err := bi.connect(rawaddr); err == nil {
 			if err, inboundSideError := bi.pipe(local, remote, buffer); err == nil || inboundSideError {
 				if needChangeUsedServerInfo {
 					smartLastUsedBackendInfo = bi
@@ -142,12 +143,13 @@ pick_server:
 				continue
 			}
 
-			if ipv6 && !bi.ipv6 {
+			if ipv6 && len(bi.ips) > 0 && !bi.ipv6 {
+				common.Warning("ipv6 is not supported", bi.ips)
 				continue
 			}
 
 			common.Debugf("try %s with failed count %d for an additional optunity, %v\n", bi.address, stat.GetFailedCount(), bi)
-			if remote, err := bi.connect(rawaddr, addr); err == nil {
+			if remote, err := bi.connect(rawaddr); err == nil {
 				if err, inboundSideError := bi.pipe(local, remote, buffer); err == nil || inboundSideError {
 					if needChangeUsedServerInfo {
 						smartLastUsedBackendInfo = bi
@@ -165,21 +167,21 @@ pick_server:
 	return errors.New("all servers worked abnormally")
 }
 
-func smartLoadBalance(local net.Conn, rawaddr []byte, addr string) {
+func smartLoadBalance(local net.Conn, rawaddr []byte) {
 	var buffer *common.Buffer
 	maxTryCount := Backends.Len()
 	for i := 0; i < maxTryCount; i++ {
-		err := smartCreateServerConn(local, rawaddr, addr, buffer)
+		err := smartCreateServerConn(local, rawaddr, buffer)
 		if err != nil {
 			continue
 		}
 
 		break
 	}
-	common.Debug("closed connection to", addr)
+	common.Debug("closed connection to", rawaddr)
 }
 
-func indexSpecifiedCreateServerConn(local net.Conn, rawaddr []byte, addr string) (remote net.Conn, si *BackendInfo, err error) {
+func indexSpecifiedCreateServerConn(local net.Conn, rawaddr []byte) (remote net.Conn, si *BackendInfo, err error) {
 	if Backends.Len() == 0 {
 		common.Error("no outbound available")
 		err = errors.New("no outbound available")
@@ -195,7 +197,7 @@ func indexSpecifiedCreateServerConn(local net.Conn, rawaddr []byte, addr string)
 		return
 	}
 	common.Debugf("try %s with failed count %d, %v\n", s.address, stat.GetFailedCount(), s)
-	if remote, err = s.connect(rawaddr, addr); err == nil {
+	if remote, err = s.connect(rawaddr); err == nil {
 		si = s
 		return
 	}
@@ -206,29 +208,29 @@ func indexSpecifiedCreateServerConn(local net.Conn, rawaddr []byte, addr string)
 	return
 }
 
-func indexSpecifiedLoadBalance(local net.Conn, rawaddr []byte, addr string) {
+func indexSpecifiedLoadBalance(local net.Conn, rawaddr []byte) {
 	var buffer *common.Buffer
-	remote, bi, err := indexSpecifiedCreateServerConn(local, rawaddr, addr)
+	remote, bi, err := indexSpecifiedCreateServerConn(local, rawaddr)
 	if err != nil {
 		return
 	}
 	bi.pipe(local, remote, buffer)
-	common.Debug("closed connection to", addr)
+	common.Debug("closed connection to", rawaddr)
 }
 
-func roundRobinCreateServerConn(local net.Conn, rawaddr []byte, addr string) (remote net.Conn, si *BackendInfo, err error) {
+func roundRobinCreateServerConn(local net.Conn, rawaddr []byte) (remote net.Conn, si *BackendInfo, err error) {
 	outboundIndex++
-	return indexSpecifiedCreateServerConn(local, rawaddr, addr)
+	return indexSpecifiedCreateServerConn(local, rawaddr)
 }
 
-func roundRobinLoadBalance(local net.Conn, rawaddr []byte, addr string) {
+func roundRobinLoadBalance(local net.Conn, rawaddr []byte) {
 	var buffer *common.Buffer
-	remote, bi, err := roundRobinCreateServerConn(local, rawaddr, addr)
+	remote, bi, err := roundRobinCreateServerConn(local, rawaddr)
 	if err != nil {
 		return
 	}
 	bi.pipe(local, remote, buffer)
-	common.Debug("closed connection to", addr)
+	common.Debug("closed connection to", rawaddr)
 }
 
 func handleOutbound(conn net.Conn, rawaddr []byte, addr string) {
@@ -303,5 +305,5 @@ func handleOutbound(conn net.Conn, rawaddr []byte, addr string) {
 		}
 	}
 
-	outboundLoadBalanceHandler(conn, rawaddr, addr)
+	outboundLoadBalanceHandler(conn, rawaddr)
 }

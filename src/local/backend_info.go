@@ -7,12 +7,12 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"common"
 	"github.com/RouterScript/ProxyClient"
 	"outbound/ss"
-	"strings"
 )
 
 // CommonProxyInfo fields that auth for http/https/socks
@@ -61,9 +61,9 @@ type BackendInfo struct {
 	SSRInfo
 }
 
-func (bi *BackendInfo) testLatency(rawaddr []byte, addr string) {
+func (bi *BackendInfo) testLatency(rawaddr []byte) {
 	startTime := time.Now()
-	remote, err := bi.connect(rawaddr, addr)
+	remote, err := bi.connect(rawaddr)
 	if err == nil {
 		if remote != nil {
 			defer remote.Close()
@@ -143,7 +143,7 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 	return nil, false
 }
 
-func (bi *BackendInfo) connectToProxy(u *url.URL, addr string) (remote net.Conn, err error) {
+func connectToProxy(u *url.URL, bi *BackendInfo) (remote net.Conn, err error) {
 	dialer := net.Dial
 	if bi.timeout != 0 {
 		dialer = proxyclient.DialWithTimeout(bi.timeout)
@@ -157,59 +157,58 @@ func (bi *BackendInfo) connectToProxy(u *url.URL, addr string) (remote net.Conn,
 
 	remote, err = p("tcp", u.Host)
 	if err != nil {
-		common.Error("connecting to target failed.", *u, addr, err)
+		common.Error("connecting to target failed.", *u, err)
 	}
 	return
 }
 
-func (bi *BackendInfo) connect(rawaddr []byte, addr string) (remote net.Conn, err error) {
-	switch strings.ToLower(bi.protocolType) {
-	case "https", "socks5+tls":
-		u := &url.URL{
-			Scheme: bi.protocolType,
-			User:   url.UserPassword(bi.username, bi.password),
-			Host:   bi.address,
-		}
-		v := u.Query()
-		v.Set("tls-insecure-skip-verify", strconv.FormatBool(bi.insecureSkipVerify))
-		v.Set("tls-domain", bi.domain)
-		u.RawQuery = v.Encode()
-
-		return bi.connectToProxy(u, addr)
-	case "http", "socks4", "socks4a", "socks5":
-		u := &url.URL{
-			Scheme: bi.protocolType,
-			User:   url.UserPassword(bi.username, bi.password),
-			Host:   bi.address,
-		}
-		return bi.connectToProxy(u, addr)
-	case "shadowsocks", "shadowsocksr", "ss", "ssr":
-		u := &url.URL{
-			Scheme: bi.protocolType,
-			Host:   bi.address,
-		}
-
-		v := u.Query()
-		v.Set("priority-interface-enabled", strconv.FormatBool(config.Generals.PriorityInterfaceEnabled))
-		v.Set("priority-interface-address", config.Generals.PriorityInterfaceAddress)
-		v.Set("encrypt-method", bi.encryptMethod)
-		v.Set("encrypt-key", bi.encryptPassword)
-		v.Set("obfs", bi.obfs)
-		v.Set("obfs-param", bi.obfsParam)
-		v.Set("protocol", bi.protocol)
-		v.Set("protocol-param", bi.protocolParam)
-		u.RawQuery = v.Encode()
-
-		if c, e := bi.connectToProxy(u, addr); e == nil {
-			return bi.setSSRData(rawaddr, c)
-		}
-	default:
-		return nil, fmt.Errorf("Unknown backend protocol type: %s", bi.protocolType)
+func tlsConnect(_ []byte, bi *BackendInfo) (remote net.Conn, err error) {
+	u := &url.URL{
+		Scheme: bi.protocolType,
+		User:   url.UserPassword(bi.username, bi.password),
+		Host:   bi.address,
 	}
-	return
+	v := u.Query()
+	v.Set("tls-insecure-skip-verify", strconv.FormatBool(bi.insecureSkipVerify))
+	v.Set("tls-domain", bi.domain)
+	u.RawQuery = v.Encode()
+
+	return connectToProxy(u, bi)
 }
 
-func (bi *BackendInfo) setSSRData(rawaddr []byte, c net.Conn) (remote net.Conn, err error) {
+func plainConnect(_ []byte, bi *BackendInfo) (remote net.Conn, err error) {
+	u := &url.URL{
+		Scheme: bi.protocolType,
+		User:   url.UserPassword(bi.username, bi.password),
+		Host:   bi.address,
+	}
+	return connectToProxy(u, bi)
+}
+
+func ssConnect(rawaddr []byte, bi *BackendInfo) (remote net.Conn, err error) {
+	u := &url.URL{
+		Scheme: bi.protocolType,
+		Host:   bi.address,
+	}
+
+	v := u.Query()
+	v.Set("priority-interface-enabled", strconv.FormatBool(config.Generals.PriorityInterfaceEnabled))
+	v.Set("priority-interface-address", config.Generals.PriorityInterfaceAddress)
+	v.Set("encrypt-method", bi.encryptMethod)
+	v.Set("encrypt-key", bi.encryptPassword)
+	v.Set("obfs", bi.obfs)
+	v.Set("obfs-param", bi.obfsParam)
+	v.Set("protocol", bi.protocol)
+	v.Set("protocol-param", bi.protocolParam)
+	u.RawQuery = v.Encode()
+
+	if c, e := connectToProxy(u, bi); e == nil {
+		return setSSRData(rawaddr, bi, c)
+	}
+	return nil, errors.New("connecting to ss server failed")
+}
+
+func setSSRData(rawaddr []byte, bi *BackendInfo, c net.Conn) (remote net.Conn, err error) {
 	ssconn, ok := c.(*ss.SSTCPConn)
 	if !ok {
 		return nil, errors.New("not a *SSTCPConn")
@@ -229,4 +228,30 @@ func (bi *BackendInfo) setSSRData(rawaddr []byte, c net.Conn) (remote net.Conn, 
 		return nil, err
 	}
 	return ssconn, nil
+}
+
+type connector func([]byte, *BackendInfo) (net.Conn, error)
+
+var (
+	connectorMap = map[string]connector{
+		"https":        tlsConnect,
+		"socks5+tls":   tlsConnect,
+		"http":         plainConnect,
+		"socks4":       plainConnect,
+		"socks4a":      plainConnect,
+		"socks5":       plainConnect,
+		"ss":           ssConnect,
+		"ssr":          ssConnect,
+		"shadowsocks":  ssConnect,
+		"shadowsocksr": ssConnect,
+	}
+)
+
+func (bi *BackendInfo) connect(rawaddr []byte) (remote net.Conn, err error) {
+	ctr, ok := connectorMap[strings.ToLower(bi.protocolType)]
+	if !ok {
+		return nil, fmt.Errorf("Unknown backend protocol type: %s", bi.protocolType)
+	}
+
+	return ctr(rawaddr, bi)
 }

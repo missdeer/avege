@@ -84,7 +84,7 @@ func (c *Connection) handleWS(msg []byte) []byte {
 
 func (c *Connection) readWS() (err error) {
 	var p []byte
-	for {
+	for err == nil {
 		_, p, err = c.conn.ReadMessage()
 		// don't worry, if write goroutine exits abnormally,
 		// the connection will be closed,
@@ -100,7 +100,7 @@ func (c *Connection) readWS() (err error) {
 }
 
 func (c *Connection) writeWS() (err error) {
-	for {
+	for err == nil {
 		select {
 		case t := <-c.msg:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))

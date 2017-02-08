@@ -170,7 +170,7 @@ func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 			signaled = true
 			if !result {
 				common.Debug("paired piping inbound to outbound goroutine exited, so this goroutine piping outbound to inbound just exit too")
-				break
+				return nil
 			}
 			common.Debug("no matter paired goroutine exiting, go on reading outbound input with", bytesRead, "bytes")
 		default:
