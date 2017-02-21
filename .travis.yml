@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.7.5
+  - 1.8
 env:
   global:
       - NDK_VERSION=r13b
@@ -69,6 +69,8 @@ script:
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=ppc64le GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-ppc64le.tar.gz avege conf resources templates config-sample.json
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=mips64 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mips64.tar.gz avege conf resources templates config-sample.json
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=mips64le GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mips64le.tar.gz avege conf resources templates config-sample.json
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=mips GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mips.tar.gz avege conf resources templates config-sample.json
+  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=mipsle GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mipsle.tar.gz avege conf resources templates config-sample.json
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=darwin go build  && tar czvf avege-darwin-amd64.tar.gz avege conf resources templates config-sample.json
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=windows go build  && tar czvf avege-windows-amd64.tar.gz avege.exe conf resources templates config-sample.json
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=windows go build  && tar czvf avege-windows-x86.tar.gz avege.exe conf resources templates config-sample.json
@@ -87,30 +89,32 @@ deploy:
   api_key:
     secure: qROlG3DcJ0KV4iucaggSGshDNZspXnL336bnsserCG0337wAmHT08sfdOZMHORZ4hmzNnMvoj1ImU7eW7v1JprphD3npf9jj0Ns/2zM2lydrXGAGcCF0Ec0r8b5ZLS9CKZ+0wftkfHXDThWxJvC7g01L52BsxIPfFqkCZIexMwGG3xAwxYnVP6CFJ7U9+dOzhGsjTG6UxvWb4eMZsM0oqa18aT1tMmuiYw/5Y4RpngKPl/BafiyriTLP88PoyY/SpJS3ttggymH5IXIbBGHzlNK6f5/Niz76TDhTtimH65xT/QgUrFJJMlMtbntraxYvwCBhgADM95AA7ncv0GKXiAJswnjPknVRzAtxRdUopY0Spblln0HjZuYjimbbmtv5OZaARgHK1/gQS8p2EGnsXzAFuY9asWGHlkayIxFYx1rQXwIMERrX4v6BwBqEK6ni6DwMxtlxF9rQvpZ2/Q8w/BzexEN8p1zQD784SS/UdWr2P81OsEH9wx+X8Z7Eyw4FM6XP6EMC+412xASLDhQwJK90ut7fME5BAOipgCx6rCaXlxm2e/XVNB6ZlB41mj42HmlvJzvi0i648yRtKHmqEv6Ff82LGET4PapT7OFES9MSZUupSr7NGocs4v8XGhrhL607ugJcC2qP5ZHy4eqGREImyYsdkv+T7lZazEuRe8s=
   file: 
-    - avege-android-armv7.tar.gz          
-    - avege-android-x86.tar.gz            
-    - avege-darwin-amd64.tar.gz           
-    - avege-dragonflybsd-amd64.tar.gz     
-    - avege-freebsd-amd64.tar.gz          
-    - avege-freebsd-arm.tar.gz            
-    - avege-freebsd-x86.tar.gz            
-    - avege-linux-amd64.tar.gz            
-    - avege-linux-arm64.tar.gz            
-    - avege-linux-armv6.tar.gz            
-    - avege-linux-armv7.tar.gz            
-    - avege-linux-mips64.tar.gz           
-    - avege-linux-mips64le.tar.gz         
-    - avege-linux-ppc64.tar.gz            
-    - avege-linux-ppc64le.tar.gz          
-    - avege-linux-x86.tar.gz              
-    - avege-netbsd-amd64.tar.gz           
-    - avege-netbsd-arm.tar.gz             
-    - avege-netbsd-x86.tar.gz             
-    - avege-openbsd-amd64.tar.gz          
-    - avege-openbsd-x86.tar.gz            
-    - avege-solaris-amd64.tar.gz                
-    - avege-windows-amd64.tar.gz              
-    - avege-windows-x86.tar.gz                
+    - avege-android-armv7.tar.gz
+    - avege-android-x86.tar.gz
+    - avege-darwin-amd64.tar.gz
+    - avege-dragonflybsd-amd64.tar.gz
+    - avege-freebsd-amd64.tar.gz
+    - avege-freebsd-arm.tar.gz
+    - avege-freebsd-x86.tar.gz
+    - avege-linux-amd64.tar.gz
+    - avege-linux-arm64.tar.gz
+    - avege-linux-armv6.tar.gz
+    - avege-linux-armv7.tar.gz
+    - avege-linux-mips64.tar.gz
+    - avege-linux-mips64le.tar.gz
+    - avege-linux-mips.tar.gz
+    - avege-linux-mipsle.tar.gz
+    - avege-linux-ppc64.tar.gz
+    - avege-linux-ppc64le.tar.gz
+    - avege-linux-x86.tar.gz
+    - avege-netbsd-amd64.tar.gz
+    - avege-netbsd-arm.tar.gz
+    - avege-netbsd-x86.tar.gz
+    - avege-openbsd-amd64.tar.gz
+    - avege-openbsd-x86.tar.gz
+    - avege-solaris-amd64.tar.gz
+    - avege-windows-amd64.tar.gz
+    - avege-windows-x86.tar.gz
   on:
     repo: avege/avege
     tags: true
