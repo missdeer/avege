@@ -4,12 +4,12 @@ package redir
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 	"syscall"
 
 	"common"
-	"github.com/pkg/errors"
 	"inbound"
 )
 
