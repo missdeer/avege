@@ -10,18 +10,18 @@ import (
 	"inbound"
 )
 
-func handleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
+func handleTCPInbound(conn *net.TCPConn, outboundHandler common.TCPOutboundHandler) error {
 	common.Debugf("socks connect from %s\n", conn.RemoteAddr().String())
 	conf := &SocksServerConfig{}
 	s, err := NewSocks5Server(conf)
 	if err != nil {
 		common.Error("creating socks5 server failed", err)
-		return
+		return err
 	}
 	req, err := s.GetRequest(conn)
 	if err != nil {
 		common.Error("getting socks5 request failed", err)
-		return
+		return err
 	}
 
 	var rawaddr []byte
@@ -39,7 +39,7 @@ func handleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 			// ipv4 connect directly
 			defer conn.Close()
 			s.HandleRequest(req, conn)
-			return
+			return nil
 		}
 	} else if req.DestAddr.IP.To16() != nil {
 		// IPv6
@@ -52,7 +52,7 @@ func handleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 		host, _, _ := net.SplitHostPort(req.DestAddr.Address())
 		if domain.ToBlock(host) {
 			conn.Close()
-			return
+			return nil
 		}
 		rawaddr = make([]byte, 1+1+len(host)+2)
 		rawaddr[0] = 3
@@ -66,12 +66,20 @@ func handleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
 	_, err = conn.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x08, 0x43})
 	if err != nil {
 		common.Debug("send connection confirmation:", err)
-		return
+		return err
 	}
 	addr := req.DestAddr.Address()
-	outboundHander(conn, rawaddr, addr)
+	outboundHandler(conn, rawaddr, addr)
+	return nil
 }
 
-func GetInboundHandler(inbound *inbound.InBound) inbound.InBoundHander {
-	return handleInbound
+func GetTCPInboundHandler(inbound *inbound.Inbound) inbound.TCPInboundHandler {
+	return handleTCPInbound
+}
+
+func GetUDPInboundHandler(inbound *inbound.Inbound) inbound.UDPInboundHandler {
+	return func(conn net.PacketConn, outboundHandler common.UDPOutboundHandler) error {
+		common.Debugf("socks5 connect from %s\n", conn.LocalAddr().String())
+		return nil
+	}
 }

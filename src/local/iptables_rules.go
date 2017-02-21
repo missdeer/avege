@@ -229,8 +229,8 @@ func doUpdateRules() {
 	// current running server addresses
 	record = "-A SS -d %s/32 -j RETURN"
 	var res []string
-	Statistics.RLock()
-	for si := range Statistics.StatisticMap {
+	statistics.RLock()
+	for si := range statistics.StatisticMap {
 		host, _, _ := net.SplitHostPort(si.address)
 		if ips, err := net.LookupIP(host); err == nil {
 			for _, ip := range ips {
@@ -245,7 +245,7 @@ func doUpdateRules() {
 			}
 		}
 	}
-	Statistics.RUnlock()
+	statistics.RUnlock()
 
 	if file, err := os.OpenFile(ruleFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644); err != nil {
 		common.Error("open rule file failed", err)

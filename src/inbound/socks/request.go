@@ -381,7 +381,6 @@ func proxy(dst io.Writer, src io.Reader, errCh chan error) {
 func proxyLocalToRemoteHttp(dst io.Writer, src io.Reader, errCh chan error) {
 	const bufSize = 32 * 1024
 	var err error
-	var written int64
 
 	buf := make([]byte, bufSize)
 	for {
@@ -393,9 +392,6 @@ func proxyLocalToRemoteHttp(dst io.Writer, src io.Reader, errCh chan error) {
 				fmt.Println("request:", httpreq.URL.String())
 			}
 			nw, ew := dst.Write(buf[0:nr])
-			if nw > 0 {
-				written += int64(nw)
-			}
 			if ew != nil {
 				err = ew
 				break

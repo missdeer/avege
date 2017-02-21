@@ -13,10 +13,11 @@ import (
 	"common/netutil"
 )
 
+const gfwlistURL = "https://yii.li/gfwlist"
+
 var (
 	//gfwlist    = ds.NewItemTree("gfwlist.lst", true)
-	gfwlist    = ds.NewItemMapWithCap("gfwlist.lst", true, 4000)
-	gfwlistUrl = "https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt"
+	gfwlist = ds.NewItemMapWithCap("gfwlist.lst", true, 4000)
 )
 
 func IsGFWed(dn string) bool {
@@ -36,8 +37,8 @@ func LoadDomainNameGFWed() {
 func UpdateGFWList() {
 	var content io.ReadCloser
 	for err := os.ErrNotExist; err != nil; time.Sleep(5 * time.Second) {
-		common.Warning("try to download content from", gfwlistUrl)
-		content, err = netutil.DownloadRemoteContent(gfwlistUrl)
+		common.Warning("try to download content from", gfwlistURL)
+		content, err = netutil.DownloadRemoteContent(gfwlistURL)
 	}
 	defer content.Close()
 
@@ -59,6 +60,6 @@ func UpdateGFWList() {
 		}
 	}
 	gfwlist.Unlock()
-	common.Debugf("gfwlist from %s loaded", gfwlistUrl)
+	common.Debugf("gfwlist from %s loaded", gfwlistURL)
 	gfwlist.Save()
 }

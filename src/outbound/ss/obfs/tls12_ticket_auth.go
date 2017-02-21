@@ -11,12 +11,16 @@ import (
 	"outbound/ss/ssr"
 )
 
+func init() {
+	register("tls1.2_ticket_auth", newTLS12TicketAuth)
+}
+
 type tlsAuthData struct {
 	localClientID [32]byte
 }
 
-// TLS12TicketAuth tls1.2_ticket_auth obfs encapsulate
-type TLS12TicketAuth struct {
+// tls12TicketAuth tls1.2_ticket_auth obfs encapsulate
+type tls12TicketAuth struct {
 	ssr.ServerInfoForObfs
 	data            *tlsAuthData
 	sendID          int
@@ -25,26 +29,26 @@ type TLS12TicketAuth struct {
 	recvBuffer      []byte
 }
 
-// NewTLS12TicketAuth create a tlv1.2_ticket_auth object
-func NewTLS12TicketAuth() *TLS12TicketAuth {
-	return &TLS12TicketAuth{}
+// newTLS12TicketAuth create a tlv1.2_ticket_auth object
+func newTLS12TicketAuth() IObfs {
+	return &tls12TicketAuth{}
 }
 
-func (t *TLS12TicketAuth) SetServerInfo(s *ssr.ServerInfoForObfs) {
+func (t *tls12TicketAuth) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	t.ServerInfoForObfs = *s
 }
 
-func (t *TLS12TicketAuth) GetServerInfo() (s *ssr.ServerInfoForObfs) {
+func (t *tls12TicketAuth) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &t.ServerInfoForObfs
 }
 
-func (t *TLS12TicketAuth) SetData(data interface{}) {
+func (t *tls12TicketAuth) SetData(data interface{}) {
 	if auth, ok := data.(*tlsAuthData); ok {
 		t.data = auth
 	}
 }
 
-func (t *TLS12TicketAuth) GetData() interface{} {
+func (t *tls12TicketAuth) GetData() interface{} {
 	if t.data == nil {
 		t.data = &tlsAuthData{}
 		b := make([]byte, 32)
@@ -54,7 +58,7 @@ func (t *TLS12TicketAuth) GetData() interface{} {
 	return t.data
 }
 
-func (t *TLS12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
+func (t *tls12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 	if t.handshakeStatus == -1 {
 		return data, nil
 	}
@@ -196,7 +200,7 @@ func (t *TLS12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 	return
 }
 
-func (t *TLS12TicketAuth) Decode(data []byte) (decodedData []byte, needSendBack bool, err error) {
+func (t *tls12TicketAuth) Decode(data []byte) (decodedData []byte, needSendBack bool, err error) {
 	if t.handshakeStatus == -1 {
 		return data, false, nil
 	}
@@ -244,7 +248,7 @@ func (t *TLS12TicketAuth) Decode(data []byte) (decodedData []byte, needSendBack 
 	return nil, true, nil
 }
 
-func (t *TLS12TicketAuth) packAuthData() (outData []byte) {
+func (t *tls12TicketAuth) packAuthData() (outData []byte) {
 	outSize := 32
 	outData = make([]byte, outSize)
 
@@ -259,7 +263,7 @@ func (t *TLS12TicketAuth) packAuthData() (outData []byte) {
 	return
 }
 
-func (t *TLS12TicketAuth) hmacSHA1(data []byte) []byte {
+func (t *tls12TicketAuth) hmacSHA1(data []byte) []byte {
 	key := make([]byte, t.KeyLen+32)
 	copy(key, t.Key)
 	copy(key[t.KeyLen:], t.data.localClientID[:])
@@ -268,7 +272,7 @@ func (t *TLS12TicketAuth) hmacSHA1(data []byte) []byte {
 	return sha1Data[:ssr.ObfsHMACSHA1Len]
 }
 
-func (t *TLS12TicketAuth) sni(u string) []byte {
+func (t *tls12TicketAuth) sni(u string) []byte {
 	bURL := []byte(u)
 	length := len(bURL)
 	ret := make([]byte, length+9)

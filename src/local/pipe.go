@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	ERR_READ     = errors.New("Reading pipe error")
-	ERR_WRITE    = errors.New("Writing pipe error")
-	ERR_NOSIG    = errors.New("Signal timeout error")
-	ERR_SIGFALSE = errors.New("Signal false")
+	ErrRead        = errors.New("Reading pipe error")
+	ErrWrite       = errors.New("Writing pipe error")
+	ErrNoSignal    = errors.New("Signal timeout error")
+	ErrSignalFalse = errors.New("Signal false")
 )
 
 func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto time.Duration, stat *common.Statistic, sig chan bool, buffer **common.Buffer) (result error) {
@@ -67,11 +67,11 @@ func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 	for {
 		//common.Debugf("try to read something from inbound with timeout %v at %v\n", rto, time.Now().Add(rto))
 		src.SetReadDeadline(time.Now().Add(rto))
-		n, err := src.Read(buf)
-		bytesRead += n
-		if n > 0 {
+		nr, err := src.Read(buf)
+		bytesRead += nr
+		if nr > 0 {
 			if bytesRead < 10*1024*1024 {
-				tempBuffer = append(tempBuffer, bytes.NewBuffer(buf[0:n]))
+				tempBuffer = append(tempBuffer, bytes.NewBuffer(buf[:nr]))
 			}
 
 			if !signaled {
@@ -82,18 +82,18 @@ func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 
 			//common.Debugf("read something from inbound, and try to write to outbound with timeout %v at %v\n", wto, time.Now().Add(wto))
 			dst.SetWriteDeadline(time.Now().Add(wto))
-			nw, err := dst.Write(buf[0:n])
+			nw, err := dst.Write(buf[:nr])
 			if err != nil {
 				if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
-					common.Error("write to outbound err: ", ERR_WRITE)
-					result = ERR_WRITE
+					common.Error("write to outbound err: ", ErrWrite)
+					result = ErrWrite
 					return
 				}
 				common.Error("writing to outbound err: ", err)
 				result = err
 				return
 			}
-			common.Debug("written ", n, "bytes to outbound and ", nw, "bytes are expected, read", bytesRead, " bytes totally")
+			common.Debug("written ", nw, "bytes to outbound and ", nr, "bytes are expected, read", bytesRead, " bytes totally")
 		}
 		if err != nil {
 			if !signaled {
@@ -104,7 +104,7 @@ func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 					result = err
 				} else {
 					common.Error("reading from inbound error:", err)
-					result = ERR_READ
+					result = ErrRead
 				}
 			}
 
@@ -129,37 +129,39 @@ func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 	s := <-sig // wait for paired goroutine to start
 	common.Debug("R/W begin signaled")
 	if !s {
-		return ERR_SIGFALSE
+		return ErrSignalFalse
 	}
 
 	buf := ds.GlobalLeakyBuf.Get()
 	defer ds.GlobalLeakyBuf.Put(buf)
-	var n int
+	var nr int
+	var nw int
 	for {
 		//common.Debugf("try to read something from outbound with timeout %v at %v\n", rto, time.Now().Add(rto))
 		src.SetReadDeadline(time.Now().Add(rto))
-		n, err = src.Read(buf)
-		bytesRead += n
-		if n > 0 {
-			stat.BytesDownload(uint64(n))
+		nr, err = src.Read(buf)
+		bytesRead += nr
+		if nr > 0 {
+			stat.BytesDownload(uint64(nr))
 			//common.Debugf("read something from outbound, and try to write to inbound with timeout %v at %v\n", wto, time.Now().Add(wto))
 			dst.SetWriteDeadline(time.Now().Add(wto))
-			nw, err := dst.Write(buf[0:n])
+			nw, err = dst.Write(buf[:nr])
 			if err != nil {
 				common.Error("write to inbound error: ", err)
-				err = ERR_WRITE
+				err = ErrWrite
 				break
 			}
-			common.Debug("written ", nw, "bytes to inbound and", n, "bytes are expected, read", bytesRead, "bytes totally")
+			common.Debug("written ", nw, "bytes to inbound and", nr, "bytes are expected, read", bytesRead, "bytes totally")
 		}
 		if err != nil {
 			if neterr, ok := err.(net.Error); ok && neterr.Timeout() && bytesRead == 0 {
 				common.Error("read from outbound timeout, seems the server has been null")
-				err = ERR_READ
+				err = ErrRead
 				break
 			}
 			if err == io.EOF {
 				common.Debug("read from outbound eof with", bytesRead, "bytes")
+				err = nil
 				break
 			}
 			common.Error("reading from outbound error:", err)
@@ -178,6 +180,5 @@ func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 		}
 	}
 
-	common.Debug("outbound to inbound seems ok")
-	return nil
+	return
 }

@@ -9,19 +9,18 @@ import (
 	"inbound"
 )
 
-func GetInboundHandler(inbound *inbound.InBound) inbound.InBoundHander {
+func parseAddr(inbound *inbound.Inbound) (rawaddr []byte, addr string) {
 	host, p, err := net.SplitHostPort(inbound.Parameter)
 	if err != nil {
 		common.Error("incorrect inbound parameter format", inbound.Parameter, err)
-		return nil
+		return
 	}
 	port, err := strconv.Atoi(p)
 	if err != nil {
 		common.Error("can't convert port string", p, err)
-		return nil
+		return
 	}
 	ip := net.ParseIP(host)
-	var rawaddr []byte
 	if ip == nil {
 		// variant length domain name
 		rawaddr = make([]byte, 1+1+len(host)+2)
@@ -47,9 +46,22 @@ func GetInboundHandler(inbound *inbound.InBound) inbound.InBoundHander {
 	} else {
 
 	}
-	addr := inbound.Parameter
-	return func(conn *net.TCPConn, outboundHander common.OutboundHandler) {
+	addr = inbound.Parameter
+	return
+}
+
+func GetUDPInboundHandler(inbound *inbound.Inbound) inbound.UDPInboundHandler {
+	rawaddr, addr := parseAddr(inbound)
+	return func(c net.PacketConn, outboundHandler common.UDPOutboundHandler) error {
+		common.Debug("tunnel connect from", c.LocalAddr().String())
+		return outboundHandler(c, rawaddr, addr)
+	}
+}
+
+func GetTCPInboundHandler(inbound *inbound.Inbound) inbound.TCPInboundHandler {
+	rawaddr, addr := parseAddr(inbound)
+	return func(conn *net.TCPConn, outboundHandler common.TCPOutboundHandler) error {
 		common.Debugf("tunnel connect from %s\n", conn.RemoteAddr().String())
-		outboundHander(conn, rawaddr, addr)
+		return outboundHandler(conn, rawaddr, addr)
 	}
 }

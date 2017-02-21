@@ -5,7 +5,8 @@ import (
 	"net"
 )
 
-type OutboundHandler func(net.Conn, []byte, string)
+type TCPOutboundHandler func(net.Conn, []byte, string) error
+type UDPOutboundHandler func(net.PacketConn, []byte, string) error
 
 type Buffer []*bytes.Buffer
 

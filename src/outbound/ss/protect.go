@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	// ProtectSocketPathPrefix prefix of file path that used for Unix socket communication
 	ProtectSocketPathPrefix string
 )
 

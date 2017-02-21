@@ -1,55 +1,59 @@
 package inbound
 
 import (
-	"common"
 	"net"
+	"strings"
+
+	"common"
 )
 
-type InBound struct {
+type Inbound struct {
 	Type      string `json:"type"`
 	Address   string `json:"address"`
 	Parameter string `json:"parameter"`
 	Port      int    `json:"port"`
 }
 
-type InBoundHander func(conn *net.TCPConn, outboundHander common.OutboundHandler)
+type TCPInboundHandler func(conn *net.TCPConn, outboundHandler common.TCPOutboundHandler) error
+type UDPInboundHandler func(conn net.PacketConn, outboundHandler common.UDPOutboundHandler) error
 
 const (
-	inBoundNone = 0
+	none = 0
 )
 const (
-	inBoundSocks5 = 1 << iota
-	inBoundRedir
-	inBoundTunnel
+	socks5 = 1 << iota
+	redir
+	tunnel
 )
 
 var (
-	inBoundModesEnabled = inBoundNone
+	modesEnabled = none
+	modeMap      = map[string]int{
+		"socks5": socks5,
+		"socks":  socks5,
+		"redir":  redir,
+		"tunnel": tunnel,
+	}
 )
 
-func InBoundModeEnable(inboundType string) {
-	switch inboundType {
-	case "socks5", "socks":
-		inBoundModesEnabled |= inBoundSocks5
-	case "redir":
-		inBoundModesEnabled |= inBoundRedir
-	case "tunnel":
-		inBoundModesEnabled |= inBoundTunnel
+// ModeEnable set inbound mode mask
+func ModeEnable(inboundType string) {
+	mode, ok := modeMap[strings.ToLower(inboundType)]
+	if ok {
+		modesEnabled |= mode
 	}
 }
 
-func HasInBound() bool {
-	return inBoundModesEnabled != inBoundNone
+// Has is there any inbound configuration item
+func Has() bool {
+	return modesEnabled != none
 }
 
-func IsInBoundModeEnabled(inboundType string) bool {
-	switch inboundType {
-	case "socks5", "socks":
-		return (inBoundModesEnabled & inBoundSocks5) != 0
-	case "redir":
-		return (inBoundModesEnabled & inBoundRedir) != 0
-	case "tunnel":
-		return (inBoundModesEnabled & inBoundTunnel) != 0
+// IsModeEnabled is the special inbound mode enabled
+func IsModeEnabled(inboundType string) bool {
+	mode, ok := modeMap[strings.ToLower(inboundType)]
+	if ok {
+		return (modesEnabled & mode) != 0
 	}
 	return false
 }

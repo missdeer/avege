@@ -63,14 +63,14 @@ func Dial(host string, cipher *StreamCipher, priorityInterfaceAddress string) (c
 		}
 
 		if conn, err = dialer.Dial("tcp", host); err == nil {
-			return NewSSConn(conn, cipher), nil
+			return NewSSTCPConn(conn, cipher), nil
 		}
 		common.Warning("dialing on the interface with priorityInterfaceAddress", priorityInterfaceAddress, err)
 		tcpAddr = nil
 	}
 
 	if conn, err = dualStackDialer.Dial("tcp", host); err == nil {
-		return NewSSConn(conn, cipher), nil
+		return NewSSTCPConn(conn, cipher), nil
 	}
 
 	return

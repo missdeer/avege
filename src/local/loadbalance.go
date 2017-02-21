@@ -1,13 +1,10 @@
 package local
 
 import (
-	"encoding/binary"
 	"errors"
 	"math/rand"
 	"net"
 	"sort"
-	"strconv"
-	"strings"
 	"time"
 
 	"common"
@@ -25,10 +22,6 @@ func init() {
 type loadBalanceMethod func(local net.Conn, rawaddr []byte)
 
 var (
-	// Backends collection contains remote server information
-	Backends = NewBackendsInformationWrapper()
-	// Statistics collections contains all remote servers statistics
-	Statistics                          = NewStatisticWrapper()
 	outboundLoadBalanceHandler          loadBalanceMethod
 	outboundIndex                       = 0
 	smartLastUsedBackendInfo            *BackendInfo
@@ -49,7 +42,7 @@ func smartCreateServerConn(local net.Conn, rawaddr []byte, buffer *common.Buffer
 			common.Warning("firewall dropped")
 			goto pick_server
 		}
-		stat, ok := Statistics.Get(smartLastUsedBackendInfo)
+		stat, ok := statistics.Get(smartLastUsedBackendInfo)
 		if !ok || stat == nil {
 			common.Warning("no statistic record")
 			needChangeUsedServerInfo = true
@@ -68,7 +61,7 @@ func smartCreateServerConn(local net.Conn, rawaddr []byte, buffer *common.Buffer
 		}
 
 		if remote, err := smartLastUsedBackendInfo.connect(rawaddr); err == nil {
-			if err, inboundSideError := smartLastUsedBackendInfo.pipe(local, remote, buffer); err == nil {
+			if inboundSideError, err := smartLastUsedBackendInfo.pipe(local, remote, buffer); err == nil {
 				return nil
 			} else if inboundSideError {
 				common.Info("inbound side error")
@@ -87,8 +80,8 @@ pick_server:
 	ordered := make(BackendsInformation, 0)
 	skipped := make(BackendsInformation, 0)
 	{
-		Backends.RLock()
-		for _, bi := range Backends.BackendsInformation {
+		backends.RLock()
+		for _, bi := range backends.BackendsInformation {
 			if bi == smartLastUsedBackendInfo {
 				continue
 			}
@@ -103,13 +96,13 @@ pick_server:
 			}
 			ordered = append(ordered, bi)
 		}
-		Backends.RUnlock()
+		backends.RUnlock()
 	}
 
 	sort.Sort(ByHighestLastSecondBps{ordered})
 	for _, bi := range ordered {
 		// skip failed server, but try it with some probability
-		stat, ok := Statistics.Get(bi)
+		stat, ok := statistics.Get(bi)
 		if !ok || stat == nil {
 			continue
 		}
@@ -121,7 +114,7 @@ pick_server:
 		common.Debugf("try %s with failed count %d, %v, smartLastUsedBackendInfo=%v\n", bi.address, stat.GetFailedCount(), bi, smartLastUsedBackendInfo)
 
 		if remote, err := bi.connect(rawaddr); err == nil {
-			if err, inboundSideError := bi.pipe(local, remote, buffer); err == nil || inboundSideError {
+			if inboundSideError, err := bi.pipe(local, remote, buffer); err == nil || inboundSideError {
 				if needChangeUsedServerInfo {
 					smartLastUsedBackendInfo = bi
 				}
@@ -138,7 +131,7 @@ pick_server:
 	if len(skipped) > 0 {
 		sort.Sort(ByLatency{skipped})
 		for _, bi := range skipped {
-			stat, ok := Statistics.Get(bi)
+			stat, ok := statistics.Get(bi)
 			if !ok || stat == nil {
 				continue
 			}
@@ -150,7 +143,7 @@ pick_server:
 
 			common.Debugf("try %s with failed count %d for an additional optunity, %v\n", bi.address, stat.GetFailedCount(), bi)
 			if remote, err := bi.connect(rawaddr); err == nil {
-				if err, inboundSideError := bi.pipe(local, remote, buffer); err == nil || inboundSideError {
+				if inboundSideError, err := bi.pipe(local, remote, buffer); err == nil || inboundSideError {
 					if needChangeUsedServerInfo {
 						smartLastUsedBackendInfo = bi
 					}
@@ -169,7 +162,7 @@ pick_server:
 
 func smartLoadBalance(local net.Conn, rawaddr []byte) {
 	var buffer *common.Buffer
-	maxTryCount := Backends.Len()
+	maxTryCount := backends.Len()
 	for i := 0; i < maxTryCount; i++ {
 		err := smartCreateServerConn(local, rawaddr, buffer)
 		if err != nil {
@@ -182,17 +175,17 @@ func smartLoadBalance(local net.Conn, rawaddr []byte) {
 }
 
 func indexSpecifiedCreateServerConn(local net.Conn, rawaddr []byte) (remote net.Conn, si *BackendInfo, err error) {
-	if Backends.Len() == 0 {
+	if backends.Len() == 0 {
 		common.Error("no outbound available")
 		err = errors.New("no outbound available")
 		return
 	}
-	if outboundIndex >= Backends.Len() {
+	if outboundIndex >= backends.Len() {
 		//common.Warning("the specified index are out of range, use index 0 now")
 		outboundIndex = 0
 	}
-	s := Backends.Get(outboundIndex)
-	stat, ok := Statistics.Get(s)
+	s := backends.Get(outboundIndex)
+	stat, ok := statistics.Get(s)
 	if !ok || stat == nil {
 		return
 	}
@@ -231,79 +224,4 @@ func roundRobinLoadBalance(local net.Conn, rawaddr []byte) {
 	}
 	bi.pipe(local, remote, buffer)
 	common.Debug("closed connection to", rawaddr)
-}
-
-func handleOutbound(conn net.Conn, rawaddr []byte, addr string) {
-	defer conn.Close()
-	switch rawaddr[0] {
-	case 1:
-		// IPv4
-		targetIP := net.IPv4(rawaddr[1], rawaddr[2], rawaddr[3], rawaddr[4])
-		port := int(binary.BigEndian.Uint16(rawaddr[5:]))
-		ipAddr := binary.BigEndian.Uint32(rawaddr[1:5])
-		if _, ok := deniedPort[port]; ok {
-			common.Warning(conn.RemoteAddr(), "is trying to access denied port", port)
-			return
-		}
-		if config.Target.Port.Deny == "all" {
-			if _, ok := allowedPort[port]; !ok {
-				common.Warning(conn.RemoteAddr(), "is trying to access not allowed port", port)
-				return
-			}
-		}
-		if _, ok := deniedIP[ipAddr]; ok {
-			common.Warning(conn.RemoteAddr(), "is trying to access denied IP", targetIP)
-			return
-		}
-		if config.Target.IP.Deny == "all" {
-			if _, ok := allowedIP[ipAddr]; !ok {
-				common.Warning(conn.RemoteAddr(), "is trying to access not allowed IP", targetIP)
-				return
-			}
-		}
-		if p, ok := serverIP[ipAddr]; ok && port == p {
-			common.Warningf("%v is trying to access proxy server %v:%d",
-				conn.RemoteAddr(), targetIP, port)
-			Backends.RLock()
-			defer Backends.RUnlock()
-			for _, si := range Backends.BackendsInformation {
-				for _, ip := range si.ips {
-					if ip.Equal(targetIP) {
-						si.firewalled = true
-						break
-					}
-				}
-			}
-			return
-		}
-		common.Debug("try to access:", targetIP, port)
-	case 3:
-	// variant length domain name
-	case 4:
-		// IPv6
-	}
-
-	if outboundLoadBalanceHandler == nil {
-		switch config.Generals.LoadBalance {
-		case "smart":
-			outboundLoadBalanceHandler = smartLoadBalance
-		case "roundrobin":
-			outboundLoadBalanceHandler = roundRobinLoadBalance
-		case "none":
-			outboundIndex = 0
-			outboundLoadBalanceHandler = indexSpecifiedLoadBalance
-		default:
-			if strings.Index(config.Generals.LoadBalance, "index:") == 0 {
-				if index, err := strconv.Atoi(config.Generals.LoadBalance[6:]); err == nil {
-					outboundIndex = index
-					outboundLoadBalanceHandler = indexSpecifiedLoadBalance
-				} else {
-					common.Error("wrong index specified load balance method format, use smart method now")
-					outboundLoadBalanceHandler = smartLoadBalance
-				}
-			}
-		}
-	}
-
-	outboundLoadBalanceHandler(conn, rawaddr)
 }

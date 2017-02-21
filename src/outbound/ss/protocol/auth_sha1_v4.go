@@ -9,7 +9,11 @@ import (
 	"outbound/ss/ssr"
 )
 
-type AuthSHA1v4 struct {
+func init() {
+	register("auth_sha1_v4", newAuthSHA1v4)
+}
+
+type authSHA1v4 struct {
 	ssr.ServerInfoForObfs
 	data             *authData
 	hasSentHeader    bool
@@ -17,33 +21,33 @@ type AuthSHA1v4 struct {
 	recvBufferLength int
 }
 
-func NewAuthSHA1v4() *AuthSHA1v4 {
-	a := &AuthSHA1v4{}
+func newAuthSHA1v4() IProtocol {
+	a := &authSHA1v4{}
 	return a
 }
 
-func (a *AuthSHA1v4) SetServerInfo(s *ssr.ServerInfoForObfs) {
+func (a *authSHA1v4) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	a.ServerInfoForObfs = *s
 }
 
-func (a *AuthSHA1v4) GetServerInfo() (s *ssr.ServerInfoForObfs) {
+func (a *authSHA1v4) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &a.ServerInfoForObfs
 }
 
-func (a *AuthSHA1v4) SetData(data interface{}) {
+func (a *authSHA1v4) SetData(data interface{}) {
 	if auth, ok := data.(*authData); ok {
 		a.data = auth
 	}
 }
 
-func (a *AuthSHA1v4) GetData() interface{} {
+func (a *authSHA1v4) GetData() interface{} {
 	if a.data == nil {
 		a.data = &authData{}
 	}
 	return a.data
 }
 
-func (a *AuthSHA1v4) packData(data []byte) (outData []byte) {
+func (a *authSHA1v4) packData(data []byte) (outData []byte) {
 	dataLength := len(data)
 	randLength := 1
 	if dataLength <= 1300 {
@@ -83,7 +87,7 @@ func (a *AuthSHA1v4) packData(data []byte) (outData []byte) {
 	return outData
 }
 
-func (a *AuthSHA1v4) packAuthData(data []byte) (outData []byte) {
+func (a *authSHA1v4) packAuthData(data []byte) (outData []byte) {
 	dataLength := len(data)
 	randLength := 1
 	if dataLength <= 1300 {
@@ -152,7 +156,7 @@ func (a *AuthSHA1v4) packAuthData(data []byte) (outData []byte) {
 	return outData
 }
 
-func (a *AuthSHA1v4) PreEncrypt(plainData []byte) (outData []byte, err error) {
+func (a *authSHA1v4) PreEncrypt(plainData []byte) (outData []byte, err error) {
 	dataLength := len(plainData)
 	offset := 0
 	if !a.hasSentHeader && dataLength > 0 {
@@ -181,7 +185,7 @@ func (a *AuthSHA1v4) PreEncrypt(plainData []byte) (outData []byte, err error) {
 	return
 }
 
-func (a *AuthSHA1v4) PostDecrypt(plainData []byte) (outData []byte, err error) {
+func (a *authSHA1v4) PostDecrypt(plainData []byte) (outData []byte, err error) {
 	dataLength := len(plainData)
 	b := make([]byte, len(a.recvBuffer)+dataLength)
 	copy(b, a.recvBuffer)

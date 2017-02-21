@@ -142,31 +142,39 @@ func getOriginalDst(clientConn *net.TCPConn) (rawaddr []byte, host string, newTC
 	return
 }
 
-func handleInbound(conn *net.TCPConn, outboundHander common.OutboundHandler) {
+func handleTCPInbound(conn *net.TCPConn, outboundHandler common.TCPOutboundHandler) error {
 	common.Debugf("redir connect from %s, BSD is detected, use pf now.\n",
 		conn.RemoteAddr().String())
 
 	if conn == nil {
 		common.Errorf("handleRedirInbound(): oops, conn is nil")
-		return
+		return errors.New("input conn is nil")
 	}
 
 	// test if the underlying fd is nil
 	remoteAddr := conn.RemoteAddr()
 	if remoteAddr == nil {
 		common.Errorf("handleRedirInbound(): oops, conn.fd is nil!")
-		return
+		return errors.New("input conn.fd is nil")
 	}
 
 	rawaddr, addr, conn, err := getOriginalDst(conn)
 	if err != nil {
 		common.Errorf("handleRedirInbound(): can not handle this connection, error occurred in getting original destination ip address/port: %+v\n", err)
-		return
+		return err
 	}
 
-	outboundHander(conn, rawaddr, addr)
+	outboundHandler(conn, rawaddr, addr)
+	return nil
 }
 
-func GetInboundHandler(inbound *inbound.InBound) inbound.InBoundHander {
-	return handleInbound
+func GetTCPInboundHandler(inbound *inbound.Inbound) inbound.TCPInboundHandler {
+	return handleTCPInbound
+}
+
+func GetUDPInboundHandler(inbound *inbound.Inbound) inbound.UDPInboundHandler {
+	return func(conn net.PacketConn, outboundHandler common.UDPOutboundHandler) error {
+		common.Debugf("redir connect from %s\n", conn.LocalAddr().String())
+		return nil
+	}
 }

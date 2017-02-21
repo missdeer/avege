@@ -184,6 +184,7 @@ var streamCipherMethod = map[string]*cipherInfo{
 	"bf-cfb":           {16, 8, newBlowFishStream},
 	"cast5-cfb":        {16, 8, newCast5Stream},
 	"rc4-md5":          {16, 16, newRC4MD5Stream},
+	"rc4-md5-6":        {16, 6, newRC4MD5Stream},
 	"chacha20":         {32, 8, newChaCha20Stream},
 	"chacha20-ietf":    {32, 12, newChacha20IETFStream},
 	"salsa20":          {32, 8, newSalsa20Stream},

@@ -29,6 +29,7 @@ var (
 	defaultMethod string
 )
 
+// GeneralConfig represents the general config section in configuration file
 type GeneralConfig struct {
 	LoadBalance              string `json:"load_balance"`
 	API                      string `json:"api"`
@@ -53,6 +54,7 @@ type GeneralConfig struct {
 	ConsoleWebSocketURL      string `json:"console_websocket_url"`
 }
 
+// UnmarshalJSON override the json unmarshal method, so that some fields could be initialized correctly
 func (g *GeneralConfig) UnmarshalJSON(b []byte) error {
 	type Alias GeneralConfig
 	aux := &struct {
@@ -77,27 +79,32 @@ func (g *GeneralConfig) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// AllowDeny items for ACL
 type AllowDeny struct {
 	Allow string `json:"allow"`
 	Deny  string `json:"deny"`
 }
 
+// ACL access control list
 type ACL struct {
 	Port AllowDeny `json:"port"`
 	IP   AllowDeny `json:"ip"`
 }
 
+// DNSConfig represents each DNS server configuration
 type DNSConfig struct {
 	Address                 string `json:"address"`
 	Protocol                string `json:"protocol"`
 	EDNSClientSubnetEnabled bool   `json:"edns_client_subnet_enabled"`
 }
 
+// DNSServerSpecific some domain names should be resolved by some special DNS servers
 type DNSServerSpecific struct {
 	Domains []string     `json:"domains"`
 	Servers []*DNSConfig `json:"servers"`
 }
 
+// DNS represents the DNS section in configuration file
 type DNS struct {
 	Enabled                bool `json:"enabled"`
 	CacheEnabled           bool `json:"cache"`
@@ -118,6 +125,7 @@ type DNS struct {
 	Server                 DNSServerSpecific `json:"server"`
 }
 
+// UnmarshalJSON override the json unmarshal method, so that some fields could be initialized correctly
 func (g *DNS) UnmarshalJSON(b []byte) error {
 	type Alias DNS
 	aux := &struct {
@@ -152,13 +160,14 @@ func (g *DNS) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// LocalConfig represents the whole configuration file struct
 type LocalConfig struct {
 	Generals        *GeneralConfig       `json:"general"`
 	DNSProxy        *DNS                 `json:"dns"`
 	Target          *ACL                 `json:"target"`
-	InBoundConfig   *inbound.InBound     `json:"inbound"`
-	InBoundsConfig  []*inbound.InBound   `json:"inbounds"`
-	OutBoundsConfig []*outbound.OutBound `json:"outbounds"`
+	InboundConfig   *inbound.Inbound     `json:"inbound"`
+	InboundsConfig  []*inbound.Inbound   `json:"inbounds"`
+	OutboundsConfig []*outbound.Outbound `json:"outbounds"`
 }
 
 func changeKeyMethod() {
@@ -168,42 +177,42 @@ func changeKeyMethod() {
 		return
 	}
 
-	Backends.Lock()
-	for _, backendInfo := range Backends.BackendsInformation {
+	backends.Lock()
+	for _, backendInfo := range backends.BackendsInformation {
 		if backendInfo.local == false {
 			backendInfo.encryptMethod = defaultMethod
 			backendInfo.encryptPassword = defaultKey
 		}
 	}
-	Backends.Unlock()
+	backends.Unlock()
 }
 
 func changePort() {
-	Backends.Lock()
-	for _, backendInfo := range Backends.BackendsInformation {
+	backends.Lock()
+	for _, backendInfo := range backends.BackendsInformation {
 		if backendInfo.local == false {
 			host, _, _ := net.SplitHostPort(backendInfo.address)
 			backendInfo.address = net.JoinHostPort(host, defaultPort)
 		}
 	}
-	Backends.Unlock()
+	backends.Unlock()
 }
 
 func removeServer(address string) {
-	for i, backendInfo := range Backends.BackendsInformation {
+	for i, backendInfo := range backends.BackendsInformation {
 		host, _, _ := net.SplitHostPort(backendInfo.address)
 		if host == address && backendInfo.local == false {
-			// remove this element from Backends array
-			Statistics.Delete(Backends.Get(i))
-			Backends.Remove(i)
+			// remove this element from backends array
+			statistics.Delete(backends.Get(i))
+			backends.Remove(i)
 			break
 		}
 	}
 
-	for i, outbound := range config.OutBoundsConfig {
+	for i, outbound := range config.OutboundsConfig {
 		host, _, _ := net.SplitHostPort(outbound.Address)
 		if host == address && outbound.Local == false {
-			config.OutBoundsConfig = append(config.OutBoundsConfig[:i], config.OutBoundsConfig[i+1:]...)
+			config.OutboundsConfig = append(config.OutboundsConfig[:i], config.OutboundsConfig[i+1:]...)
 			// save to redis
 			break
 		}
@@ -219,7 +228,7 @@ func addServer(address string) {
 
 	// don't append directly, scan the existing elements and update them
 	find := false
-	for _, backendInfo := range Backends.BackendsInformation {
+	for _, backendInfo := range backends.BackendsInformation {
 		host, _, _ := net.SplitHostPort(backendInfo.address)
 		if host == address && backendInfo.local == false {
 			backendInfo.protocolType = "shadowsocks"
@@ -250,18 +259,18 @@ func addServer(address string) {
 				},
 			},
 		}
-		Backends.Append(bi)
+		backends.Append(bi)
 
 		stat := common.NewStatistic()
-		Statistics.Insert(bi, stat)
+		statistics.Insert(bi, stat)
 
-		outbound := &outbound.OutBound{
+		outbound := &outbound.Outbound{
 			Address: net.JoinHostPort(address, defaultPort),
 			Key:     defaultKey,
 			Method:  defaultMethod,
 			Type:    "shadowsocks",
 		}
-		config.OutBoundsConfig = append(config.OutBoundsConfig, outbound)
+		config.OutboundsConfig = append(config.OutboundsConfig, outbound)
 		// save to redis
 	}
 }
@@ -332,10 +341,10 @@ func parseMultiServersConfig(data []byte) error {
 	}
 
 	// remove the ones that is not included in new config
-	for i := 0; i < Backends.Len(); {
-		backendInfo := Backends.Get(i)
+	for i := 0; i < backends.Len(); {
+		backendInfo := backends.Get(i)
 		find := false
-		for _, s := range config.OutBoundsConfig {
+		for _, s := range config.OutboundsConfig {
 			if backendInfo.address == s.Address {
 				find = true
 				break
@@ -343,9 +352,9 @@ func parseMultiServersConfig(data []byte) error {
 		}
 
 		if !find {
-			// remove this element from Backends array
-			Statistics.Delete(Backends.Get(i))
-			Backends.Remove(i)
+			// remove this element from backends array
+			statistics.Delete(backends.Get(i))
+			backends.Remove(i)
 			i = 0
 		} else {
 			i++
@@ -353,7 +362,7 @@ func parseMultiServersConfig(data []byte) error {
 	}
 
 	// add or update the ones that is included in the config
-	for _, outboundConfig := range config.OutBoundsConfig {
+	for _, outboundConfig := range config.OutboundsConfig {
 		if outboundConfig.Type == "shadowsocks" || outboundConfig.Type == "ss" {
 			_, err := ss.NewStreamCipher(outboundConfig.Method, outboundConfig.Key)
 			if err != nil {
@@ -364,7 +373,7 @@ func parseMultiServersConfig(data []byte) error {
 
 		// don't append directly, scan the existing elements and update them
 		find := false
-		for _, backendInfo := range Backends.BackendsInformation {
+		for _, backendInfo := range backends.BackendsInformation {
 			if backendInfo.address == outboundConfig.Address {
 				backendInfo.protocolType = outboundConfig.Type
 				backendInfo.encryptMethod = outboundConfig.Method
@@ -398,7 +407,7 @@ func parseMultiServersConfig(data []byte) error {
 					},
 				},
 
-				HttpsProxyInfo: HttpsProxyInfo{
+				HTTPSProxyInfo: HTTPSProxyInfo{
 					insecureSkipVerify: outboundConfig.TLSInsecureSkipVerify,
 					domain:             outboundConfig.TLSDomain,
 					CommonProxyInfo: CommonProxyInfo{
@@ -414,10 +423,10 @@ func parseMultiServersConfig(data []byte) error {
 			}
 			backendInfo.local = outboundConfig.Local
 
-			Backends.Append(backendInfo)
+			backends.Append(backendInfo)
 
 			stat := common.NewStatistic()
-			Statistics.Insert(backendInfo, stat)
+			statistics.Insert(backendInfo, stat)
 		}
 
 		if len(defaultKey) == 0 {
@@ -430,7 +439,7 @@ func parseMultiServersConfig(data []byte) error {
 			defaultMethod = outboundConfig.Method
 		}
 	}
-	common.Debugf("servers in config: %V\n", Backends)
+	common.Debugf("servers in config: %V\n", backends)
 
 	return nil
 }

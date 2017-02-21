@@ -6,6 +6,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"strconv"
 	"time"
 
 	"common"
@@ -29,14 +30,14 @@ var (
 	quit = make(chan bool)
 )
 
-func serveInbound(ib *inbound.InBound, ibHandler inbound.InBoundHander) {
+func serveTCPInbound(ib *inbound.Inbound, ibHandler inbound.TCPInboundHandler) {
 	ln, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   net.ParseIP(ib.Address),
 		Port: ib.Port,
 		Zone: "",
 	})
 	if err != nil {
-		common.Panic("Failed listening", err)
+		common.Panic("Failed listening on TCP port", ib.Address, err)
 		return
 	}
 
@@ -46,50 +47,65 @@ func serveInbound(ib *inbound.InBound, ibHandler inbound.InBoundHander) {
 			common.Error("accept err: ", err)
 			continue
 		}
-		go ibHandler(conn, handleOutbound)
+		go ibHandler(conn, handleTCPOutbound)
 	}
 }
 
-func runInbound(ib *inbound.InBound) {
+func serveUDPInbound(ib *inbound.Inbound, ibHandler inbound.UDPInboundHandler) {
+	c, err := net.ListenPacket("udp", net.JoinHostPort(ib.Address, strconv.Itoa(ib.Port)))
+	if err != nil {
+		common.Panic("Failed listening on UDP port", ib.Address, err)
+		return
+	}
+	defer c.Close()
+
+	for err == nil {
+		err = ibHandler(c, handleUDPOutbound)
+	}
+}
+
+func runInbound(ib *inbound.Inbound) {
+	if leftQuote <= 0 {
+		common.Fatal("no quote now, please charge in time")
+	}
 	switch ib.Type {
 	case "socks5", "socks":
-		go serveInbound(ib, socks.GetInboundHandler(ib))
+		go serveTCPInbound(ib, socks.GetTCPInboundHandler(ib))
+		//go serveUDPInbound(ib, socks.GetUDPInboundHandler(ib))
 	case "redir":
-		if leftQuote <= 0 {
-			common.Fatal("no quote now, please charge in time")
-			break
-		}
-		go serveInbound(ib, redir.GetInboundHandler(ib))
+		go serveTCPInbound(ib, redir.GetTCPInboundHandler(ib))
+		//go serveUDPInbound(ib, redir.GetUDPInboundHandler(ib))
 	case "tunnel":
-		go serveInbound(ib, tunnel.GetInboundHandler(ib))
+		go serveTCPInbound(ib, tunnel.GetTCPInboundHandler(ib))
+		go serveUDPInbound(ib, tunnel.GetUDPInboundHandler(ib))
 	}
 }
 
 func run() {
-	if config.InBoundConfig != nil {
-		inbound.InBoundModeEnable(config.InBoundConfig.Type)
-		go runInbound(config.InBoundConfig)
+	if config.InboundConfig != nil {
+		inbound.ModeEnable(config.InboundConfig.Type)
+		go runInbound(config.InboundConfig)
 	}
-	for _, i := range config.InBoundsConfig {
-		inbound.InBoundModeEnable(i.Type)
+	for _, i := range config.InboundsConfig {
+		inbound.ModeEnable(i.Type)
 		go runInbound(i)
 	}
 
 	if config.DNSProxy.Enabled {
 		startDNSProxy()
 	}
-	Statistics.LoadFromCache()
+	statistics.LoadFromCache()
 	if config.Generals.ConsoleReportEnabled {
 		go consoleWS()
 		go getQuote()
 	}
-	if inbound.IsInBoundModeEnabled("redir") {
+	if inbound.IsModeEnabled("redir") {
 		go updateRedirFirewallRules()
 	}
 
-	if inbound.HasInBound() {
-		go Statistics.UpdateLatency()
-		go Statistics.UpdateServerIP()
+	if inbound.Has() {
+		go statistics.UpdateLatency()
+		go statistics.UpdateServerIP()
 	}
 
 	timers()
@@ -126,11 +142,11 @@ func timers() {
 	hourTicker := time.NewTicker(1 * time.Hour)
 	dayTicker := time.NewTicker(24 * time.Hour)
 	weekTicker := time.NewTicker(7 * 24 * time.Hour)
-	for {
+	for doQuit := false; !doQuit; {
 		select {
 		case <-secondTicker.C:
-			if inbound.HasInBound() {
-				go Statistics.UpdateBps()
+			if inbound.Has() {
+				go statistics.UpdateBps()
 			}
 			if config.Generals.BroadcastEnabled {
 				if conn == nil {
@@ -148,18 +164,18 @@ func timers() {
 				}
 			}
 		case <-minuteTicker.C:
-			if inbound.HasInBound() {
-				go Statistics.UpdateLatency()
+			if inbound.Has() {
+				go statistics.UpdateLatency()
 			}
 			if config.Generals.ConsoleReportEnabled {
 				go uploadStatistic()
 			}
 		case <-hourTicker.C:
-			if inbound.HasInBound() {
-				go Statistics.UpdateServerIP()
+			if inbound.Has() {
+				go statistics.UpdateServerIP()
 			}
 		case <-dayTicker.C:
-			if inbound.IsInBoundModeEnabled("redir") {
+			if inbound.IsModeEnabled("redir") {
 				go updateRedirFirewallRules()
 			}
 		case <-weekTicker.C:
@@ -168,11 +184,10 @@ func timers() {
 			go domain.UpdateDomainNameToBlock()
 			go domain.UpdateGFWList()
 		case <-quit:
-			goto doQuit
+			doQuit = true
 		}
 	}
 
-doQuit:
 	secondTicker.Stop()
 	minuteTicker.Stop()
 	hourTicker.Stop()

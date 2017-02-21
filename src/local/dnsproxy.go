@@ -2,12 +2,8 @@ package local
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
-	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,6 +13,7 @@ import (
 	"common/cache"
 	"common/domain"
 	iputil "common/ip"
+	"common/netutil"
 	"github.com/garyburd/redigo/redis"
 	"github.com/miekg/dns"
 )
@@ -25,37 +22,34 @@ var (
 	tcpClient         *dns.Client
 	tcpTLSClient      *dns.Client
 	udpClient         *dns.Client
+	clients           = make(map[string]*dns.Client)
 	servers           []*dns.Server
 	mutexServers      sync.RWMutex
 	externalIPAddress string
+	prefixPatterns    = map[string]bool{
+		"ad":         true,
+		"ads":        true,
+		"banner":     true,
+		"banners":    true,
+		"creatives":  true,
+		"oas":        true,
+		"oascentral": true,
+		"stats":      true,
+		"tag":        true,
+		"telemetry":  true,
+		"tracker":    true,
+	}
+	suffixPatterns = map[string]bool{
+		"lan":         true,
+		"local":       true,
+		"localdomain": true,
+		"workgroup":   true,
+	}
 )
 
-func getExternalIPAddress() (string, error) {
-	client := &http.Client{}
-	u := "https://if.yii.li"
-	req, err := http.NewRequest("GET", u, nil)
-	req.Header.Set("User-Agent", "curl/7.41.0")
-	resp, err := client.Do(req)
-	if err != nil {
-		common.Error("request %s failed", u)
-		return "", err
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		common.Error("reading ifconfig response failed")
-		return "", err
-	}
-
-	for i := len(body); i > 0 && (body[i-1] < '0' || body[i-1] > '9'); i = len(body) {
-		body = body[:i-1]
-	}
-
-	if matched, err := regexp.Match(`^([0-9]{1,3}\.){3,3}[0-9]{1,3}$`, body); err == nil && matched == true {
-		return string(body), nil
-	}
-
-	return "", errors.New("invalid IP address")
+func hitPattern(s string, patterns map[string]bool) bool {
+	_, ok := patterns[s]
+	return ok
 }
 
 func addEDNSClientSubnet(r *dns.Msg, ip string) {
@@ -167,8 +161,12 @@ func dropResponse(r *dns.Msg) (rs *dns.Msg) {
 func isBlocked(r *dns.Msg) (rs *dns.Msg) {
 	for _, v := range r.Question {
 		vv := strings.Split(v.Name, ".")
-		if domain.ToBlock(strings.Join(vv, ".")) {
-			return dropResponse(r)
+		if len(vv) > 1 {
+			if hitPattern(vv[len(vv)-1], suffixPatterns) ||
+				hitPattern(vv[0], prefixPatterns) ||
+				domain.ToBlock(strings.Join(vv, ".")) {
+				return dropResponse(r)
+			}
 		}
 	}
 	return nil
@@ -230,16 +228,9 @@ func queryFromChinaServers(r *dns.Msg, do bool) (resp chan *dns.Msg) {
 	resp = make(chan *dns.Msg, length)
 	count := 0
 	for _, v := range config.DNSProxy.China {
-		switch v.Protocol {
-		case "tcp":
+		if c, ok := clients[v.Protocol]; ok {
+			go exchange(v, c, r, resp)
 			count++
-			go exchange(v, tcpClient, r, resp)
-		case "tcp-tls":
-			count++
-			go exchange(v, tcpTLSClient, r, resp)
-		default:
-			count++
-			go exchange(v, udpClient, r, resp)
 		}
 
 		if count == length {
@@ -260,17 +251,11 @@ func queryFromAbroadServers(r *dns.Msg, do bool) (resp chan *dns.Msg) {
 	resp = make(chan *dns.Msg, length)
 	count := 0
 	for _, v := range config.DNSProxy.Abroad {
-		if v.Protocol == "tcp" && (config.DNSProxy.AbroadProtocol == "tcp" || config.DNSProxy.AbroadProtocol == "all") {
-			count++
-			go exchange(v, tcpClient, r, resp)
-		}
-		if v.Protocol == "tcp-tls" && (config.DNSProxy.AbroadProtocol == "tcp-tls" || config.DNSProxy.AbroadProtocol == "all") {
-			count++
-			go exchange(v, tcpTLSClient, r, resp)
-		}
-		if v.Protocol == "udp" && (config.DNSProxy.AbroadProtocol == "udp" || config.DNSProxy.AbroadProtocol == "all") {
-			count++
-			go exchange(v, udpClient, r, resp)
+		if config.DNSProxy.AbroadProtocol == v.Protocol || config.DNSProxy.AbroadProtocol == "all" {
+			if c, ok := clients[v.Protocol]; ok {
+				go exchange(v, c, r, resp)
+				count++
+			}
 		}
 		if count == length {
 			break
@@ -294,13 +279,8 @@ func querySpecificServer(r *dns.Msg) (rs *dns.Msg) {
 	length := len(config.DNSProxy.Server.Servers)
 	resp := make(chan *dns.Msg, length)
 	for _, v := range config.DNSProxy.Server.Servers {
-		switch v.Protocol {
-		case "tcp":
-			go exchange(v, tcpClient, r, resp)
-		case "tcp-tls":
-			go exchange(v, tcpTLSClient, r, resp)
-		default:
-			go exchange(v, udpClient, r, resp)
+		if c, ok := clients[v.Protocol]; ok {
+			go exchange(v, c, r, resp)
 		}
 	}
 
@@ -526,17 +506,20 @@ func createClients() {
 		ReadTimeout:  config.DNSProxy.ReadTimeout,
 		WriteTimeout: config.DNSProxy.WriteTimeout,
 	}
+	clients["tcp"] = tcpClient
 	udpClient = &dns.Client{
 		Net:          "udp",
 		ReadTimeout:  config.DNSProxy.ReadTimeout,
 		WriteTimeout: config.DNSProxy.WriteTimeout,
 	}
+	clients["udp"] = udpClient
 	tcpTLSClient = &dns.Client{
 		Net:          "tcp-tls",
 		ReadTimeout:  config.DNSProxy.ReadTimeout,
 		WriteTimeout: config.DNSProxy.WriteTimeout,
 		TLSConfig:    &tls.Config{InsecureSkipVerify: true},
 	}
+	clients["tcp-tls"] = tcpTLSClient
 }
 
 func startDNSProxy() {
@@ -555,7 +538,7 @@ func startDNSProxy() {
 	go domain.LoadDomainNameGFWed()
 	go func() {
 		for i := 0; len(externalIPAddress) == 0 && i < 10; i++ {
-			externalIPAddress, _ = getExternalIPAddress()
+			externalIPAddress, _ = netutil.GetExternalIPAddress()
 		}
 	}()
 }

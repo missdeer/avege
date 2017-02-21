@@ -48,7 +48,7 @@ func (c *Connection) handleWS(msg []byte) []byte {
 	case common.CMD_STOP_REVERSE_SSH:
 		m.Cmd = common.CMD_REVERSE_SSH_STOPPED
 	case common.CMD_NEW_RULES:
-		if inbound.IsInBoundModeEnabled("redir") {
+		if inbound.IsModeEnabled("redir") {
 			go updateRedirFirewallRules()
 		}
 		m.Cmd = common.CMD_RESPONSE

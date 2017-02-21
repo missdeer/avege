@@ -1,7 +1,15 @@
 package protocol
 
 import (
+	"strings"
+
 	"outbound/ss/ssr"
+)
+
+type creator func() IProtocol
+
+var (
+	creatorMap = make(map[string]creator)
 )
 
 type IProtocol interface {
@@ -18,18 +26,14 @@ type authData struct {
 	connectionID uint32
 }
 
+func register(name string, c creator) {
+	creatorMap[name] = c
+}
+
 func NewProtocol(name string) IProtocol {
-	switch name {
-	case "origin":
-		return NewOrigin()
-	case "auth_sha1_v4":
-		return NewAuthSHA1v4()
-	case "auth_aes128_md5":
-		return NewAuthAES128MD5()
-	case "auth_aes128_sha1":
-		return NewAuthAES128SHA1()
-	case "ota", "verify_sha1":
-		return NewVerifySHA1()
+	c, ok := creatorMap[strings.ToLower(name)]
+	if ok {
+		return c()
 	}
 	return nil
 }

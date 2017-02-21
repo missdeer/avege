@@ -1,7 +1,15 @@
 package obfs
 
 import (
+	"strings"
+
 	"outbound/ss/ssr"
+)
+
+type creator func() IObfs
+
+var (
+	creatorMap = make(map[string]creator)
 )
 
 type IObfs interface {
@@ -13,19 +21,15 @@ type IObfs interface {
 	GetData() interface{}
 }
 
+func register(name string, c creator) {
+	creatorMap[name] = c
+}
+
 // NewObfs create an obfs object by name and return as an IObfs interface
 func NewObfs(name string) IObfs {
-	switch name {
-	case "plain":
-		return NewPlainObfs()
-	case "tls1.2_ticket_auth":
-		return NewTLS12TicketAuth()
-	case "http_simple":
-		return NewHttpSimple()
-	case "http_post":
-		return NewHttpPost()
-	case "random_head":
-		return NewRandomHead()
+	c, ok := creatorMap[strings.ToLower(name)]
+	if ok {
+		return c()
 	}
 	return nil
 }

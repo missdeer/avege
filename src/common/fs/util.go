@@ -10,6 +10,7 @@ import (
 	"github.com/kardianos/osext"
 )
 
+// IsFileExists check if the file exists
 func IsFileExists(path string) (bool, error) {
 	stat, err := os.Stat(path)
 	if err == nil {
@@ -24,6 +25,7 @@ func IsFileExists(path string) (bool, error) {
 	return false, err
 }
 
+// GetConfigPath find the configuration file in some paths
 func GetConfigPath(fileName string) (filePath string, err error) {
 	configFile := fileName
 	var binDir string
@@ -62,6 +64,7 @@ func GetConfigPath(fileName string) (filePath string, err error) {
 	return configFile, nil
 }
 
+// MonitorFileChanegs notify the channel if the file has been changed
 func MonitorFileChanegs(path string, changed chan bool) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {

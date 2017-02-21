@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	// ProtectSocketPathPrefix prefix of file path that used for Unix socket communication
 	ProtectSocketPathPrefix string
 	ErrNotTCPConn           = errors.New("not a *net.TCPConn")
 	ErrNotUnixConn          = errors.New("not a *net.UnixConn")

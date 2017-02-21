@@ -16,6 +16,8 @@ type remoteAddr struct {
 }
 
 var (
+	// statistics collections contains all remote servers statistics
+	statistics                = NewStatisticWrapper()
 	remoteAddresses           []remoteAddr
 	oneResolveRemoteAddresses sync.Once
 )
@@ -23,7 +25,7 @@ var (
 func resolvServer(bi *BackendInfo) {
 	host, _, _ := net.SplitHostPort(bi.address)
 	if ips, err := net.LookupIP(host); err == nil {
-		Backends.Lock()
+		backends.Lock()
 		bi.ips = ips
 		bi.ipv6 = false
 		for _, ip := range ips {
@@ -32,7 +34,7 @@ func resolvServer(bi *BackendInfo) {
 				break
 			}
 		}
-		Backends.Unlock()
+		backends.Unlock()
 	}
 }
 

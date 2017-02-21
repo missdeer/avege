@@ -5,7 +5,9 @@ import (
 	"time"
 )
 
-type OutBound struct {
+// Outbound configuration struct that represents the outbound
+type Outbound struct {
+	// Address outbound network address, in Host:Port format
 	Address string `json:"address"`
 	// Key shadowsocks only key used to encrypting
 	Key string `json:"key"`
@@ -37,8 +39,9 @@ type OutBound struct {
 	TCPFastOpen bool `json:"tcpfastopen"`
 }
 
-func (o *OutBound) UnmarshalJSON(b []byte) error {
-	type Alias OutBound
+// UnmarshalJSON override the json unmarshal method, so that some fields could be initialized correctly
+func (o *Outbound) UnmarshalJSON(b []byte) error {
+	type Alias Outbound
 	aux := &struct {
 		Timeout string `json:"timeout"`
 		*Alias

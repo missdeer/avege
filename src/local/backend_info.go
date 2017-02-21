@@ -11,8 +11,9 @@ import (
 	"time"
 
 	"common"
-	"github.com/RouterScript/ProxyClient"
 	"outbound/ss"
+
+	"github.com/RouterScript/ProxyClient"
 )
 
 // CommonProxyInfo fields that auth for http/https/socks
@@ -21,8 +22,8 @@ type CommonProxyInfo struct {
 	password string
 }
 
-// HttpsProxyInfo fields that https used only
-type HttpsProxyInfo struct {
+// HTTPSProxyInfo fields that https used only
+type HTTPSProxyInfo struct {
 	CommonProxyInfo
 	insecureSkipVerify bool
 	domain             string
@@ -57,7 +58,7 @@ type BackendInfo struct {
 	ipv6               bool
 	lastCheckTimePoint time.Time
 	ips                []net.IP
-	HttpsProxyInfo
+	HTTPSProxyInfo
 	SSRInfo
 }
 
@@ -73,7 +74,7 @@ func (bi *BackendInfo) testLatency(rawaddr []byte) {
 	}
 	bi.lastCheckTimePoint = time.Now()
 	endTime := time.Now()
-	if stat, ok := Statistics.Get(bi); ok {
+	if stat, ok := statistics.Get(bi); ok {
 		if err != nil {
 			stat.IncreaseFailedCount()
 			if stat.GetFailedCount() > 10 {
@@ -86,12 +87,12 @@ func (bi *BackendInfo) testLatency(rawaddr []byte) {
 	}
 }
 
-func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buffer) (err error, inboundSideError bool) {
+func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buffer) (inboundSideError bool, err error) {
 	sig := make(chan bool)
 	result := make(chan error)
-	stat, ok := Statistics.Get(bi)
+	stat, ok := statistics.Get(bi)
 	if !ok || stat == nil {
-		return errors.New("invalid statistics"), false
+		return false, errors.New("invalid statistics")
 	}
 
 	go func() {
@@ -109,11 +110,11 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 		config.Generals.InBoundTimeout,
 		stat,
 		sig)
-	if err == ERR_WRITE {
+	if err == ErrWrite {
 		inboundSideError = true
 	}
-	if err == ERR_READ || err == ERR_NOSIG || err == ERR_SIGFALSE {
-		Statistics.StatisticMap[bi].IncreaseFailedCount()
+	if err == ErrRead || err == ErrNoSignal || err == ErrSignalFalse {
+		statistics.StatisticMap[bi].IncreaseFailedCount()
 		common.Errorf("piping outbound to inbound error: %v, at %v\n", err, bi)
 		go func() {
 			// clear the channel
@@ -127,10 +128,10 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 	}
 
 	err = <-result
-	if err == ERR_READ || err == ERR_WRITE || err == ERR_NOSIG || err == ERR_SIGFALSE {
-		Statistics.StatisticMap[bi].IncreaseFailedCount()
+	if err == ErrRead || err == ErrWrite || err == ErrNoSignal || err == ErrSignalFalse {
+		statistics.StatisticMap[bi].IncreaseFailedCount()
 		common.Errorf("piping inbound to outbound error: %v, at %v\n", err, bi)
-		if err == ERR_READ {
+		if err == ErrRead {
 			inboundSideError = true
 		}
 		return
@@ -140,7 +141,7 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 		common.Error("piping inbound to outbound unknown error: ", neterr)
 	}
 
-	return nil, false
+	return false, nil
 }
 
 func connectToProxy(u *url.URL, bi *BackendInfo) (remote net.Conn, err error) {

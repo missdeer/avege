@@ -18,8 +18,12 @@ import (
 type hmacMethod func(key []byte, data []byte) []byte
 type hashDigestMethod func(data []byte) []byte
 
-func NewAuthAES128MD5() *AuthAES128 {
-	a := &AuthAES128{
+func init() {
+	register("auth_aes128_md5", newAuthAES128MD5)
+}
+
+func newAuthAES128MD5() IProtocol {
+	a := &authAES128{
 		salt:       "auth_aes128_md5",
 		hmac:       common.HmacMD5,
 		hashDigest: common.MD5Sum,
@@ -29,7 +33,7 @@ func NewAuthAES128MD5() *AuthAES128 {
 	return a
 }
 
-type AuthAES128 struct {
+type authAES128 struct {
 	ssr.ServerInfoForObfs
 	data             *authData
 	hasSentHeader    bool
@@ -43,28 +47,28 @@ type AuthAES128 struct {
 	hashDigest       hashDigestMethod
 }
 
-func (a *AuthAES128) SetServerInfo(s *ssr.ServerInfoForObfs) {
+func (a *authAES128) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	a.ServerInfoForObfs = *s
 }
 
-func (a *AuthAES128) GetServerInfo() (s *ssr.ServerInfoForObfs) {
+func (a *authAES128) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &a.ServerInfoForObfs
 }
 
-func (a *AuthAES128) SetData(data interface{}) {
+func (a *authAES128) SetData(data interface{}) {
 	if auth, ok := data.(*authData); ok {
 		a.data = auth
 	}
 }
 
-func (a *AuthAES128) GetData() interface{} {
+func (a *authAES128) GetData() interface{} {
 	if a.data == nil {
 		a.data = &authData{}
 	}
 	return a.data
 }
 
-func (a *AuthAES128) packData(data []byte) (outData []byte) {
+func (a *authAES128) packData(data []byte) (outData []byte) {
 	dataLength := len(data)
 	randLength := 1
 	if dataLength <= 1200 {
@@ -110,7 +114,7 @@ func (a *AuthAES128) packData(data []byte) (outData []byte) {
 	return
 }
 
-func (a *AuthAES128) packAuthData(data []byte) (outData []byte) {
+func (a *authAES128) packAuthData(data []byte) (outData []byte) {
 	dataLength := len(data)
 	var randLength int
 	if dataLength > 400 {
@@ -201,7 +205,7 @@ func (a *AuthAES128) packAuthData(data []byte) (outData []byte) {
 	return
 }
 
-func (a *AuthAES128) PreEncrypt(plainData []byte) (outData []byte, err error) {
+func (a *authAES128) PreEncrypt(plainData []byte) (outData []byte, err error) {
 	dataLength := len(plainData)
 	offset := 0
 	if !a.hasSentHeader {
@@ -230,7 +234,7 @@ func (a *AuthAES128) PreEncrypt(plainData []byte) (outData []byte, err error) {
 	return
 }
 
-func (a *AuthAES128) PostDecrypt(plainData []byte) (outData []byte, err error) {
+func (a *authAES128) PostDecrypt(plainData []byte) (outData []byte, err error) {
 	dataLength := len(plainData)
 	b := make([]byte, len(a.recvBuffer)+dataLength)
 	copy(b, a.recvBuffer)

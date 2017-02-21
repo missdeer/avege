@@ -8,7 +8,12 @@ import (
 	"outbound/ss/ssr"
 )
 
-type VerifySHA1 struct {
+func init() {
+	register("verify_sha1", newVerifySHA1)
+	register("ota", newVerifySHA1)
+}
+
+type verifySHA1 struct {
 	ssr.ServerInfoForObfs
 	hasSentHeader bool
 	chunkId       uint32
@@ -18,16 +23,16 @@ const (
 	oneTimeAuthMask byte = 0x10
 )
 
-func NewVerifySHA1() *VerifySHA1 {
-	a := &VerifySHA1{}
+func newVerifySHA1() IProtocol {
+	a := &verifySHA1{}
 	return a
 }
 
-func (v *VerifySHA1) otaConnectAuth(data []byte) []byte {
+func (v *verifySHA1) otaConnectAuth(data []byte) []byte {
 	return append(data, common.HmacSHA1(append(v.IV, v.Key...), data)...)
 }
 
-func (v *VerifySHA1) otaReqChunkAuth(chunkId uint32, data []byte) []byte {
+func (v *verifySHA1) otaReqChunkAuth(chunkId uint32, data []byte) []byte {
 	nb := make([]byte, 2)
 	binary.BigEndian.PutUint16(nb, uint16(len(data)))
 	chunkIdBytes := make([]byte, 4)
@@ -36,36 +41,36 @@ func (v *VerifySHA1) otaReqChunkAuth(chunkId uint32, data []byte) []byte {
 	return append(header, data...)
 }
 
-func (v *VerifySHA1) otaVerifyAuth(iv []byte, chunkId uint32, data []byte, expectedHmacSha1 []byte) bool {
+func (v *verifySHA1) otaVerifyAuth(iv []byte, chunkId uint32, data []byte, expectedHmacSha1 []byte) bool {
 	chunkIdBytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(chunkIdBytes, chunkId)
 	actualHmacSha1 := common.HmacSHA1(append(iv, chunkIdBytes...), data)
 	return bytes.Equal(expectedHmacSha1, actualHmacSha1)
 }
 
-func (v *VerifySHA1) getAndIncreaseChunkId() (chunkId uint32) {
+func (v *verifySHA1) getAndIncreaseChunkId() (chunkId uint32) {
 	chunkId = v.chunkId
 	v.chunkId += 1
 	return
 }
 
-func (v *VerifySHA1) SetServerInfo(s *ssr.ServerInfoForObfs) {
+func (v *verifySHA1) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	v.ServerInfoForObfs = *s
 }
 
-func (v *VerifySHA1) GetServerInfo() (s *ssr.ServerInfoForObfs) {
+func (v *verifySHA1) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &v.ServerInfoForObfs
 }
 
-func (v *VerifySHA1) SetData(data interface{}) {
+func (v *verifySHA1) SetData(data interface{}) {
 
 }
 
-func (v *VerifySHA1) GetData() interface{} {
+func (v *verifySHA1) GetData() interface{} {
 	return nil
 }
 
-func (v *VerifySHA1) PreEncrypt(data []byte) (encryptedData []byte, err error) {
+func (v *verifySHA1) PreEncrypt(data []byte) (encryptedData []byte, err error) {
 	dataLength := len(data)
 	offset := 0
 	if !v.hasSentHeader {
@@ -91,6 +96,6 @@ func (v *VerifySHA1) PreEncrypt(data []byte) (encryptedData []byte, err error) {
 	return
 }
 
-func (v *VerifySHA1) PostDecrypt(data []byte) (decryptedData []byte, err error) {
+func (v *verifySHA1) PostDecrypt(data []byte) (decryptedData []byte, err error) {
 	return data, nil
 }

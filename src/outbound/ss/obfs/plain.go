@@ -4,35 +4,39 @@ import (
 	"outbound/ss/ssr"
 )
 
-type PlainObfs struct {
+func init() {
+	register("plain", newPlainObfs)
+}
+
+type plain struct {
 	ssr.ServerInfoForObfs
 }
 
-func NewPlainObfs() *PlainObfs {
-	p := &PlainObfs{}
+func newPlainObfs() IObfs {
+	p := &plain{}
 	return p
 }
 
-func (p *PlainObfs) SetServerInfo(s *ssr.ServerInfoForObfs) {
+func (p *plain) SetServerInfo(s *ssr.ServerInfoForObfs) {
 	p.ServerInfoForObfs = *s
 }
 
-func (p *PlainObfs) GetServerInfo() (s *ssr.ServerInfoForObfs) {
+func (p *plain) GetServerInfo() (s *ssr.ServerInfoForObfs) {
 	return &p.ServerInfoForObfs
 }
 
-func (p *PlainObfs) Encode(data []byte) (encodedData []byte, err error) {
+func (p *plain) Encode(data []byte) (encodedData []byte, err error) {
 	return data, nil
 }
 
-func (p *PlainObfs) Decode(data []byte) (decodedData []byte, needSendBack bool, err error) {
+func (p *plain) Decode(data []byte) (decodedData []byte, needSendBack bool, err error) {
 	return data, false, nil
 }
 
-func (p *PlainObfs) SetData(data interface{}) {
+func (p *plain) SetData(data interface{}) {
 
 }
 
-func (p *PlainObfs) GetData() interface{} {
+func (p *plain) GetData() interface{} {
 	return nil
 }

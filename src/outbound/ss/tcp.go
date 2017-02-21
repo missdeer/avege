@@ -1,14 +1,16 @@
 package ss
 
 import (
+	"net"
+	"sync"
+
 	"common"
 	"common/ds"
-	"net"
 	"outbound/ss/obfs"
 	"outbound/ss/protocol"
-	"sync"
 )
 
+// SSTCPConn the struct that override the net.Conn methods
 type SSTCPConn struct {
 	net.Conn
 	sync.RWMutex
@@ -21,7 +23,7 @@ type SSTCPConn struct {
 	lastReadError error
 }
 
-func NewSSConn(c net.Conn, cipher *StreamCipher) *SSTCPConn {
+func NewSSTCPConn(c net.Conn, cipher *StreamCipher) *SSTCPConn {
 	return &SSTCPConn{
 		Conn:         c,
 		StreamCipher: cipher,

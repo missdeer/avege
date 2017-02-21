@@ -15,9 +15,7 @@ import (
 	"common/netutil"
 )
 
-const (
-	apnic = "http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest"
-)
+const apnic = "https://yii.li/apnic"
 
 type ipField struct {
 	mask byte

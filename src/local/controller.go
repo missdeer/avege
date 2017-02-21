@@ -50,7 +50,7 @@ func clearDNSCache(c *gin.Context) {
 
 func updateIptablesRulesHandler(c *gin.Context) {
 	if runtime.GOOS == "linux" {
-		if inbound.IsInBoundModeEnabled("redir") {
+		if inbound.IsModeEnabled("redir") {
 			go updateRedirFirewallRules()
 			c.JSON(http.StatusOK, gin.H{
 				"Result": "OK",
@@ -84,9 +84,9 @@ func getSelectServerHandler(c *gin.Context) {
 	if smartLastUsedBackendInfo != nil && smartLastUsedBackendInfo.id == id {
 		return
 	}
-	Statistics.RLock()
-	defer Statistics.RUnlock()
-	for server := range Statistics.StatisticMap {
+	statistics.RLock()
+	defer statistics.RUnlock()
+	for server := range statistics.StatisticMap {
 		if server.id == id {
 			smartLastUsedBackendInfo = server
 			return
@@ -108,9 +108,9 @@ func postSelectServerHandler(c *gin.Context) {
 		})
 		return
 	}
-	Statistics.RLock()
-	defer Statistics.RUnlock()
-	for server := range Statistics.StatisticMap {
+	statistics.RLock()
+	defer statistics.RUnlock()
+	for server := range statistics.StatisticMap {
 		if server.id == id {
 			smartLastUsedBackendInfo = server
 			c.JSON(http.StatusOK, gin.H{
@@ -385,8 +385,8 @@ type Report struct {
 
 func statisticsXMLHandler(c *gin.Context) {
 	stats := make(Stats, 0)
-	Statistics.RLock()
-	for backendInfo, stat := range Statistics.StatisticMap {
+	statistics.RLock()
+	for backendInfo, stat := range statistics.StatisticMap {
 		s := new(Stat)
 		s.Id = backendInfo.id
 		s.Address = backendInfo.address
@@ -405,7 +405,7 @@ func statisticsXMLHandler(c *gin.Context) {
 		s.LastSecondBps = stat.GetLastSecondBps()
 		stats = append(stats, s)
 	}
-	Statistics.RUnlock()
+	statistics.RUnlock()
 	order := c.DefaultQuery("order", "asc")
 	orderBy := c.DefaultQuery("orderby", "address")
 	switch orderBy {
@@ -513,8 +513,8 @@ func statisticsXMLHandler(c *gin.Context) {
 
 func statisticsJSONHandler(c *gin.Context) {
 	stats := make(Stats, 0)
-	Statistics.RLock()
-	for backendInfo, stat := range Statistics.StatisticMap {
+	statistics.RLock()
+	for backendInfo, stat := range statistics.StatisticMap {
 		s := new(Stat)
 		s.Id = backendInfo.id
 		s.Address = backendInfo.address
@@ -533,7 +533,7 @@ func statisticsJSONHandler(c *gin.Context) {
 		s.LastSecondBps = stat.GetLastSecondBps()
 		stats = append(stats, s)
 	}
-	Statistics.RUnlock()
+	statistics.RUnlock()
 	order := c.DefaultQuery("order", "asc")
 	orderBy := c.DefaultQuery("orderby", "address")
 	switch orderBy {
@@ -641,8 +641,8 @@ func statisticsJSONHandler(c *gin.Context) {
 
 func statisticsHTMLHandler(c *gin.Context) {
 	stats := make(Stats, 0)
-	Statistics.RLock()
-	for backendInfo, stat := range Statistics.StatisticMap {
+	statistics.RLock()
+	for backendInfo, stat := range statistics.StatisticMap {
 		s := new(Stat)
 		s.Id = backendInfo.id
 		s.Address = backendInfo.address
@@ -661,7 +661,7 @@ func statisticsHTMLHandler(c *gin.Context) {
 		s.LastSecondBps = stat.GetLastSecondBps()
 		stats = append(stats, s)
 	}
-	Statistics.RUnlock()
+	statistics.RUnlock()
 	order := c.DefaultQuery("order", "asc")
 	orderBy := c.DefaultQuery("orderby", "address")
 	switch orderBy {
