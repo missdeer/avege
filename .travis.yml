@@ -7,7 +7,7 @@ env:
       - ANDROID_NDK_HOME=$HOME/.android/android-ndk-${NDK_VERSION}
       - DEPS=$HOME/.deps
       - ANDROID_ARM_TOOLCHAIN=$DEPS/android-toolchain-16-arm
-      - ANDROID_X86_TOOLCHAIN=$DEPS/android-toolchain-16-386
+      - ANDROID_X86_TOOLCHAIN=$DEPS/android-toolchain-16-x86
       - ANDROID_ARM_CC=$ANDROID_ARM_TOOLCHAIN/bin/arm-linux-androideabi-gcc
       - ANDROID_ARM_STRIP=$ANDROID_ARM_TOOLCHAIN/bin/arm-linux-androideabi-strip
       - ANDROID_X86_CC=$ANDROID_X86_TOOLCHAIN/bin/i686-linux-android-gcc
@@ -37,7 +37,7 @@ install:
   - >
     if [ ! -d "$ANDROID_X86_TOOLCHAIN" ]; then
         echo "Make standalone toolchain for X86 arch"
-        $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch 386 \
+        $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch x86 \
             --api 16 --install-dir $ANDROID_X86_TOOLCHAIN
     fi
   - go get github.com/op/go-logging
