@@ -39,7 +39,7 @@ type GeneralConfig struct {
 	MaxOpenFiles             uint64 `json:"max_openfiles"`
 	LogLevel                 int    `json:"log_level"`
 	Timeout                  time.Duration
-	InBoundTimeout           time.Duration
+	InboundTimeout           time.Duration
 	PProfEnabled             bool   `json:"pprof"`
 	GenRelease               bool   `json:"gen_release"`
 	UDPEnabled               bool   `json:"udp_enabled"`
@@ -72,7 +72,7 @@ func (g *GeneralConfig) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	g.InBoundTimeout, err = time.ParseDuration(aux.InBoundTimeout)
+	g.InboundTimeout, err = time.ParseDuration(aux.InBoundTimeout)
 	if err != nil {
 		return err
 	}
@@ -275,25 +275,19 @@ func addServer(address string) {
 	}
 }
 
-func parseMultiServersConfig(data []byte) error {
-	if err := json.Unmarshal(data, config); err != nil {
-		common.Error("Failed unmarshalling config file", err, len(data))
-		return err
-	}
-
+func handleCacheService() {
 	if len(config.Generals.CacheService) == 0 {
 		config.Generals.CacheService = "gocache"
 	}
+}
 
-	ss.ProtectSocketPathPrefix = config.Generals.ProtectSocketPathPrefix
-	consoleHost = config.Generals.ConsoleHost
-	consoleVer = config.Generals.ConsoleVersion
-	consoleWSUrl = config.Generals.ConsoleWebSocketURL
-
-	if config.Generals.InBoundTimeout == 0 {
-		config.Generals.InBoundTimeout = config.Generals.Timeout
+func handleInboundTimeout() {
+	if config.Generals.InboundTimeout == 0 {
+		config.Generals.InboundTimeout = config.Generals.Timeout
 	}
+}
 
+func handlePortACL() {
 	if len(config.Target.Port.Allow) > 0 && config.Target.Port.Allow != "all" {
 		ports := strings.Split(config.Target.Port.Allow, ",")
 		for _, port := range ports {
@@ -314,7 +308,9 @@ func parseMultiServersConfig(data []byte) error {
 			}
 		}
 	}
+}
 
+func handleIPACL() {
 	if len(config.Target.IP.Allow) > 0 && config.Target.IP.Allow != "all" {
 		ips := strings.Split(config.Target.IP.Allow, ",")
 		for _, ip := range ips {
@@ -339,7 +335,9 @@ func parseMultiServersConfig(data []byte) error {
 			}
 		}
 	}
+}
 
+func removeDeprecatedServers() {
 	// remove the ones that is not included in new config
 	for i := 0; i < backends.Len(); {
 		backendInfo := backends.Get(i)
@@ -360,7 +358,67 @@ func parseMultiServersConfig(data []byte) error {
 			i++
 		}
 	}
+}
 
+func updateExistsOutboundConfig(outboundConfig *outbound.Outbound) bool {
+	for _, backendInfo := range backends.BackendsInformation {
+		if backendInfo.address == outboundConfig.Address {
+			backendInfo.protocolType = outboundConfig.Type
+			backendInfo.encryptMethod = outboundConfig.Method
+			backendInfo.encryptPassword = outboundConfig.Key
+			if outboundConfig.Timeout != 0 {
+				backendInfo.timeout = outboundConfig.Timeout
+			} else {
+				backendInfo.timeout = config.Generals.Timeout
+			}
+
+			return true
+		}
+	}
+	return false
+}
+
+func addNewOutboundConfig(outboundConfig *outbound.Outbound) {
+	// append directly
+	backendInfo := &BackendInfo{
+		id:           common.GenerateRandomString(4),
+		address:      outboundConfig.Address,
+		protocolType: outboundConfig.Type,
+		SSRInfo: SSRInfo{
+			obfs:          outboundConfig.Obfs,
+			obfsParam:     outboundConfig.ObfsParam,
+			protocol:      outboundConfig.Protocol,
+			protocolParam: outboundConfig.ProtocolParam,
+			SSInfo: SSInfo{
+				encryptMethod:   outboundConfig.Method,
+				encryptPassword: outboundConfig.Key,
+				tcpFastOpen:     outboundConfig.TCPFastOpen,
+			},
+		},
+
+		HTTPSProxyInfo: HTTPSProxyInfo{
+			insecureSkipVerify: outboundConfig.TLSInsecureSkipVerify,
+			domain:             outboundConfig.TLSDomain,
+			CommonProxyInfo: CommonProxyInfo{
+				username: outboundConfig.Username,
+				password: outboundConfig.Password,
+			},
+		},
+	}
+	if outboundConfig.Timeout != 0 {
+		backendInfo.timeout = outboundConfig.Timeout
+	} else {
+		backendInfo.timeout = config.Generals.Timeout
+	}
+	backendInfo.local = outboundConfig.Local
+
+	backends.Append(backendInfo)
+
+	stat := common.NewStatistic()
+	statistics.Insert(backendInfo, stat)
+}
+
+func updateNewServers() {
 	// add or update the ones that is included in the config
 	for _, outboundConfig := range config.OutboundsConfig {
 		if outboundConfig.Type == "shadowsocks" || outboundConfig.Type == "ss" {
@@ -372,61 +430,8 @@ func parseMultiServersConfig(data []byte) error {
 		}
 
 		// don't append directly, scan the existing elements and update them
-		find := false
-		for _, backendInfo := range backends.BackendsInformation {
-			if backendInfo.address == outboundConfig.Address {
-				backendInfo.protocolType = outboundConfig.Type
-				backendInfo.encryptMethod = outboundConfig.Method
-				backendInfo.encryptPassword = outboundConfig.Key
-				if outboundConfig.Timeout != 0 {
-					backendInfo.timeout = outboundConfig.Timeout
-				} else {
-					backendInfo.timeout = config.Generals.Timeout
-				}
-
-				find = true
-				break
-			}
-		}
-
-		if !find {
-			// append directly
-			backendInfo := &BackendInfo{
-				id:           common.GenerateRandomString(4),
-				address:      outboundConfig.Address,
-				protocolType: outboundConfig.Type,
-				SSRInfo: SSRInfo{
-					obfs:          outboundConfig.Obfs,
-					obfsParam:     outboundConfig.ObfsParam,
-					protocol:      outboundConfig.Protocol,
-					protocolParam: outboundConfig.ProtocolParam,
-					SSInfo: SSInfo{
-						encryptMethod:   outboundConfig.Method,
-						encryptPassword: outboundConfig.Key,
-						tcpFastOpen:     outboundConfig.TCPFastOpen,
-					},
-				},
-
-				HTTPSProxyInfo: HTTPSProxyInfo{
-					insecureSkipVerify: outboundConfig.TLSInsecureSkipVerify,
-					domain:             outboundConfig.TLSDomain,
-					CommonProxyInfo: CommonProxyInfo{
-						username: outboundConfig.Username,
-						password: outboundConfig.Password,
-					},
-				},
-			}
-			if outboundConfig.Timeout != 0 {
-				backendInfo.timeout = outboundConfig.Timeout
-			} else {
-				backendInfo.timeout = config.Generals.Timeout
-			}
-			backendInfo.local = outboundConfig.Local
-
-			backends.Append(backendInfo)
-
-			stat := common.NewStatistic()
-			statistics.Insert(backendInfo, stat)
+		if !updateExistsOutboundConfig(outboundConfig) {
+			addNewOutboundConfig(outboundConfig)
 		}
 
 		if len(defaultKey) == 0 {
@@ -439,6 +444,31 @@ func parseMultiServersConfig(data []byte) error {
 			defaultMethod = outboundConfig.Method
 		}
 	}
+}
+
+func parseMultiServersConfig(data []byte) error {
+	if err := json.Unmarshal(data, config); err != nil {
+		common.Error("Failed unmarshalling config file", err, len(data))
+		return err
+	}
+
+	handleCacheService()
+
+	ss.ProtectSocketPathPrefix = config.Generals.ProtectSocketPathPrefix
+	consoleHost = config.Generals.ConsoleHost
+	consoleVer = config.Generals.ConsoleVersion
+	consoleWSUrl = config.Generals.ConsoleWebSocketURL
+
+	handleInboundTimeout()
+
+	handlePortACL()
+
+	handleIPACL()
+
+	removeDeprecatedServers()
+
+	updateNewServers()
+
 	common.Debugf("servers in config: %V\n", backends)
 
 	return nil

@@ -58,6 +58,21 @@ func (t *tls12TicketAuth) GetData() interface{} {
 	return t.data
 }
 
+func (t *tls12TicketAuth) getHost() string {
+	host := t.Host
+	if len(t.Param) > 0 {
+		hosts := strings.Split(t.Param, ",")
+		if len(hosts) > 0 {
+			host = hosts[rand.Intn(len(hosts))]
+			host = strings.TrimSpace(host)
+		}
+	}
+	if len(host) > 0 && host[len(host)-1] >= byte('0') && host[len(host)-1] <= byte('9') && len(t.Param) == 0 {
+		host = ""
+	}
+	return host
+}
+
 func (t *tls12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 	if t.handshakeStatus == -1 {
 		return data, nil
@@ -155,17 +170,8 @@ func (t *tls12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 	var extBuf []byte
 	extBuf = append(extBuf, tlsData1...)
 
-	host := t.Host
-	if len(t.Param) > 0 {
-		hosts := strings.Split(t.Param, ",")
-		if len(hosts) > 0 {
-			host = hosts[rand.Intn(len(hosts))]
-			host = strings.TrimSpace(host)
-		}
-	}
-	if len(host) > 0 && host[len(host)-1] >= byte('0') && host[len(host)-1] <= byte('9') && len(t.Param) == 0 {
-		host = ""
-	}
+	host := t.getHost()
+
 	extBuf = append(extBuf, t.sni(host)...)
 	extBuf = append(extBuf, tlsData2...)
 	ticket := make([]byte, 208)

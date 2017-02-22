@@ -6,6 +6,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -27,7 +28,8 @@ const (
 )
 
 var (
-	quit = make(chan bool)
+	quit             = make(chan bool)
+	udpBroadcastConn *net.UDPConn
 )
 
 func serveTCPInbound(ib *inbound.Inbound, ibHandler inbound.TCPInboundHandler) {
@@ -126,76 +128,81 @@ func dialUDP() (conn *net.UDPConn, err error) {
 	return
 }
 
+func onSecondTicker() {
+	if inbound.Has() {
+		go statistics.UpdateBps()
+	}
+	if config.Generals.BroadcastEnabled {
+		if udpBroadcastConn == nil {
+			common.Warning("broadcast UDP conn is nil")
+			udpBroadcastConn, _ = dialUDP()
+			if udpBroadcastConn == nil {
+				common.Warning("recreating UDP conn failed")
+			}
+		}
+		if _, err := udpBroadcastConn.Write([]byte(config.Generals.Token)); err != nil {
+			common.Error("failed to broadcast", err)
+			udpBroadcastConn.Close()
+			udpBroadcastConn, _ = dialUDP()
+		}
+	}
+}
+
+func onMinuteTicker() {
+	if inbound.Has() {
+		go statistics.UpdateLatency()
+	}
+	if config.Generals.ConsoleReportEnabled {
+		go uploadStatistic()
+	}
+}
+
+func onHourTicker() {
+	if inbound.Has() {
+		go statistics.UpdateServerIP()
+	}
+}
+
+func onDayTicker() {
+	if inbound.IsModeEnabled("redir") {
+		go updateRedirFirewallRules()
+	}
+}
+
+func onWeekTicker() {
+	go iputil.LoadChinaIPList(true)
+	go domain.UpdateDomainNameInChina()
+	go domain.UpdateDomainNameToBlock()
+	go domain.UpdateGFWList()
+}
+
 func timers() {
-	var conn *net.UDPConn
-	var err error
-	if config.Generals.BroadcastEnabled {
-		for ; ; time.Sleep(3 * time.Second) {
-			if conn, err = dialUDP(); err == nil {
-				break
-			}
-		}
+	type onTicker func()
+	onTickers := []struct {
+		*time.Ticker
+		onTicker
+	}{
+		{time.NewTicker(1 * time.Second), onSecondTicker},
+		{time.NewTicker(1 * time.Minute), onMinuteTicker},
+		{time.NewTicker(1 * time.Hour), onHourTicker},
+		{time.NewTicker(24 * time.Hour), onDayTicker},
+		{time.NewTicker(7 * 24 * time.Hour), onWeekTicker},
 	}
 
-	secondTicker := time.NewTicker(1 * time.Second)
-	minuteTicker := time.NewTicker(1 * time.Minute)
-	hourTicker := time.NewTicker(1 * time.Hour)
-	dayTicker := time.NewTicker(24 * time.Hour)
-	weekTicker := time.NewTicker(7 * 24 * time.Hour)
-	for doQuit := false; !doQuit; {
-		select {
-		case <-secondTicker.C:
-			if inbound.Has() {
-				go statistics.UpdateBps()
-			}
-			if config.Generals.BroadcastEnabled {
-				if conn == nil {
-					common.Warning("broadcast UDP conn is nil")
-					conn, _ = dialUDP()
-					if conn == nil {
-						common.Warning("recreating UDP conn failed")
-						break
-					}
-				}
-				if _, err = conn.Write([]byte(config.Generals.Token)); err != nil {
-					common.Error("failed to broadcast", err)
-					conn.Close()
-					conn, _ = dialUDP()
-				}
-			}
-		case <-minuteTicker.C:
-			if inbound.Has() {
-				go statistics.UpdateLatency()
-			}
-			if config.Generals.ConsoleReportEnabled {
-				go uploadStatistic()
-			}
-		case <-hourTicker.C:
-			if inbound.Has() {
-				go statistics.UpdateServerIP()
-			}
-		case <-dayTicker.C:
-			if inbound.IsModeEnabled("redir") {
-				go updateRedirFirewallRules()
-			}
-		case <-weekTicker.C:
-			go iputil.LoadChinaIPList(true)
-			go domain.UpdateDomainNameInChina()
-			go domain.UpdateDomainNameToBlock()
-			go domain.UpdateGFWList()
-		case <-quit:
-			doQuit = true
-		}
+	cases := make([]reflect.SelectCase, len(onTickers)+1)
+	for i, v := range onTickers {
+		cases[i].Dir = reflect.SelectRecv
+		cases[i].Chan = reflect.ValueOf(v.Ticker.C)
+	}
+	cases[len(onTickers)].Dir = reflect.SelectRecv
+	cases[len(onTickers)].Chan = reflect.ValueOf(quit)
+
+	for chosen, _, _ := reflect.Select(cases); chosen < len(onTickers); chosen, _, _ = reflect.Select(cases) {
+		onTickers[chosen].onTicker()
 	}
 
-	secondTicker.Stop()
-	minuteTicker.Stop()
-	hourTicker.Stop()
-	dayTicker.Stop()
-	weekTicker.Stop()
-
-	if config.Generals.BroadcastEnabled {
-		conn.Close()
+	for _, v := range onTickers {
+		v.Ticker.Stop()
 	}
 }
 

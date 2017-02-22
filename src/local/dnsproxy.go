@@ -22,7 +22,7 @@ var (
 	tcpClient         *dns.Client
 	tcpTLSClient      *dns.Client
 	udpClient         *dns.Client
-	clients           = make(map[string]*dns.Client)
+	clients           map[string]*dns.Client
 	servers           []*dns.Server
 	mutexServers      sync.RWMutex
 	externalIPAddress string
@@ -57,21 +57,26 @@ func addEDNSClientSubnet(r *dns.Msg, ip string) {
 		return
 	}
 
-	option := new(dns.OPT)
-	option.Hdr.Name = "."
-	option.Hdr.Rrtype = dns.TypeOPT
-	edns0Subnet := new(dns.EDNS0_SUBNET)
-	edns0Subnet.Code = dns.EDNS0SUBNET
-	edns0Subnet.Address = net.ParseIP(ip)
-	if edns0Subnet.Address.To4() != nil {
-		edns0Subnet.Family = 1         // 1 for IPv4 source address, 2 for IPv6
-		edns0Subnet.SourceNetmask = 32 // 32 for IPV4, 128 for IPv6
-	} else {
+	edns0Subnet := &dns.EDNS0_SUBNET{
+		Code:          dns.EDNS0SUBNET,
+		Address:       net.ParseIP(ip),
+		Family:        1,  // 1 for IPv4 source address, 2 for IPv6
+		SourceNetmask: 32, // 32 for IPV4, 128 for IPv6
+		SourceScope:   0,
+	}
+	if edns0Subnet.Address.To4() == nil {
 		edns0Subnet.Family = 2          // 1 for IPv4 source address, 2 for IPv6
 		edns0Subnet.SourceNetmask = 128 // 32 for IPV4, 128 for IPv6
 	}
-	edns0Subnet.SourceScope = 0
-	option.Option = append(option.Option, edns0Subnet)
+
+	option := &dns.OPT{
+		Hdr: dns.RR_Header{
+			Name:   ".",
+			Rrtype: dns.TypeOPT,
+		},
+		Option: []dns.EDNS0{edns0Subnet},
+	}
+
 	r.Extra = append(r.Extra, option)
 }
 
@@ -304,38 +309,7 @@ func cacheDNSResultLocation(cacheKey string, inChina bool) {
 	cache.Instance.PutWithTimeout(cacheKey+"ca", inChina, 30*24*3600) // for 1 month
 }
 
-func serveDNS(w dns.ResponseWriter, r *dns.Msg) {
-	var rs *dns.Msg
-	fromCache := false
-	cacheKey := fmt.Sprintf("dns:%s:cachekey", r.Question[0].Name)
-	defer func() {
-		valid := true
-		if rs == nil {
-			rs = &dns.Msg{
-				MsgHdr: dns.MsgHdr{
-					Id: r.Id,
-				},
-			}
-			valid = false
-		}
-		for i := len(rs.Answer) - 1; i >= 0; i-- {
-			if rs.Answer[i] == nil {
-				common.Warningf("found nil answer in %s's %V\nresult: %V\n%s", r.Question[0].Name, r, rs, rs)
-				rs.Answer = append(rs.Answer[:i], rs.Answer[i+1:]...)
-			}
-		}
-		if m, err := rs.Pack(); err == nil {
-			w.Write(m)
-			if !fromCache && valid {
-				saveToCache(r, rs, cacheKey, m)
-			}
-		}
-	}()
-
-	if len(r.Question) == 0 {
-		return
-	}
-
+func processSearchDomain(r *dns.Msg) {
 	if len(config.DNSProxy.SearchDomain) > 0 {
 		for i, v := range r.Question {
 			fields := strings.Split(v.Name, ".")
@@ -344,6 +318,45 @@ func serveDNS(w dns.ResponseWriter, r *dns.Msg) {
 			}
 		}
 	}
+}
+
+func finalResponse(w dns.ResponseWriter, r *dns.Msg, rs *dns.Msg, fromCache bool, cacheKey string) {
+	valid := true
+	if rs == nil {
+		rs = &dns.Msg{
+			MsgHdr: dns.MsgHdr{
+				Id: r.Id,
+			},
+		}
+		valid = false
+	}
+	for i := len(rs.Answer) - 1; i >= 0; i-- {
+		if rs.Answer[i] == nil {
+			common.Warningf("found nil answer in %s's %V\nresult: %V\n%s", r.Question[0].Name, r, rs, rs)
+			rs.Answer = append(rs.Answer[:i], rs.Answer[i+1:]...)
+		}
+	}
+	if m, err := rs.Pack(); err == nil {
+		w.Write(m)
+		if !fromCache && valid {
+			saveToCache(r, rs, cacheKey, m)
+		}
+	}
+}
+
+func serveDNS(w dns.ResponseWriter, r *dns.Msg) {
+	var rs *dns.Msg
+	fromCache := false
+	cacheKey := fmt.Sprintf("dns:%s:cachekey", r.Question[0].Name)
+	defer func() {
+		finalResponse(w, r, rs, fromCache, cacheKey)
+	}()
+
+	if len(r.Question) == 0 {
+		return
+	}
+
+	processSearchDomain(r)
 
 	// query from cache
 	if rs = hitCache(r, cacheKey); rs != nil {
@@ -385,105 +398,129 @@ func serveDNS(w dns.ResponseWriter, r *dns.Msg) {
 			common.Debug(r.Question[0].Name, "too long waited, just abort")
 			return
 		case rr := <-respChina:
-			if giveUpChinaResult == true {
-				break
-			}
-			if rr == nil {
-				//common.Error(r.Question[0].Name, "querying from china dns failed")
-				break
-			}
-
-			if chinaOnly {
-				common.Debug(r.Question[0].Name, "use result from China DNS servers only")
-				rs = rr
-				return
-			}
-
-			for _, v := range rr.Answer {
-				if v.Header().Rrtype != dns.TypeA && v.Header().Rrtype != dns.TypeAAAA {
-					continue
-				}
-
-				ss := strings.Split(v.String(), "\t")
-				if len(ss) == 5 {
-					ip := ss[4]
-					if iputil.InChina(ip) {
-						common.Debug(r.Question[0].Name, "use result from China DNS servers")
-						cacheDNSResultLocation(cacheKey, true)
-						rs = rr
-						return
-					}
-
-					if iputil.IsBogusNXDomain(ip) {
-						rs = dropResponse(r)
-						return
-					}
-
-					// always use the result from abroad DNS server if the ip is not in China,
-					if iputil.InBlacklist(ip) {
-						common.Debug(r.Question[0].Name, "drop all results from China DNS servers due to in blacklist", ip)
-					} else {
-						common.Debug(r.Question[0].Name, "drop all results from China DNS servers due to out of China", ip)
-						rc = rr // candidates
-					}
-
-					giveUpChinaResult = true
-					break
-				}
-
-				common.Debug(r.Question[0].Name, "empty record")
-				giveUpChinaResult = true
-				break
-			}
-
-			if rs != nil {
-				// maybe result from abroad DNS server is ok
-				common.Debug(r.Question[0].Name, "use result from abroad DNS servers")
+			shouldReturn := true
+			if rs, rc, shouldReturn = chinaResponseHandler(r, rr, chinaOnly, &giveUpChinaResult, cacheKey); shouldReturn {
 				return
 			}
 		case rr := <-respAbroad:
-			if rr == nil {
-				//common.Error(r.Question[0].Name, "querying from abroad dns failed")
-				break
+			shouldReturn := true
+			if rs, shouldReturn = abroadResponseHandler(r, rr, abroadOnly, &giveUpChinaResult, cacheKey); shouldReturn {
+				return
 			}
+		}
+	}
+}
 
-			if abroadOnly == true {
-				common.Debug(r.Question[0].Name, "use result from abroad DNS servers only")
+func chinaResponseHandler(r *dns.Msg, rr *dns.Msg, chinaOnly bool, giveUpChinaResult *bool, cacheKey string) (rs *dns.Msg, rc *dns.Msg, shouldReturn bool) {
+	shouldReturn = true
+	if *giveUpChinaResult == true {
+		shouldReturn = false
+		return
+	}
+	if rr == nil {
+		//common.Error(r.Question[0].Name, "querying from china dns failed")
+		shouldReturn = false
+		return
+	}
+
+	if chinaOnly {
+		common.Debug(r.Question[0].Name, "use result from China DNS servers only")
+		rs = rr
+		return
+	}
+
+	for _, v := range rr.Answer {
+		if v.Header().Rrtype != dns.TypeA && v.Header().Rrtype != dns.TypeAAAA {
+			continue
+		}
+
+		ss := strings.Split(v.String(), "\t")
+		if len(ss) == 5 {
+			ip := ss[4]
+			if iputil.InChina(ip) {
+				common.Debug(r.Question[0].Name, "use result from China DNS servers")
+				cacheDNSResultLocation(cacheKey, true)
 				rs = rr
 				return
 			}
 
-			for _, v := range rr.Answer {
-				if v.Header().Rrtype != dns.TypeA && v.Header().Rrtype != dns.TypeAAAA {
-					continue
-				}
-
-				ss := strings.Split(v.String(), "\t")
-				if len(ss) == 5 {
-					ip := ss[4]
-					// always use the result from abroad DNS server if the ip is not in China,
-					if iputil.InBlacklist(ip) {
-						common.Debug(r.Question[0].Name, "drop this results from abroad DNS servers due to in blacklist", ip)
-						goto continueLoop
-					}
-
-					if iputil.IsBogusNXDomain(ip) {
-						rs = dropResponse(r)
-						return
-					}
-				}
-			}
-
-			rs = rr
-			if giveUpChinaResult == true {
-				common.Debug(r.Question[0].Name, "use result from abroad DNS servers")
-				cacheDNSResultLocation(cacheKey, false)
+			if iputil.IsBogusNXDomain(ip) {
+				rs = dropResponse(r)
 				return
 			}
-		continueLoop:
+
+			// always use the result from abroad DNS server if the ip is not in China,
+			if iputil.InBlacklist(ip) {
+				common.Debug(r.Question[0].Name, "drop all results from China DNS servers due to in blacklist", ip)
+			} else {
+				common.Debug(r.Question[0].Name, "drop all results from China DNS servers due to out of China", ip)
+				rc = rr // candidates
+			}
+
+			*giveUpChinaResult = true
+			break
+		}
+
+		common.Debug(r.Question[0].Name, "empty record")
+		*giveUpChinaResult = true
+		break
+	}
+
+	if rs != nil {
+		// maybe result from abroad DNS server is ok
+		common.Debug(r.Question[0].Name, "use result from abroad DNS servers")
+		return
+	}
+
+	shouldReturn = false
+	return
+}
+
+func abroadResponseHandler(r *dns.Msg, rr *dns.Msg, abroadOnly bool, giveUpChinaResult *bool, cacheKey string) (rs *dns.Msg, shouldReturn bool) {
+	shouldReturn = true
+	if rr == nil {
+		//common.Error(r.Question[0].Name, "querying from abroad dns failed")
+		shouldReturn = false
+		return
+	}
+
+	if abroadOnly == true {
+		common.Debug(r.Question[0].Name, "use result from abroad DNS servers only")
+		rs = rr
+		return
+	}
+
+	for _, v := range rr.Answer {
+		if v.Header().Rrtype != dns.TypeA && v.Header().Rrtype != dns.TypeAAAA {
+			continue
+		}
+
+		ss := strings.Split(v.String(), "\t")
+		if len(ss) == 5 {
+			ip := ss[4]
+			// always use the result from abroad DNS server if the ip is not in China,
+			if iputil.InBlacklist(ip) {
+				common.Debug(r.Question[0].Name, "drop this results from abroad DNS servers due to in blacklist", ip)
+				shouldReturn = false
+				return
+			}
+
+			if iputil.IsBogusNXDomain(ip) {
+				rs = dropResponse(r)
+				return
+			}
 		}
 	}
 
+	rs = rr
+	if *giveUpChinaResult == true {
+		common.Debug(r.Question[0].Name, "use result from abroad DNS servers")
+		cacheDNSResultLocation(cacheKey, false)
+		return
+	}
+
+	shouldReturn = false
+	return
 }
 
 func listenAndServe(address string, protocol string) {
@@ -506,20 +543,22 @@ func createClients() {
 		ReadTimeout:  config.DNSProxy.ReadTimeout,
 		WriteTimeout: config.DNSProxy.WriteTimeout,
 	}
-	clients["tcp"] = tcpClient
 	udpClient = &dns.Client{
 		Net:          "udp",
 		ReadTimeout:  config.DNSProxy.ReadTimeout,
 		WriteTimeout: config.DNSProxy.WriteTimeout,
 	}
-	clients["udp"] = udpClient
 	tcpTLSClient = &dns.Client{
 		Net:          "tcp-tls",
 		ReadTimeout:  config.DNSProxy.ReadTimeout,
 		WriteTimeout: config.DNSProxy.WriteTimeout,
 		TLSConfig:    &tls.Config{InsecureSkipVerify: true},
 	}
-	clients["tcp-tls"] = tcpTLSClient
+	clients = map[string]*dns.Client{
+		"tcp":     tcpClient,
+		"udp":     udpClient,
+		"tcp-tls": tcpTLSClient,
+	}
 }
 
 func startDNSProxy() {

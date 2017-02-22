@@ -98,7 +98,7 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 	go func() {
 		result <- PipeInboundToOutbound(local,
 			remote,
-			config.Generals.InBoundTimeout,
+			config.Generals.InboundTimeout,
 			bi.timeout,
 			stat,
 			sig,
@@ -107,7 +107,7 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 	err = PipeOutboundToInbound(remote,
 		local,
 		bi.timeout,
-		config.Generals.InBoundTimeout,
+		config.Generals.InboundTimeout,
 		stat,
 		sig)
 	if err == ErrWrite {

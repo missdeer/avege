@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"sort"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -15,7 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kardianos/osext"
 	"inbound"
-	"runtime"
 )
 
 var (
@@ -148,23 +147,32 @@ func setMethodHandler(c *gin.Context) {
 		})
 		return
 	}
-	switch methodStr {
-	case "aes-128-cfb":
-	case "aes-192-cfb":
-	case "aes-256-cfb":
-	case "des-cfb":
-	case "bf-cfb":
-	case "cast5-cfb":
-	case "rc4-md5":
-	case "chacha20":
-	case "salsa20":
-	case "camellia-128-cfb":
-	case "camellia-192-cfb":
-	case "camellia-256-cfb":
-	case "idea-cfb":
-	case "rc2-cfb":
-	case "seed-cfb":
-	default:
+	methodMap := map[string]bool{
+		"aes-128-cfb":      true,
+		"aes-256-cfb":      true,
+		"aes-192-cfb":      true,
+		"aes-128-ctr":      true,
+		"aes-256-ctr":      true,
+		"aes-192-ctr":      true,
+		"aes-128-ofb":      true,
+		"aes-256-ofb":      true,
+		"aes-192-ofb":      true,
+		"des-cfb":          true,
+		"bf-cfb":           true,
+		"cast5-cfb":        true,
+		"rc4-md5":          true,
+		"chacha20":         true,
+		"chacha20-ietf":    true,
+		"salsa20":          true,
+		"camellia-128-cfb": true,
+		"camellia-192-cfb": true,
+		"camellia-256-cfb": true,
+		"idea-cfb":         true,
+		"rc2-cfb":          true,
+		"seed-cfb":         true,
+	}
+	_, ok := methodMap[methodStr]
+	if !ok {
 		c.JSON(http.StatusOK, gin.H{
 			"Result": fmt.Sprintf("unsupported method %s", methodStr),
 		})
@@ -264,23 +272,32 @@ func addServerFullHandler(c *gin.Context) {
 		})
 		return
 	}
-	switch methodStr {
-	case "aes-128-cfb":
-	case "aes-192-cfb":
-	case "aes-256-cfb":
-	case "des-cfb":
-	case "bf-cfb":
-	case "cast5-cfb":
-	case "rc4-md5":
-	case "chacha20":
-	case "salsa20":
-	case "camellia-128-cfb":
-	case "camellia-192-cfb":
-	case "camellia-256-cfb":
-	case "idea-cfb":
-	case "rc2-cfb":
-	case "seed-cfb":
-	default:
+	methodMap := map[string]bool{
+		"aes-128-cfb":      true,
+		"aes-256-cfb":      true,
+		"aes-192-cfb":      true,
+		"aes-128-ctr":      true,
+		"aes-256-ctr":      true,
+		"aes-192-ctr":      true,
+		"aes-128-ofb":      true,
+		"aes-256-ofb":      true,
+		"aes-192-ofb":      true,
+		"des-cfb":          true,
+		"bf-cfb":           true,
+		"cast5-cfb":        true,
+		"rc4-md5":          true,
+		"chacha20":         true,
+		"chacha20-ietf":    true,
+		"salsa20":          true,
+		"camellia-128-cfb": true,
+		"camellia-192-cfb": true,
+		"camellia-256-cfb": true,
+		"idea-cfb":         true,
+		"rc2-cfb":          true,
+		"seed-cfb":         true,
+	}
+	_, ok := methodMap[methodStr]
+	if !ok {
 		c.JSON(http.StatusOK, gin.H{
 			"Result": fmt.Sprintf("unsupported method %s", methodStr),
 		})
@@ -408,94 +425,7 @@ func statisticsXMLHandler(c *gin.Context) {
 	statistics.RUnlock()
 	order := c.DefaultQuery("order", "asc")
 	orderBy := c.DefaultQuery("orderby", "address")
-	switch orderBy {
-	case "failedcount":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byFailedCount{stats}))
-		} else {
-			sort.Sort(byFailedCount{stats})
-		}
-	case "latency":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLatency{stats}))
-		} else {
-			sort.Sort(byLatency{stats})
-		}
-	case "download":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byTotalDownload{stats}))
-		} else {
-			sort.Sort(byTotalDownload{stats})
-		}
-	case "upload":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byTotalUpload{stats}))
-		} else {
-			sort.Sort(byTotalUpload{stats})
-		}
-	case "highestlasthourbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastHourBps{stats}))
-		} else {
-			sort.Sort(byHighestLastHourBps{stats})
-		}
-	case "highestlasttenminutesbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastTenMinutesBps{stats}))
-		} else {
-			sort.Sort(byHighestLastTenMinutesBps{stats})
-		}
-	case "highestlastminutebps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastMinuteBps{stats}))
-		} else {
-			sort.Sort(byHighestLastMinuteBps{stats})
-		}
-	case "highestlastsecondbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastSecondBps{stats}))
-		} else {
-			sort.Sort(byHighestLastSecondBps{stats})
-		}
-	case "lasthourbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastHourBps{stats}))
-		} else {
-			sort.Sort(byLastHourBps{stats})
-		}
-	case "lasttenminutesbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastTenMinutesBps{stats}))
-		} else {
-			sort.Sort(byLastTenMinutesBps{stats})
-		}
-	case "lastminutebps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastMinuteBps{stats}))
-		} else {
-			sort.Sort(byLastMinuteBps{stats})
-		}
-	case "lastsecondbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastSecondBps{stats}))
-		} else {
-			sort.Sort(byLastSecondBps{stats})
-		}
-	case "protocol":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byProtocolType{stats}))
-		} else {
-			sort.Sort(byProtocolType{stats})
-		}
-	case "address":
-		fallthrough
-	default:
-		if order == "desc" {
-			sort.Sort(sort.Reverse(stats))
-		} else {
-			sort.Sort(stats)
-		}
-	}
+	orderStats(order, orderBy, stats)
 	currentUsing := "nil"
 	if smartLastUsedBackendInfo != nil {
 		currentUsing = smartLastUsedBackendInfo.address
@@ -536,94 +466,7 @@ func statisticsJSONHandler(c *gin.Context) {
 	statistics.RUnlock()
 	order := c.DefaultQuery("order", "asc")
 	orderBy := c.DefaultQuery("orderby", "address")
-	switch orderBy {
-	case "failedcount":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byFailedCount{stats}))
-		} else {
-			sort.Sort(byFailedCount{stats})
-		}
-	case "latency":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLatency{stats}))
-		} else {
-			sort.Sort(byLatency{stats})
-		}
-	case "download":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byTotalDownload{stats}))
-		} else {
-			sort.Sort(byTotalDownload{stats})
-		}
-	case "upload":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byTotalUpload{stats}))
-		} else {
-			sort.Sort(byTotalUpload{stats})
-		}
-	case "highestlasthourbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastHourBps{stats}))
-		} else {
-			sort.Sort(byHighestLastHourBps{stats})
-		}
-	case "highestlasttenminutesbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastTenMinutesBps{stats}))
-		} else {
-			sort.Sort(byHighestLastTenMinutesBps{stats})
-		}
-	case "highestlastminutebps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastMinuteBps{stats}))
-		} else {
-			sort.Sort(byHighestLastMinuteBps{stats})
-		}
-	case "highestlastsecondbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastSecondBps{stats}))
-		} else {
-			sort.Sort(byHighestLastSecondBps{stats})
-		}
-	case "lasthourbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastHourBps{stats}))
-		} else {
-			sort.Sort(byLastHourBps{stats})
-		}
-	case "lasttenminutesbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastTenMinutesBps{stats}))
-		} else {
-			sort.Sort(byLastTenMinutesBps{stats})
-		}
-	case "lastminutebps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastMinuteBps{stats}))
-		} else {
-			sort.Sort(byLastMinuteBps{stats})
-		}
-	case "lastsecondbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastSecondBps{stats}))
-		} else {
-			sort.Sort(byLastSecondBps{stats})
-		}
-	case "protocol":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byProtocolType{stats}))
-		} else {
-			sort.Sort(byProtocolType{stats})
-		}
-	case "address":
-		fallthrough
-	default:
-		if order == "desc" {
-			sort.Sort(sort.Reverse(stats))
-		} else {
-			sort.Sort(stats)
-		}
-	}
+	orderStats(order, orderBy, stats)
 	currentUsing := "nil"
 	if smartLastUsedBackendInfo != nil {
 		currentUsing = smartLastUsedBackendInfo.address
@@ -664,105 +507,16 @@ func statisticsHTMLHandler(c *gin.Context) {
 	statistics.RUnlock()
 	order := c.DefaultQuery("order", "asc")
 	orderBy := c.DefaultQuery("orderby", "address")
-	switch orderBy {
-	case "failedcount":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byFailedCount{stats}))
-		} else {
-			sort.Sort(byFailedCount{stats})
-		}
-	case "latency":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLatency{stats}))
-		} else {
-			sort.Sort(byLatency{stats})
-		}
-	case "download":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byTotalDownload{stats}))
-		} else {
-			sort.Sort(byTotalDownload{stats})
-		}
-	case "upload":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byTotalUpload{stats}))
-		} else {
-			sort.Sort(byTotalUpload{stats})
-		}
-	case "highestlasthourbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastHourBps{stats}))
-		} else {
-			sort.Sort(byHighestLastHourBps{stats})
-		}
-	case "highestlasttenminutesbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastTenMinutesBps{stats}))
-		} else {
-			sort.Sort(byHighestLastTenMinutesBps{stats})
-		}
-	case "highestlastminutebps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastMinuteBps{stats}))
-		} else {
-			sort.Sort(byHighestLastMinuteBps{stats})
-		}
-	case "highestlastsecondbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byHighestLastSecondBps{stats}))
-		} else {
-			sort.Sort(byHighestLastSecondBps{stats})
-		}
-	case "lasthourbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastHourBps{stats}))
-		} else {
-			sort.Sort(byLastHourBps{stats})
-		}
-	case "lasttenminutesbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastTenMinutesBps{stats}))
-		} else {
-			sort.Sort(byLastTenMinutesBps{stats})
-		}
-	case "lastminutebps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastMinuteBps{stats}))
-		} else {
-			sort.Sort(byLastMinuteBps{stats})
-		}
-	case "lastsecondbps":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byLastSecondBps{stats}))
-		} else {
-			sort.Sort(byLastSecondBps{stats})
-		}
-	case "protocol":
-		if order == "desc" {
-			sort.Sort(sort.Reverse(byProtocolType{stats}))
-		} else {
-			sort.Sort(byProtocolType{stats})
-		}
-	case "address":
-		fallthrough
-	default:
-		if order == "desc" {
-			sort.Sort(sort.Reverse(stats))
-		} else {
-			sort.Sort(stats)
-		}
-	}
+	orderStats(order, orderBy, stats)
 	currentUsing := "nil"
 	if smartLastUsedBackendInfo != nil {
 		currentUsing = smartLastUsedBackendInfo.address
 	}
-	var newOrder string
-	if order == "asc" {
-		newOrder = "desc"
-	} else {
-		newOrder = "asc"
-	}
 
+	newOrders := map[string]string{
+		"asc":  "desc",
+		"desc": "asc",
+	}
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
 		"title":         "avege, a powerful anti-GFW toolset",
 		"stats":         stats,
@@ -772,7 +526,15 @@ func statisticsHTMLHandler(c *gin.Context) {
 		"quote":         leftQuote,
 		"startAt":       startAt,
 		"uptime":        time.Now().Sub(startAt).String(),
-		"order":         newOrder,
+		"order":         newOrders[order],
 		"next":          url.QueryEscape(fmt.Sprintf("orderby=%s&order=%s", orderBy, order)),
 	})
+}
+
+func orderStats(order string, orderBy string, stats Stats) {
+	if sorter, ok := statsSortMap[orderBy]; ok {
+		sorter(order, stats)
+	} else {
+		orderByAddress(order, stats)
+	}
 }
