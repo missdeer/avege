@@ -18,56 +18,76 @@ var (
 	ErrSignalFalse = errors.New("Signal false")
 )
 
-func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto time.Duration, stat *common.Statistic, sig chan bool, buffer **common.Buffer) (result error) {
-	bytesRead := 0
-	var tempBuffer common.Buffer
-	signaled := false
-	defer func() {
-		if !signaled {
-			sig <- false
-		} else {
-			if bytesRead < 10*1024*1024 {
-				*buffer = &tempBuffer
-			} else {
-				*buffer = nil
-			}
+type pipeParam struct {
+	src  net.Conn
+	dst  net.Conn
+	rto  time.Duration
+	wto  time.Duration
+	stat *common.Statistic
+	sig  chan bool
+}
 
-			stat.IncreaseTotalUpload(uint64(bytesRead))
-		}
-		if result != nil {
-			common.Warning("piping inbound to outbound goroutine exits with error:", result)
-			sig <- false
-		} else {
-			sig <- true
-		}
-	}()
-
+func handleBuffer(pp pipeParam, buffer **common.Buffer, signaled *bool) (tempBuffer common.Buffer, result error) {
 	if buffer != nil && *buffer != nil {
 		tempBuffer = *(*buffer)
 		common.Debug("try to write old data:")
 
 		for i := 0; i < len(tempBuffer); i++ {
-			if _, err := dst.Write(tempBuffer[i].Bytes()); err != nil {
+			if _, err := pp.dst.Write(tempBuffer[i].Bytes()); err != nil {
 				common.Error("write old data to outbound error: ", err)
 				result = err
 				return
 			}
-			stat.IncreaseTotalUpload(uint64(tempBuffer[i].Len()))
+			pp.stat.IncreaseTotalUpload(uint64(tempBuffer[i].Len()))
 		}
 
-		if !signaled {
+		if !*signaled {
 			common.Debug("signal the paired goroutine, written old data to outbound")
-			sig <- true
-			signaled = true
+			pp.sig <- true
+			*signaled = true
 		}
+	}
+	return
+}
+
+func finalOutput(pp pipeParam, buffer **common.Buffer, signaled *bool, bytesRead int, tempBuffer *common.Buffer, result error) {
+	if !*signaled {
+		pp.sig <- false
+	} else {
+		if bytesRead < 10*1024*1024 {
+			*buffer = tempBuffer
+		} else {
+			*buffer = nil
+		}
+
+		pp.stat.IncreaseTotalUpload(uint64(bytesRead))
+	}
+	if result != nil {
+		common.Warning("piping inbound to outbound goroutine exits with error:", result)
+		pp.sig <- false
+	} else {
+		pp.sig <- true
+	}
+}
+
+func PipeInboundToOutbound(pp pipeParam, buffer **common.Buffer) (result error) {
+	signaled := false
+	bytesRead := 0
+	var tempBuffer common.Buffer
+	defer func() {
+		finalOutput(pp, buffer, &signaled, bytesRead, &tempBuffer, result)
+	}()
+
+	if tempBuffer, result = handleBuffer(pp, buffer, &signaled); result != nil {
+		return
 	}
 
 	buf := ds.GlobalLeakyBuf.Get()
 	defer ds.GlobalLeakyBuf.Put(buf)
 	for {
 		//common.Debugf("try to read something from inbound with timeout %v at %v\n", rto, time.Now().Add(rto))
-		src.SetReadDeadline(time.Now().Add(rto))
-		nr, err := src.Read(buf)
+		pp.src.SetReadDeadline(time.Now().Add(pp.rto))
+		nr, err := pp.src.Read(buf)
 		bytesRead += nr
 		if nr > 0 {
 			if bytesRead < 10*1024*1024 {
@@ -76,13 +96,13 @@ func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 
 			if !signaled {
 				common.Debug("signal the paired goroutine")
-				sig <- true
+				pp.sig <- true
 				signaled = true
 			}
 
 			//common.Debugf("read something from inbound, and try to write to outbound with timeout %v at %v\n", wto, time.Now().Add(wto))
-			dst.SetWriteDeadline(time.Now().Add(wto))
-			nw, err := dst.Write(buf[:nr])
+			pp.dst.SetWriteDeadline(time.Now().Add(pp.wto))
+			nw, err := pp.dst.Write(buf[:nr])
 			if err != nil {
 				if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
 					common.Error("write to outbound err: ", ErrWrite)
@@ -97,7 +117,7 @@ func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 		}
 		if err != nil {
 			if !signaled {
-				sig <- true
+				pp.sig <- true
 				signaled = true
 				if err == io.EOF {
 					common.Debug("pipe inbound to outbound eof with ", bytesRead, " bytes")
@@ -115,18 +135,18 @@ func PipeInboundToOutbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 	return
 }
 
-func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto time.Duration, stat *common.Statistic, sig chan bool) (err error) {
+func PipeOutboundToInbound(pp pipeParam) (err error) {
 	bytesRead := 0
 	signaled := false
 	defer func() {
 		if signaled == false {
-			<-sig
+			<-pp.sig
 		}
-		src.Close()
+		pp.src.Close()
 		common.Debug("R/W end signaled")
 	}()
 
-	s := <-sig // wait for paired goroutine to start
+	s := <-pp.sig // wait for paired goroutine to start
 	common.Debug("R/W begin signaled")
 	if !s {
 		return ErrSignalFalse
@@ -138,14 +158,14 @@ func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 	var nw int
 	for {
 		//common.Debugf("try to read something from outbound with timeout %v at %v\n", rto, time.Now().Add(rto))
-		src.SetReadDeadline(time.Now().Add(rto))
-		nr, err = src.Read(buf)
+		pp.src.SetReadDeadline(time.Now().Add(pp.rto))
+		nr, err = pp.src.Read(buf)
 		bytesRead += nr
 		if nr > 0 {
-			stat.BytesDownload(uint64(nr))
+			pp.stat.BytesDownload(uint64(nr))
 			//common.Debugf("read something from outbound, and try to write to inbound with timeout %v at %v\n", wto, time.Now().Add(wto))
-			dst.SetWriteDeadline(time.Now().Add(wto))
-			nw, err = dst.Write(buf[:nr])
+			pp.dst.SetWriteDeadline(time.Now().Add(pp.wto))
+			nw, err = pp.dst.Write(buf[:nr])
 			if err != nil {
 				common.Error("write to inbound error: ", err)
 				err = ErrWrite
@@ -168,7 +188,7 @@ func PipeOutboundToInbound(src net.Conn, dst net.Conn, rto time.Duration, wto ti
 			break
 		}
 		select {
-		case result := <-sig:
+		case result := <-pp.sig:
 			signaled = true
 			if !result {
 				common.Debug("paired piping inbound to outbound goroutine exited, so this goroutine piping outbound to inbound just exit too")

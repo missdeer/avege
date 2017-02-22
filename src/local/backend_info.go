@@ -96,20 +96,25 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 	}
 
 	go func() {
-		result <- PipeInboundToOutbound(local,
+		pp := pipeParam{
+			local,
 			remote,
 			config.Generals.InboundTimeout,
 			bi.timeout,
 			stat,
 			sig,
-			&buffer)
+		}
+		result <- PipeInboundToOutbound(pp, &buffer)
 	}()
-	err = PipeOutboundToInbound(remote,
+	pp := pipeParam{
+		remote,
 		local,
 		bi.timeout,
 		config.Generals.InboundTimeout,
 		stat,
-		sig)
+		sig,
+	}
+	err = PipeOutboundToInbound(pp)
 	if err == ErrWrite {
 		inboundSideError = true
 	}

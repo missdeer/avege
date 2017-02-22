@@ -400,7 +400,7 @@ type Report struct {
 	Stats
 }
 
-func statisticsXMLHandler(c *gin.Context) {
+func createStats(order string, orderBy string) Stats {
 	stats := make(Stats, 0)
 	statistics.RLock()
 	for backendInfo, stat := range statistics.StatisticMap {
@@ -423,14 +423,17 @@ func statisticsXMLHandler(c *gin.Context) {
 		stats = append(stats, s)
 	}
 	statistics.RUnlock()
-	order := c.DefaultQuery("order", "asc")
-	orderBy := c.DefaultQuery("orderby", "address")
 	orderStats(order, orderBy, stats)
+	return stats
+}
+
+func createReport(order string, orderBy string) *Report {
+	stats := createStats(order, orderBy)
 	currentUsing := "nil"
 	if smartLastUsedBackendInfo != nil {
 		currentUsing = smartLastUsedBackendInfo.address
 	}
-	c.XML(http.StatusOK, Report{
+	return &Report{
 		Stats:         stats,
 		TotalDownload: common.TotalStat.GetDownload(),
 		TotalUpload:   common.TotalStat.GetUpload(),
@@ -438,86 +441,20 @@ func statisticsXMLHandler(c *gin.Context) {
 		CurrentUsing:  currentUsing,
 		StartAt:       startAt,
 		Uptime:        time.Now().Sub(startAt).String(),
-	})
+	}
 }
 
-func statisticsJSONHandler(c *gin.Context) {
-	stats := make(Stats, 0)
-	statistics.RLock()
-	for backendInfo, stat := range statistics.StatisticMap {
-		s := new(Stat)
-		s.Id = backendInfo.id
-		s.Address = backendInfo.address
-		s.ProtocolType = backendInfo.protocolType
-		s.FailedCount = stat.GetFailedCount()
-		s.Latency = stat.GetLatency()
-		s.TotalDownload = stat.GetTotalDownload()
-		s.TotalUpload = stat.GetTotalUploaded()
-		s.HighestLastHourBps = stat.GetHighestLastHourBps()
-		s.HighestLastTenMinutesBps = stat.GetHighestLastTenMinutesBps()
-		s.HighestLastMinuteBps = stat.GetHighestLastMinuteBps()
-		s.HighestLastSecondBps = stat.GetHighestLastSecondBps()
-		s.LastHourBps = stat.GetLastHourBps()
-		s.LastTenMinutesBps = stat.GetLastTenMinutesBps()
-		s.LastMinuteBps = stat.GetLastMinuteBps()
-		s.LastSecondBps = stat.GetLastSecondBps()
-		stats = append(stats, s)
-	}
-	statistics.RUnlock()
-	order := c.DefaultQuery("order", "asc")
-	orderBy := c.DefaultQuery("orderby", "address")
-	orderStats(order, orderBy, stats)
+func createGinH(order string, orderBy string) *gin.H {
+	stats := createStats(order, orderBy)
 	currentUsing := "nil"
 	if smartLastUsedBackendInfo != nil {
 		currentUsing = smartLastUsedBackendInfo.address
 	}
-	c.JSON(http.StatusOK, Report{
-		Stats:         stats,
-		TotalDownload: common.TotalStat.GetDownload(),
-		TotalUpload:   common.TotalStat.GetUpload(),
-		Quote:         leftQuote,
-		CurrentUsing:  currentUsing,
-		StartAt:       startAt,
-		Uptime:        time.Now().Sub(startAt).String(),
-	})
-}
-
-func statisticsHTMLHandler(c *gin.Context) {
-	stats := make(Stats, 0)
-	statistics.RLock()
-	for backendInfo, stat := range statistics.StatisticMap {
-		s := new(Stat)
-		s.Id = backendInfo.id
-		s.Address = backendInfo.address
-		s.ProtocolType = backendInfo.protocolType
-		s.FailedCount = stat.GetFailedCount()
-		s.Latency = stat.GetLatency() / 1000000
-		s.TotalDownload = stat.GetTotalDownload() / 1000000
-		s.TotalUpload = stat.GetTotalUploaded() / 1000000
-		s.HighestLastHourBps = stat.GetHighestLastHourBps() / 1000
-		s.HighestLastTenMinutesBps = stat.GetHighestLastTenMinutesBps() / 1000
-		s.HighestLastMinuteBps = stat.GetHighestLastMinuteBps() / 1000
-		s.HighestLastSecondBps = stat.GetHighestLastSecondBps() / 1000
-		s.LastHourBps = stat.GetLastHourBps()
-		s.LastTenMinutesBps = stat.GetLastTenMinutesBps()
-		s.LastMinuteBps = stat.GetLastMinuteBps()
-		s.LastSecondBps = stat.GetLastSecondBps()
-		stats = append(stats, s)
-	}
-	statistics.RUnlock()
-	order := c.DefaultQuery("order", "asc")
-	orderBy := c.DefaultQuery("orderby", "address")
-	orderStats(order, orderBy, stats)
-	currentUsing := "nil"
-	if smartLastUsedBackendInfo != nil {
-		currentUsing = smartLastUsedBackendInfo.address
-	}
-
 	newOrders := map[string]string{
 		"asc":  "desc",
 		"desc": "asc",
 	}
-	c.HTML(http.StatusOK, "index.tmpl", gin.H{
+	return &gin.H{
 		"title":         "avege, a powerful anti-GFW toolset",
 		"stats":         stats,
 		"currentUsing":  currentUsing,
@@ -528,7 +465,28 @@ func statisticsHTMLHandler(c *gin.Context) {
 		"uptime":        time.Now().Sub(startAt).String(),
 		"order":         newOrders[order],
 		"next":          url.QueryEscape(fmt.Sprintf("orderby=%s&order=%s", orderBy, order)),
-	})
+	}
+}
+
+func statisticsXMLHandler(c *gin.Context) {
+	order := c.DefaultQuery("order", "asc")
+	orderBy := c.DefaultQuery("orderby", "address")
+	r := createReport(order, orderBy)
+	c.XML(http.StatusOK, *r)
+}
+
+func statisticsJSONHandler(c *gin.Context) {
+	order := c.DefaultQuery("order", "asc")
+	orderBy := c.DefaultQuery("orderby", "address")
+	r := createReport(order, orderBy)
+	c.JSON(http.StatusOK, *r)
+}
+
+func statisticsHTMLHandler(c *gin.Context) {
+	order := c.DefaultQuery("order", "asc")
+	orderBy := c.DefaultQuery("orderby", "address")
+	h := createGinH(order, orderBy)
+	c.HTML(http.StatusOK, "index.tmpl", *h)
 }
 
 func orderStats(order string, orderBy string, stats Stats) {
