@@ -12,9 +12,11 @@ import (
 
 	"common"
 	"common/cache"
+	"config"
 	"github.com/gin-gonic/gin"
 	"github.com/kardianos/osext"
 	"inbound"
+	"rule"
 )
 
 var (
@@ -50,7 +52,7 @@ func clearDNSCache(c *gin.Context) {
 func updateIptablesRulesHandler(c *gin.Context) {
 	if runtime.GOOS == "linux" {
 		if inbound.IsModeEnabled("redir") {
-			go updateRedirFirewallRules()
+			go rule.UpdateRedirFirewallRules()
 			c.JSON(http.StatusOK, gin.H{
 				"Result": "OK",
 			})
@@ -69,7 +71,7 @@ func updateIptablesRulesHandler(c *gin.Context) {
 func getTokenHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"Result": "OK",
-		"Token":  config.Generals.Token,
+		"Token":  config.Configurations.Generals.Token,
 	})
 }
 
@@ -135,7 +137,7 @@ func forceUpdateSmartUsedServerInfoHandler(c *gin.Context) {
 func getMethodHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"Result": "OK",
-		"Msg":    defaultMethod,
+		"Msg":    config.DefaultMethod,
 	})
 }
 
@@ -178,7 +180,7 @@ func setMethodHandler(c *gin.Context) {
 		})
 		return
 	}
-	defaultMethod = methodStr
+	config.DefaultMethod = methodStr
 	c.JSON(http.StatusOK, gin.H{
 		"Result": "OK",
 	})
@@ -187,7 +189,7 @@ func setMethodHandler(c *gin.Context) {
 func getKeyHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"Result": "OK",
-		"Msg":    defaultKey,
+		"Msg":    config.DefaultKey,
 	})
 }
 
@@ -200,7 +202,7 @@ func setKeyHandler(c *gin.Context) {
 		return
 	}
 
-	defaultKey = keyStr
+	config.DefaultKey = keyStr
 	c.JSON(http.StatusOK, gin.H{
 		"Result": "OK",
 	})
@@ -209,7 +211,7 @@ func setKeyHandler(c *gin.Context) {
 func getPortHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"Result": "OK",
-		"Msg":    defaultPort,
+		"Msg":    config.DefaultPort,
 	})
 }
 
@@ -237,7 +239,7 @@ func setPortHandler(c *gin.Context) {
 		return
 	}
 
-	defaultPort = portStr
+	config.DefaultPort = portStr
 	c.JSON(http.StatusOK, gin.H{
 		"Result": "OK",
 	})
@@ -304,9 +306,9 @@ func addServerFullHandler(c *gin.Context) {
 		return
 	}
 
-	defaultPort = portStr
-	defaultKey = keyStr
-	defaultMethod = methodStr
+	config.DefaultPort = portStr
+	config.DefaultKey = keyStr
+	config.DefaultMethod = methodStr
 	addServer(address)
 	c.JSON(http.StatusOK, gin.H{
 		"Result": "OK",
@@ -437,7 +439,7 @@ func createReport(order string, orderBy string) *Report {
 		Stats:         stats,
 		TotalDownload: common.TotalStat.GetDownload(),
 		TotalUpload:   common.TotalStat.GetUpload(),
-		Quote:         leftQuote,
+		Quote:         config.LeftQuote,
 		CurrentUsing:  currentUsing,
 		StartAt:       startAt,
 		Uptime:        time.Now().Sub(startAt).String(),
@@ -460,7 +462,7 @@ func createGinH(order string, orderBy string) *gin.H {
 		"currentUsing":  currentUsing,
 		"totalDownload": common.TotalStat.GetDownload(),
 		"totalUpload":   common.TotalStat.GetUpload(),
-		"quote":         leftQuote,
+		"quote":         config.LeftQuote,
 		"startAt":       startAt,
 		"uptime":        time.Now().Sub(startAt).String(),
 		"order":         newOrders[order],

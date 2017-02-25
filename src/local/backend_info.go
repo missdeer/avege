@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"common"
-	"outbound/ss"
-
+	"config"
 	"github.com/RouterScript/ProxyClient"
+	"outbound/ss"
 )
 
 // CommonProxyInfo fields that auth for http/https/socks
@@ -99,7 +99,7 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 		pp := pipeParam{
 			local,
 			remote,
-			config.Generals.InboundTimeout,
+			config.Configurations.Generals.InboundTimeout,
 			bi.timeout,
 			stat,
 			sig,
@@ -110,7 +110,7 @@ func (bi *BackendInfo) pipe(local net.Conn, remote net.Conn, buffer *common.Buff
 		remote,
 		local,
 		bi.timeout,
-		config.Generals.InboundTimeout,
+		config.Configurations.Generals.InboundTimeout,
 		stat,
 		sig,
 	}
@@ -198,8 +198,8 @@ func ssConnect(rawaddr []byte, bi *BackendInfo) (remote net.Conn, err error) {
 	}
 
 	v := u.Query()
-	v.Set("priority-interface-enabled", strconv.FormatBool(config.Generals.PriorityInterfaceEnabled))
-	v.Set("priority-interface-address", config.Generals.PriorityInterfaceAddress)
+	v.Set("priority-interface-enabled", strconv.FormatBool(config.Configurations.Generals.PriorityInterfaceEnabled))
+	v.Set("priority-interface-address", config.Configurations.Generals.PriorityInterfaceAddress)
 	v.Set("encrypt-method", bi.encryptMethod)
 	v.Set("encrypt-key", bi.encryptPassword)
 	v.Set("obfs", bi.obfs)

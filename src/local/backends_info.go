@@ -1,6 +1,14 @@
 package local
 
-import "sync"
+import (
+	"net"
+	"sync"
+
+	"common"
+	"config"
+	"outbound"
+	"outbound/ss"
+)
 
 type BackendsInformation []*BackendInfo
 
@@ -228,3 +236,112 @@ var (
 	// backends collection contains remote server information
 	backends = NewBackendsInformationWrapper()
 )
+
+func removeDeprecatedServers() {
+	// remove the ones that is not included in new config
+	for i := 0; i < backends.Len(); {
+		backendInfo := backends.Get(i)
+		find := false
+		for _, s := range config.Configurations.OutboundsConfig {
+			if backendInfo.address == s.Address {
+				find = true
+				break
+			}
+		}
+
+		if !find {
+			// remove this element from backends array
+			statistics.Delete(backends.Get(i))
+			backends.Remove(i)
+			i = 0
+		} else {
+			i++
+		}
+	}
+}
+
+func updateExistsOutboundConfig(outboundConfig *outbound.Outbound) bool {
+	for _, backendInfo := range backends.BackendsInformation {
+		if backendInfo.address == outboundConfig.Address {
+			backendInfo.protocolType = outboundConfig.Type
+			backendInfo.encryptMethod = outboundConfig.Method
+			backendInfo.encryptPassword = outboundConfig.Key
+			if outboundConfig.Timeout != 0 {
+				backendInfo.timeout = outboundConfig.Timeout
+			} else {
+				backendInfo.timeout = config.Configurations.Generals.Timeout
+			}
+
+			return true
+		}
+	}
+	return false
+}
+
+func addNewOutboundConfig(outboundConfig *outbound.Outbound) {
+	// append directly
+	backendInfo := &BackendInfo{
+		id:           common.GenerateRandomString(4),
+		address:      outboundConfig.Address,
+		protocolType: outboundConfig.Type,
+		SSRInfo: SSRInfo{
+			obfs:          outboundConfig.Obfs,
+			obfsParam:     outboundConfig.ObfsParam,
+			protocol:      outboundConfig.Protocol,
+			protocolParam: outboundConfig.ProtocolParam,
+			SSInfo: SSInfo{
+				encryptMethod:   outboundConfig.Method,
+				encryptPassword: outboundConfig.Key,
+				tcpFastOpen:     outboundConfig.TCPFastOpen,
+			},
+		},
+
+		HTTPSProxyInfo: HTTPSProxyInfo{
+			insecureSkipVerify: outboundConfig.TLSInsecureSkipVerify,
+			domain:             outboundConfig.TLSDomain,
+			CommonProxyInfo: CommonProxyInfo{
+				username: outboundConfig.Username,
+				password: outboundConfig.Password,
+			},
+		},
+	}
+	if outboundConfig.Timeout != 0 {
+		backendInfo.timeout = outboundConfig.Timeout
+	} else {
+		backendInfo.timeout = config.Configurations.Generals.Timeout
+	}
+	backendInfo.local = outboundConfig.Local
+
+	backends.Append(backendInfo)
+
+	stat := common.NewStatistic()
+	statistics.Insert(backendInfo, stat)
+}
+
+func updateNewServers() {
+	// add or update the ones that is included in the config
+	for _, outboundConfig := range config.Configurations.OutboundsConfig {
+		if outboundConfig.Type == "shadowsocks" || outboundConfig.Type == "ss" {
+			_, err := ss.NewStreamCipher(outboundConfig.Method, outboundConfig.Key)
+			if err != nil {
+				common.Error("Failed generating ciphers:", err)
+				continue
+			}
+		}
+
+		// don't append directly, scan the existing elements and update them
+		if !updateExistsOutboundConfig(outboundConfig) {
+			addNewOutboundConfig(outboundConfig)
+		}
+
+		if len(config.DefaultKey) == 0 {
+			config.DefaultKey = outboundConfig.Key
+		}
+		if len(config.DefaultPort) == 0 {
+			_, config.DefaultPort, _ = net.SplitHostPort(outboundConfig.Address)
+		}
+		if len(config.DefaultMethod) == 0 {
+			config.DefaultMethod = outboundConfig.Method
+		}
+	}
+}

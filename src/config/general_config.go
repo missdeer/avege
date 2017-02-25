@@ -1,6 +1,6 @@
-// +build freebsd dragonfly
+// +build linux darwin netbsd openbsd solaris
 
-package local
+package config
 
 import (
 	"common"
@@ -8,14 +8,14 @@ import (
 )
 
 func ApplyGeneralConfig() {
-	if config.Generals.MaxOpenFiles > 1024 {
+	if Configurations.Generals.MaxOpenFiles > 1024 {
 		var rLimit syscall.Rlimit
 		err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 		if err != nil {
 			common.Error("getting Rlimit failed", err)
 		} else {
-			rLimit.Max = int64(config.Generals.MaxOpenFiles)
-			rLimit.Cur = int64(config.Generals.MaxOpenFiles)
+			rLimit.Max = Configurations.Generals.MaxOpenFiles
+			rLimit.Cur = Configurations.Generals.MaxOpenFiles
 			if err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
 				common.Error("setting Rlimit failed", err)
 			}

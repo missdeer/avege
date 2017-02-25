@@ -1,6 +1,6 @@
 // +build windows
 
-package local
+package config
 
 func ApplyGeneralConfig() {
 }

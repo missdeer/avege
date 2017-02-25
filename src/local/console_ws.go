@@ -2,11 +2,16 @@ package local
 
 import (
 	"encoding/json"
+	"net"
 	"time"
 
 	"common"
+	"config"
 	"github.com/gorilla/websocket"
 	"inbound"
+	"outbound"
+	"outbound/ss"
+	"rule"
 )
 
 var (
@@ -49,7 +54,7 @@ func (c *Connection) handleWS(msg []byte) []byte {
 		m.Cmd = common.CMD_REVERSE_SSH_STOPPED
 	case common.CMD_NEW_RULES:
 		if inbound.IsModeEnabled("redir") {
-			go updateRedirFirewallRules()
+			go rule.UpdateRedirFirewallRules()
 		}
 		m.Cmd = common.CMD_RESPONSE
 		m.WParam = "ok"
@@ -62,17 +67,17 @@ func (c *Connection) handleWS(msg []byte) []byte {
 		m.Cmd = common.CMD_RESPONSE
 		m.WParam = "ok"
 	case common.CMD_SET_PORT:
-		defaultPort = m.WParam
+		config.DefaultPort = m.WParam
 		changePort()
 		m.Cmd = common.CMD_RESPONSE
 		m.WParam = "ok"
 	case common.CMD_SET_KEY:
-		defaultKey = m.WParam
+		config.DefaultKey = m.WParam
 		changeKeyMethod()
 		m.Cmd = common.CMD_RESPONSE
 		m.WParam = "ok"
 	case common.CMD_SET_METHOD:
-		defaultMethod = m.WParam
+		config.DefaultMethod = m.WParam
 		changeKeyMethod()
 		m.Cmd = common.CMD_RESPONSE
 		m.WParam = "ok"
@@ -145,7 +150,7 @@ func (c *Connection) connectWS() {
 	c.conn.SetPingHandler(c.pingHandler)
 	common.Debug("websocket connected to", consoleWSUrl)
 
-	c.SendMsg(common.CMD_AUTH, config.Generals.Token, "")
+	c.SendMsg(common.CMD_AUTH, config.Configurations.Generals.Token, "")
 
 	go c.readWS()
 	c.writeWS()
@@ -160,5 +165,110 @@ func consoleWS() {
 	for {
 		c.connectWS()
 		time.Sleep(10 * time.Second)
+	}
+}
+
+func changeKeyMethod() {
+	_, err := ss.NewStreamCipher(config.DefaultMethod, config.DefaultKey)
+	if err != nil {
+		common.Error("Failed generating ciphers:", err)
+		return
+	}
+
+	backends.Lock()
+	for _, backendInfo := range backends.BackendsInformation {
+		if backendInfo.local == false {
+			backendInfo.encryptMethod = config.DefaultMethod
+			backendInfo.encryptPassword = config.DefaultKey
+		}
+	}
+	backends.Unlock()
+}
+
+func changePort() {
+	backends.Lock()
+	for _, backendInfo := range backends.BackendsInformation {
+		if backendInfo.local == false {
+			host, _, _ := net.SplitHostPort(backendInfo.address)
+			backendInfo.address = net.JoinHostPort(host, config.DefaultPort)
+		}
+	}
+	backends.Unlock()
+}
+
+func removeServer(address string) {
+	for i, backendInfo := range backends.BackendsInformation {
+		host, _, _ := net.SplitHostPort(backendInfo.address)
+		if host == address && backendInfo.local == false {
+			// remove this element from backends array
+			statistics.Delete(backends.Get(i))
+			backends.Remove(i)
+			break
+		}
+	}
+
+	for i, outbound := range config.Configurations.OutboundsConfig {
+		host, _, _ := net.SplitHostPort(outbound.Address)
+		if host == address && outbound.Local == false {
+			config.Configurations.OutboundsConfig = append(config.Configurations.OutboundsConfig[:i], config.Configurations.OutboundsConfig[i+1:]...)
+			// save to redis
+			break
+		}
+	}
+}
+
+func addServer(address string) {
+	_, err := ss.NewStreamCipher(config.DefaultMethod, config.DefaultKey)
+	if err != nil {
+		common.Error("Failed generating ciphers:", err)
+		return
+	}
+
+	// don't append directly, scan the existing elements and update them
+	find := false
+	for _, backendInfo := range backends.BackendsInformation {
+		host, _, _ := net.SplitHostPort(backendInfo.address)
+		if host == address && backendInfo.local == false {
+			backendInfo.protocolType = "shadowsocks"
+			//backendInfo.cipher = cipher
+			backendInfo.encryptMethod = config.DefaultMethod
+			backendInfo.encryptPassword = config.DefaultKey
+			backendInfo.timeout = config.Configurations.Generals.Timeout
+
+			find = true
+			break
+		}
+	}
+
+	if !find {
+		// append directly
+		bi := &BackendInfo{
+			id:           common.GenerateRandomString(4),
+			address:      net.JoinHostPort(address, config.DefaultPort),
+			protocolType: "shadowsocks",
+			timeout:      config.Configurations.Generals.Timeout,
+			SSRInfo: SSRInfo{
+				obfs:     "plain",
+				protocol: "origin",
+				SSInfo: SSInfo{
+					//cipher: cipher,
+					encryptMethod:   config.DefaultMethod,
+					encryptPassword: config.DefaultKey,
+				},
+			},
+		}
+		backends.Append(bi)
+
+		stat := common.NewStatistic()
+		statistics.Insert(bi, stat)
+
+		outbound := &outbound.Outbound{
+			Address: net.JoinHostPort(address, config.DefaultPort),
+			Key:     config.DefaultKey,
+			Method:  config.DefaultMethod,
+			Type:    "shadowsocks",
+		}
+		config.Configurations.OutboundsConfig = append(config.Configurations.OutboundsConfig, outbound)
+		// save to redis
 	}
 }

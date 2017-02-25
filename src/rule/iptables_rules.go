@@ -1,6 +1,6 @@
 // +build linux
 
-package local
+package rule
 
 import (
 	"bufio"
@@ -18,6 +18,7 @@ import (
 
 	"common"
 	"common/fs"
+	"config"
 )
 
 var (
@@ -59,7 +60,7 @@ func monitorFileChange(fileName string) {
 	go fs.MonitorFileChanegs(fileName, configFileChanged)
 }
 
-func updateRedirFirewallRules() {
+func UpdateRedirFirewallRules() {
 	if oneUpdateIptablesRules == nil {
 		oneUpdateIptablesRules = &sync.Once{}
 	}
@@ -69,7 +70,7 @@ func updateRedirFirewallRules() {
 func getSSServerDomainList() (res []string) {
 	retry := 0
 doRequest:
-	req, err := http.NewRequest("GET", config.Generals.ConsoleHost+"/admin/servers", nil)
+	req, err := http.NewRequest("GET", config.Configurations.Generals.ConsoleHost+"/admin/servers", nil)
 	if err != nil {
 		common.Error("Could not parse get ss server list request:", err)
 		return
@@ -159,7 +160,7 @@ func addAbroadDNSServerIPs(encountered map[string]bool) (records []string) {
 	// abroad DNS servers IPs
 	record := "-A SS -d %s/32 -j RETURN"
 	records = append(records, "# skip DNS server out of China")
-	for _, v := range config.DNSProxy.Abroad {
+	for _, v := range config.Configurations.DNSProxy.Abroad {
 		if v.Protocol != "tcp" {
 			// only TCP is NATed
 			continue

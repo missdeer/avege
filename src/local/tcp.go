@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"common"
+	"config"
 )
 
 var (
@@ -21,28 +22,29 @@ var (
 		"roundrobin": prepareRoundRobinLoadBalance,
 		"none":       prepareNoneLoadBalance,
 	}
+	serverIP = make(map[uint32]int) // IPv4 only
 )
 
 func filterIPv4TCPOutbound(conn net.Conn, rawaddr []byte) error {
 	targetIP := net.IPv4(rawaddr[1], rawaddr[2], rawaddr[3], rawaddr[4])
 	port := int(binary.BigEndian.Uint16(rawaddr[5:]))
 	ipAddr := binary.BigEndian.Uint32(rawaddr[1:5])
-	if _, ok := deniedPort[port]; ok {
+	if _, ok := config.DeniedPort[port]; ok {
 		common.Warning(conn.RemoteAddr(), "is trying to access denied port", port)
 		return ErrDeniedPort
 	}
-	if config.Target.Port.Deny == "all" {
-		if _, ok := allowedPort[port]; !ok {
+	if config.Configurations.Target.Port.Deny == "all" {
+		if _, ok := config.AllowedPort[port]; !ok {
 			common.Warning(conn.RemoteAddr(), "is trying to access not allowed port", port)
 			return ErrNotAllowedPort
 		}
 	}
-	if _, ok := deniedIP[ipAddr]; ok {
+	if _, ok := config.DeniedIP[ipAddr]; ok {
 		common.Warning(conn.RemoteAddr(), "is trying to access denied IP", targetIP)
 		return ErrDeniedIP
 	}
-	if config.Target.IP.Deny == "all" {
-		if _, ok := allowedIP[ipAddr]; !ok {
+	if config.Configurations.Target.IP.Deny == "all" {
+		if _, ok := config.AllowedIP[ipAddr]; !ok {
 			common.Warning(conn.RemoteAddr(), "is trying to access not allowed IP", targetIP)
 			return ErrNotAllowedIP
 		}
@@ -80,8 +82,8 @@ func prepareNoneLoadBalance() {
 }
 
 func prepareDefaultLoadBalance() {
-	if strings.Index(config.Generals.LoadBalance, "index:") == 0 {
-		if index, err := strconv.Atoi(config.Generals.LoadBalance[6:]); err == nil {
+	if strings.Index(config.Configurations.Generals.LoadBalance, "index:") == 0 {
+		if index, err := strconv.Atoi(config.Configurations.Generals.LoadBalance[6:]); err == nil {
 			outboundIndex = index
 			outboundLoadBalanceHandler = indexSpecifiedLoadBalance
 		} else {
@@ -106,7 +108,7 @@ func handleTCPOutbound(conn net.Conn, rawaddr []byte, _ string) error {
 	}
 
 	if outboundLoadBalanceHandler == nil {
-		if prepareLoadBalance, ok := loadBalancePolicyMap[config.Generals.LoadBalance]; ok {
+		if prepareLoadBalance, ok := loadBalancePolicyMap[config.Configurations.Generals.LoadBalance]; ok {
 			prepareLoadBalance()
 		} else {
 			prepareDefaultLoadBalance()

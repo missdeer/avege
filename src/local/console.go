@@ -1,7 +1,6 @@
 package local
 
 import (
-	"common"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +8,9 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"common"
+	"config"
 )
 
 var (
@@ -19,12 +21,18 @@ var (
 	}
 )
 
+func updateConsoleConfigurations() {
+	consoleHost = config.Configurations.Generals.ConsoleHost
+	consoleVer = config.Configurations.Generals.ConsoleVersion
+	consoleWSUrl = config.Configurations.Generals.ConsoleWebSocketURL
+}
+
 func getQuote() {
 	retried := false
 DO_GET:
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s/quote", consoleHost, consoleVer), nil)
-	req.Header.Set("Authorization", config.Generals.Token)
+	req.Header.Set("Authorization", config.Configurations.Generals.Token)
 	resp, err := client.Do(req)
 	if err != nil {
 		if !retried {
@@ -40,7 +48,7 @@ DO_GET:
 	if resp.StatusCode != http.StatusOK {
 		common.Error("getting quote response", resp.Status)
 		if resp.StatusCode == http.StatusUnauthorized {
-			leftQuote = 0
+			config.LeftQuote = 0
 		}
 		return
 	}
@@ -65,7 +73,7 @@ DO_GET:
 	}
 	if q, ok := resQuote["quote"]; ok {
 		common.Debug("left quote:", q)
-		leftQuote = q
+		config.LeftQuote = q
 	}
 }
 
@@ -86,7 +94,7 @@ DO_POST:
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/%s/used", consoleHost, consoleVer), strings.NewReader(postValues.Encode()))
-	req.Header.Set("Authorization", config.Generals.Token)
+	req.Header.Set("Authorization", config.Configurations.Generals.Token)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -103,7 +111,7 @@ DO_POST:
 	if resp.StatusCode != http.StatusOK {
 		common.Error("getting statistic response", resp.Status)
 		if resp.StatusCode == http.StatusUnauthorized {
-			leftQuote = 0
+			config.LeftQuote = 0
 		}
 		return
 	}
@@ -127,7 +135,7 @@ DO_POST:
 	if q, ok := resQuote["quote"]; ok {
 		if quote, ok := q.(int64); ok {
 			common.Debug("left quote:", quote)
-			leftQuote = quote
+			config.LeftQuote = quote
 		}
 	}
 }

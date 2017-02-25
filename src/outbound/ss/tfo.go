@@ -1,9 +1,10 @@
 package ss
 
 import (
-	"common/ds"
 	"errors"
 	"net"
+
+	"common/ds"
 )
 
 var ENotImpl = errors.New("function not implemented")

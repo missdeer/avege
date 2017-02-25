@@ -15,12 +15,16 @@ import (
 	"common/domain"
 	"common/fs"
 	iputil "common/ip"
+	"config"
+	"dnsproxy"
 	"github.com/DeanThompson/ginpprof"
 	"github.com/gin-gonic/gin"
 	"inbound"
 	"inbound/redir"
 	"inbound/socks"
 	"inbound/tunnel"
+	"outbound/ss"
+	"rule"
 )
 
 const (
@@ -67,7 +71,7 @@ func serveUDPInbound(ib *inbound.Inbound, ibHandler inbound.UDPInboundHandler) {
 }
 
 func runInbound(ib *inbound.Inbound) {
-	if leftQuote <= 0 {
+	if config.LeftQuote <= 0 {
 		common.Fatal("no quote now, please charge in time")
 	}
 	switch ib.Type {
@@ -84,25 +88,25 @@ func runInbound(ib *inbound.Inbound) {
 }
 
 func run() {
-	if config.InboundConfig != nil {
-		inbound.ModeEnable(config.InboundConfig.Type)
-		go runInbound(config.InboundConfig)
+	if config.Configurations.InboundConfig != nil {
+		inbound.ModeEnable(config.Configurations.InboundConfig.Type)
+		go runInbound(config.Configurations.InboundConfig)
 	}
-	for _, i := range config.InboundsConfig {
+	for _, i := range config.Configurations.InboundsConfig {
 		inbound.ModeEnable(i.Type)
 		go runInbound(i)
 	}
 
-	if config.DNSProxy.Enabled {
-		startDNSProxy()
+	if config.Configurations.DNSProxy.Enabled {
+		dnsproxy.Start()
 	}
 	statistics.LoadFromCache()
-	if config.Generals.ConsoleReportEnabled {
+	if config.Configurations.Generals.ConsoleReportEnabled {
 		go consoleWS()
 		go getQuote()
 	}
 	if inbound.IsModeEnabled("redir") {
-		go updateRedirFirewallRules()
+		go rule.UpdateRedirFirewallRules()
 	}
 
 	if inbound.Has() {
@@ -132,7 +136,7 @@ func onSecondTicker() {
 	if inbound.Has() {
 		go statistics.UpdateBps()
 	}
-	if config.Generals.BroadcastEnabled {
+	if config.Configurations.Generals.BroadcastEnabled {
 		if udpBroadcastConn == nil {
 			common.Warning("broadcast UDP conn is nil")
 			udpBroadcastConn, _ = dialUDP()
@@ -140,7 +144,7 @@ func onSecondTicker() {
 				common.Warning("recreating UDP conn failed")
 			}
 		}
-		if _, err := udpBroadcastConn.Write([]byte(config.Generals.Token)); err != nil {
+		if _, err := udpBroadcastConn.Write([]byte(config.Configurations.Generals.Token)); err != nil {
 			common.Error("failed to broadcast", err)
 			udpBroadcastConn.Close()
 			udpBroadcastConn, _ = dialUDP()
@@ -152,7 +156,7 @@ func onMinuteTicker() {
 	if inbound.Has() {
 		go statistics.UpdateLatency()
 	}
-	if config.Generals.ConsoleReportEnabled {
+	if config.Configurations.Generals.ConsoleReportEnabled {
 		go uploadStatistic()
 	}
 }
@@ -165,7 +169,7 @@ func onHourTicker() {
 
 func onDayTicker() {
 	if inbound.IsModeEnabled("redir") {
-		go updateRedirFirewallRules()
+		go rule.UpdateRedirFirewallRules()
 	}
 }
 
@@ -206,13 +210,32 @@ func timers() {
 	}
 }
 
+func parseMultiServersConfig() error {
+
+	updateSSConfigurations()
+
+	updateConsoleConfigurations()
+
+	removeDeprecatedServers()
+
+	updateNewServers()
+
+	common.Debugf("servers in config: %V\n", backends)
+
+	return nil
+}
+
+func updateSSConfigurations() {
+	ss.ProtectSocketPathPrefix = config.Configurations.Generals.ProtectSocketPathPrefix
+}
+
 // Main the entry of this program
 func Main() {
 	var configFile string
 	var printVer bool
 
 	flag.BoolVar(&printVer, "version", false, "print (v)ersion")
-	flag.StringVar(&configFile, "c", "config.json", "(s)pecify config file")
+	flag.StringVar(&configFile, "c", "config.Configurations.json", "(s)pecify config file")
 
 	flag.Parse()
 
@@ -228,19 +251,21 @@ func Main() {
 		common.Panic("config file not found")
 	}
 
-	if err = parseMultiServersConfigFile(configFile); err != nil {
+	if err = config.ParseMultiServersConfigFile(configFile); err != nil {
 		common.Panic("parsing multi servers config file failed: ", err)
 	}
+	parseMultiServersConfig()
 
 	configFileChanged := make(chan bool)
 	go func() {
 		for {
 			select {
 			case <-configFileChanged:
-				if err = parseMultiServersConfigFile(configFile); err != nil {
+				if err = config.ParseMultiServersConfigFile(configFile); err != nil {
 					common.Error("reloading multi servers config file failed: ", err)
 				} else {
 					common.Debug("reload", configFile)
+					parseMultiServersConfig()
 				}
 			}
 		}
@@ -248,10 +273,10 @@ func Main() {
 	go fs.MonitorFileChanegs(configFile, configFileChanged)
 	// end reading config file
 
-	common.DebugLevel = common.DebugLog(config.Generals.LogLevel)
+	common.DebugLevel = common.DebugLog(config.Configurations.Generals.LogLevel)
 
-	if config.Generals.APIEnabled {
-		if config.Generals.GenRelease {
+	if config.Configurations.Generals.APIEnabled {
+		if config.Configurations.Generals.GenRelease {
 			gin.SetMode(gin.ReleaseMode)
 		}
 		r := gin.Default()
@@ -290,19 +315,19 @@ func Main() {
 		r.StaticFS("/static", http.Dir("./resources/static"))
 		r.StaticFile("/favicon.ico", "./resources/favicon.ico")
 
-		if config.Generals.PProfEnabled {
+		if config.Configurations.Generals.PProfEnabled {
 			ginpprof.Wrapper(r)
 		}
-		go r.Run(config.Generals.API) // listen and serve
+		go r.Run(config.Configurations.Generals.API) // listen and serve
 	}
 
-	ApplyGeneralConfig()
+	config.ApplyGeneralConfig()
 
-	switch config.Generals.CacheService {
+	switch config.Configurations.Generals.CacheService {
 	case "redis":
 		cache.DefaultRedisKey = "avegeClient"
 	}
-	cache.Init(config.Generals.CacheService)
+	cache.Init(config.Configurations.Generals.CacheService)
 
 	run()
 }
