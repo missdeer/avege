@@ -264,9 +264,13 @@ func addServer(address string) {
 
 		outbound := &outbound.Outbound{
 			Address: net.JoinHostPort(address, config.DefaultPort),
-			Key:     config.DefaultKey,
-			Method:  config.DefaultMethod,
-			Type:    "shadowsocks",
+			SSRInfo: outbound.SSRInfo{
+				SSInfo: outbound.SSInfo{
+					Key:    config.DefaultKey,
+					Method: config.DefaultMethod,
+				},
+			},
+			Type: "shadowsocks",
 		}
 		config.Configurations.OutboundsConfig = append(config.Configurations.OutboundsConfig, outbound)
 		// save to redis

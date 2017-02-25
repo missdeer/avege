@@ -27,29 +27,49 @@ var (
 	DefaultMethod string
 )
 
-// GeneralConfig represents the general config section in configuration file
-type GeneralConfig struct {
-	LoadBalance              string `json:"load_balance"`
-	API                      string `json:"api"`
-	Token                    string `json:"token"`
-	CacheService             string `json:"cache_service"`
-	ProtectSocketPathPrefix  string `json:"protect_socket_path_prefix"`
-	MaxOpenFiles             uint64 `json:"max_openfiles"`
-	LogLevel                 int    `json:"log_level"`
-	Timeout                  time.Duration
-	InboundTimeout           time.Duration
-	PProfEnabled             bool   `json:"pprof"`
-	GenRelease               bool   `json:"gen_release"`
-	UDPEnabled               bool   `json:"udp_enabled"`
-	APIEnabled               bool   `json:"api_enabled"`
-	BroadcastEnabled         bool   `json:"broadcast_enabled"`
-	Tun2SocksEnabled         bool   `json:"tun2socks_enabled"`
+type ConsoleConfiguration struct {
+	ConsoleReportEnabled bool   `json:"console_report_enabled"`
+	ConsoleHost          string `json:"console_host"`
+	ConsoleVersion       string `json:"console_version"`
+	ConsoleWebSocketURL  string `json:"console_websocket_url"`
+}
+
+type PriorityInterfaceConfiguration struct {
 	PriorityInterfaceEnabled bool   `json:"priority_interface_enabled"`
 	PriorityInterfaceAddress string `json:"priority_interface_address"`
-	ConsoleReportEnabled     bool   `json:"console_report_enabled"`
-	ConsoleHost              string `json:"console_host"`
-	ConsoleVersion           string `json:"console_version"`
-	ConsoleWebSocketURL      string `json:"console_websocket_url"`
+}
+
+type APIConfiguration struct {
+	API        string `json:"api"`
+	APIEnabled bool   `json:"api_enabled"`
+}
+
+type DebuggingConfiguration struct {
+	LogLevel     int  `json:"log_level"`
+	PProfEnabled bool `json:"pprof"`
+	GenRelease   bool `json:"gen_release"`
+}
+
+type ProxyPolicyConfiguration struct {
+	LoadBalance      string `json:"load_balance"`
+	UDPEnabled       bool   `json:"udp_enabled"`
+	Tun2SocksEnabled bool   `json:"tun2socks_enabled"`
+}
+
+// GeneralConfig represents the general config section in configuration file
+type GeneralConfig struct {
+	Token                   string `json:"token"`
+	CacheService            string `json:"cache_service"`
+	ProtectSocketPathPrefix string `json:"protect_socket_path_prefix"`
+	MaxOpenFiles            uint64 `json:"max_openfiles"`
+	BroadcastEnabled        bool   `json:"broadcast_enabled"`
+	Timeout                 time.Duration
+	InboundTimeout          time.Duration
+	ProxyPolicyConfiguration
+	DebuggingConfiguration
+	APIConfiguration
+	PriorityInterfaceConfiguration
+	ConsoleConfiguration
 }
 
 // UnmarshalJSON override the json unmarshal method, so that some fields could be initialized correctly
@@ -102,25 +122,45 @@ type DNSServerSpecific struct {
 	Servers []*DNSConfig `json:"servers"`
 }
 
+type DNSCacheConfiguration struct {
+	CacheEnabled bool `json:"cache"`
+	CacheTTL     bool `json:"cache_ttl"`
+	CacheTimeout time.Duration
+}
+
+type DNSTimeoutConfiguration struct {
+	Timeout      time.Duration
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+}
+
+type DNSAbroadServerConfiguration struct {
+	AbroadServerCount string       `json:"abroad_server_count"`
+	AbroadProtocol    string       `json:"abroad_protocol"`
+	Abroad            []*DNSConfig `json:"abroad"`
+}
+
+type DNSChinaServerConfiguration struct {
+	ChinaServerCount string       `json:"china_server_count"`
+	China            []*DNSConfig `json:"china"`
+}
+
+type DNSEdnsClientSubnetConfiguration struct {
+	EDNSClientSubnetPolicy string `json:"edns_client_subnet_policy"`
+	EDNSClientSubnetIP     string `json:"edns_client_subnet_ip"`
+}
+
 // DNS represents the DNS section in configuration file
 type DNS struct {
-	Enabled                bool `json:"enabled"`
-	CacheEnabled           bool `json:"cache"`
-	CacheTTL               bool `json:"cache_ttl"`
-	CacheTimeout           time.Duration
-	Timeout                time.Duration
-	ReadTimeout            time.Duration
-	WriteTimeout           time.Duration
-	SearchDomain           string            `json:"search_domain"`
-	EDNSClientSubnetPolicy string            `json:"edns_client_subnet_policy"`
-	EDNSClientSubnetIP     string            `json:"edns_client_subnet_ip"`
-	ChinaServerCount       string            `json:"china_server_count"`
-	AbroadServerCount      string            `json:"abroad_server_count"`
-	AbroadProtocol         string            `json:"abroad_protocol"`
-	Local                  []*DNSConfig      `json:"local"`
-	China                  []*DNSConfig      `json:"china"`
-	Abroad                 []*DNSConfig      `json:"abroad"`
-	Server                 DNSServerSpecific `json:"server"`
+	DNSCacheConfiguration
+	DNSTimeoutConfiguration
+	DNSAbroadServerConfiguration
+	DNSChinaServerConfiguration
+	DNSEdnsClientSubnetConfiguration
+	Enabled      bool              `json:"enabled"`
+	SearchDomain string            `json:"search_domain"`
+	Local        []*DNSConfig      `json:"local"`
+	Server       DNSServerSpecific `json:"server"`
 }
 
 // UnmarshalJSON override the json unmarshal method, so that some fields could be initialized correctly

@@ -6,22 +6,33 @@ import (
 	"sync/atomic"
 )
 
-type Statistic struct {
-	sync.RWMutex
-	latency                  int64
-	totalUpload              uint64
-	totalDownload            uint64
+type totalStat struct {
+	totalUpload   uint64
+	totalDownload uint64
+}
+
+type highestStat struct {
 	highestLastSecondBps     uint64
 	highestLastMinuteBps     uint64
 	highestLastTenMinutesBps uint64
 	highestLastHourBps       uint64
-	lastSecondBps            uint64
-	lastMinuteBps            uint64
-	lastTenMinutesBps        uint64
-	lastHourBps              uint64
-	bytesCurrentSecond       uint64
-	bytesPerSecond           [3600]uint64
-	failedCount              uint32
+}
+
+type lastStat struct {
+	lastSecondBps     uint64
+	lastMinuteBps     uint64
+	lastTenMinutesBps uint64
+	lastHourBps       uint64
+}
+type Statistic struct {
+	sync.RWMutex
+	totalStat
+	highestStat
+	lastStat
+	latency            int64
+	bytesCurrentSecond uint64
+	bytesPerSecond     [3600]uint64
+	failedCount        uint32
 }
 
 func NewStatistic() *Statistic {

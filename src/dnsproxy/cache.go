@@ -14,7 +14,7 @@ func cacheDNSResultLocation(cacheKey string, inChina bool) {
 }
 
 func hitCache(r *dns.Msg, cacheKey string) (rs *dns.Msg) {
-	if config.Configurations.DNSProxy.CacheEnabled && cache.Instance.IsExist(cacheKey) {
+	if config.Configurations.DNSProxy.Enabled && cache.Instance.IsExist(cacheKey) {
 		if cacheValue, err := cache.Instance.Get(cacheKey); err == nil {
 			if b, ok := cacheValue.([]byte); ok {
 				rs = &dns.Msg{}

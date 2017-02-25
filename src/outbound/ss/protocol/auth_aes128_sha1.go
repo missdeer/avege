@@ -12,7 +12,9 @@ func newAuthAES128SHA1() IProtocol {
 		hmac:       common.HmacSHA1,
 		hashDigest: common.SHA1Sum,
 		packID:     1,
-		recvID:     1,
+		recvInfo: recvInfo{
+			recvID: 1,
+		},
 	}
 	return a
 }

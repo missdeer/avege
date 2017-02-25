@@ -218,20 +218,26 @@ func (m *StatisticWrapper) SaveToRedis() {
 	defer m.RUnlock()
 	for server, stat := range m.StatisticMap {
 		s := Stat{
-			Id:                       server.id,
-			Address:                  server.address,
-			FailedCount:              stat.GetFailedCount(),
-			Latency:                  stat.GetLatency(),
-			TotalDownload:            stat.GetTotalDownload(),
-			TotalUpload:              stat.GetTotalUploaded(),
-			HighestLastHourBps:       stat.GetHighestLastHourBps(),
-			HighestLastTenMinutesBps: stat.GetHighestLastTenMinutesBps(),
-			HighestLastMinuteBps:     stat.GetHighestLastMinuteBps(),
-			HighestLastSecondBps:     stat.GetHighestLastSecondBps(),
-			LastHourBps:              stat.GetLastHourBps(),
-			LastTenMinutesBps:        stat.GetLastTenMinutesBps(),
-			LastMinuteBps:            stat.GetLastMinuteBps(),
-			LastSecondBps:            stat.GetLastSecondBps(),
+			Id:          server.id,
+			Address:     server.address,
+			FailedCount: stat.GetFailedCount(),
+			Latency:     stat.GetLatency(),
+			totalStat: totalStat{
+				TotalDownload: stat.GetTotalDownload(),
+				TotalUpload:   stat.GetTotalUploaded(),
+			},
+			highestStat: highestStat{
+				HighestLastHourBps:       stat.GetHighestLastHourBps(),
+				HighestLastTenMinutesBps: stat.GetHighestLastTenMinutesBps(),
+				HighestLastMinuteBps:     stat.GetHighestLastMinuteBps(),
+				HighestLastSecondBps:     stat.GetHighestLastSecondBps(),
+			},
+			lastStat: lastStat{
+				LastHourBps:       stat.GetLastHourBps(),
+				LastTenMinutesBps: stat.GetLastTenMinutesBps(),
+				LastMinuteBps:     stat.GetLastMinuteBps(),
+				LastSecondBps:     stat.GetLastSecondBps(),
+			},
 		}
 		var buf bytes.Buffer
 		encoder := gob.NewEncoder(&buf)

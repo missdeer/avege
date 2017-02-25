@@ -28,23 +28,29 @@ func newAuthAES128MD5() IProtocol {
 		hmac:       common.HmacMD5,
 		hashDigest: common.MD5Sum,
 		packID:     1,
-		recvID:     1,
+		recvInfo: recvInfo{
+			recvID: 1,
+		},
 	}
 	return a
 }
 
-type authAES128 struct {
-	ssr.ServerInfoForObfs
-	data             *authData
-	hasSentHeader    bool
-	packID           uint32
+type recvInfo struct {
 	recvID           uint32
-	userKey          []byte
 	recvBuffer       []byte
 	recvBufferLength int
-	salt             string
-	hmac             hmacMethod
-	hashDigest       hashDigestMethod
+}
+
+type authAES128 struct {
+	ssr.ServerInfoForObfs
+	recvInfo
+	data          *authData
+	hasSentHeader bool
+	packID        uint32
+	userKey       []byte
+	salt          string
+	hmac          hmacMethod
+	hashDigest    hashDigestMethod
 }
 
 func (a *authAES128) SetServerInfo(s *ssr.ServerInfoForObfs) {

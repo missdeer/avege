@@ -2,22 +2,34 @@ package local
 
 import "sort"
 
-type Stat struct {
-	Id                       string
-	Address                  string
-	ProtocolType             string
-	FailedCount              uint32
-	Latency                  int64
-	TotalUpload              uint64
-	TotalDownload            uint64
+type totalStat struct {
+	TotalUpload   uint64
+	TotalDownload uint64
+}
+
+type highestStat struct {
 	HighestLastSecondBps     uint64
 	HighestLastMinuteBps     uint64
 	HighestLastTenMinutesBps uint64
 	HighestLastHourBps       uint64
-	LastSecondBps            uint64
-	LastMinuteBps            uint64
-	LastTenMinutesBps        uint64
-	LastHourBps              uint64
+}
+
+type lastStat struct {
+	LastSecondBps     uint64
+	LastMinuteBps     uint64
+	LastTenMinutesBps uint64
+	LastHourBps       uint64
+}
+
+type Stat struct {
+	totalStat
+	highestStat
+	lastStat
+	Id           string
+	Address      string
+	ProtocolType string
+	FailedCount  uint32
+	Latency      int64
 }
 
 type Sorter func(string, Stats)
