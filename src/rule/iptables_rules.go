@@ -240,9 +240,8 @@ func addChinaIPs(encountered map[string]bool) (records []string) {
 func addCurrentRunningServerIPs(encountered map[string]bool) (res []string) {
 	// current running server addresses
 	record := "-A SS -d %s/32 -j RETURN"
-	statistics.RLock()
-	for si := range statistics.StatisticMap {
-		host, _, _ := net.SplitHostPort(si.address)
+	for _, outbound := range config.Configurations.OutboundsConfig {
+		host, _, _ := net.SplitHostPort(outbound.Address)
 		ips, err := net.LookupIP(host)
 		if err != nil {
 			continue
@@ -260,9 +259,7 @@ func addCurrentRunningServerIPs(encountered map[string]bool) (res []string) {
 			encountered[val] = true
 			res = append(res, val)
 		}
-
 	}
-	statistics.RUnlock()
 	return
 }
 
