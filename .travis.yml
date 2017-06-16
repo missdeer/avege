@@ -3,15 +3,27 @@ go:
   - 1.8
 env:
   global:
-      - NDK_VERSION=r13b
+      - NDK_VERSION=r15
       - ANDROID_NDK_HOME=$HOME/.android/android-ndk-${NDK_VERSION}
       - DEPS=$HOME/.deps
       - ANDROID_ARM_TOOLCHAIN=$DEPS/android-toolchain-16-arm
+      - ANDROID_AARCH64_TOOLCHAIN=$DEPS/android-toolchain-16-aarch64
       - ANDROID_X86_TOOLCHAIN=$DEPS/android-toolchain-16-x86
+      - ANDROID_X64_TOOLCHAIN=$DEPS/android-toolchain-16-x64
+      - ANDROID_MIPS64_TOOLCHAIN=$DEPS/android-toolchain-16-mips64
+      - ANDROID_MIPS_TOOLCHAIN=$DEPS/android-toolchain-16-mips
       - ANDROID_ARM_CC=$ANDROID_ARM_TOOLCHAIN/bin/arm-linux-androideabi-gcc
       - ANDROID_ARM_STRIP=$ANDROID_ARM_TOOLCHAIN/bin/arm-linux-androideabi-strip
       - ANDROID_X86_CC=$ANDROID_X86_TOOLCHAIN/bin/i686-linux-android-gcc
       - ANDROID_X86_STRIP=$ANDROID_X86_TOOLCHAIN/bin/i686-linux-android-strip
+      - ANDROID_AARCH64_CC=$ANDROID_AARCH64_TOOLCHAIN/bin/aarch64-linux-android-gcc
+      - ANDROID_AARCH64_STRIP=$ANDROID_AARCH64_TOOLCHAIN/bin/aarch64-linux-android-strip
+      - ANDROID_MIPS64_CC=$ANDROID_MIPS64_TOOLCHAIN/bin/mips64el-linux-android-gcc
+      - ANDROID_MIPS64_STRIP=$ANDROID_MIPS64_TOOLCHAIN/bin/mips64el-linux-android-strip
+      - ANDROID_MIPS_CC=$ANDROID_MIPS_TOOLCHAIN/bin/mipsel-linux-android-gcc
+      - ANDROID_MIPS_STRIP=$ANDROID_MIPS_TOOLCHAIN/bin/mipsel-linux-android-strip
+      - ANDROID_X64_CC=$ANDROID_X64_TOOLCHAIN/bin/x86_64-linux-android-gcc
+      - ANDROID_X64_STRIP=$ANDROID_X64_TOOLCHAIN/bin/x86_64-linux-android-strip
       - PATH=${ANDROID_NDK_HOME}:${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools:${PATH}
 
 install:
@@ -32,13 +44,37 @@ install:
     if [ ! -d "$ANDROID_ARM_TOOLCHAIN" ]; then
         echo "Make standalone toolchain for ARM arch"
         $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch arm \
-            --api 16 --install-dir $ANDROID_ARM_TOOLCHAIN
+            --api 20 --install-dir $ANDROID_ARM_TOOLCHAIN
     fi
   - >
     if [ ! -d "$ANDROID_X86_TOOLCHAIN" ]; then
         echo "Make standalone toolchain for X86 arch"
         $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch x86 \
-            --api 16 --install-dir $ANDROID_X86_TOOLCHAIN
+            --api 20 --install-dir $ANDROID_X86_TOOLCHAIN
+    fi
+  - >
+    if [ ! -d "$ANDROID_AARCH64_TOOLCHAIN" ]; then
+        echo "Make standalone toolchain for AARCH64 arch"
+        $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch arm64 \
+            --api 20 --install-dir $ANDROID_AARCH64_TOOLCHAIN
+    fi
+  - >
+    if [ ! -d "$ANDROID_X64_TOOLCHAIN" ]; then
+        echo "Make standalone toolchain for X86_64 arch"
+        $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch x86_64 \
+            --api 20 --install-dir $ANDROID_X64_TOOLCHAIN
+    fi
+  - >
+    if [ ! -d "$ANDROID_MIPS64_TOOLCHAIN" ]; then
+        echo "Make standalone toolchain for MIPS64EL arch"
+        $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch mips64 \
+            --api 20 --install-dir $ANDROID_MIPS64_TOOLCHAIN
+    fi
+  - >
+    if [ ! -d "$ANDROID_MIPS_TOOLCHAIN" ]; then
+        echo "Make standalone toolchain for MIPS arch"
+        $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch mips \
+            --api 20 --install-dir $ANDROID_MIPS_TOOLCHAIN
     fi
   - go get github.com/op/go-logging
   - go get github.com/garyburd/redigo/redis
@@ -59,6 +95,10 @@ script:
   - pwd && ls -l && cd src/avege
   - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_ARM_CC GOOS=android GOARCH=arm GOARM=7 go build -ldflags="-s -w" && tar czvf avege-android-armv7.tar.gz avege conf resources templates config-sample.json
   - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_X86_CC GOOS=android GOARCH=386 go build -ldflags="-s -w"  && tar czvf avege-android-386.tar.gz avege conf resources templates config-sample.json
+  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_AARCH64_CC GOOS=android GOARCH=arm64 go build -ldflags="-s -w"  && tar czvf avege-android-arm64.tar.gz avege conf resources templates config-sample.json
+  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_X64_CC GOOS=android GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf avege-android-amd64.tar.gz avege conf resources templates config-sample.json
+  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_MIPS64_CC GOOS=android GOARCH=mips64le go build -ldflags="-s -w"  && tar czvf avege-android-mips64le.tar.gz avege conf resources templates config-sample.json
+  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_MIPS_CC GOOS=android GOARCH=mipsle go build -ldflags="-s -w"  && tar czvf avege-android-mipsle.tar.gz avege conf resources templates config-sample.json
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-amd64.tar.gz avege conf resources templates config-sample.json
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-386.tar.gz avege conf resources templates config-sample.json
   - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOARM=5 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-armv5.tar.gz avege conf resources templates config-sample.json
@@ -91,6 +131,10 @@ deploy:
   file: 
     - avege-android-armv7.tar.gz
     - avege-android-386.tar.gz
+    - avege-android-amd64.tar.gz
+    - avege-android-mips64le.tar.gz
+    - avege-android-mipsle.tar.gz
+    - avege-android-arm64.tar.gz
     - avege-darwin-amd64.tar.gz
     - avege-dragonflybsd-amd64.tar.gz
     - avege-freebsd-amd64.tar.gz
