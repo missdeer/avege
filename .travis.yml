@@ -44,37 +44,37 @@ install:
     if [ ! -d "$ANDROID_ARM_TOOLCHAIN" ]; then
         echo "Make standalone toolchain for ARM arch"
         $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch arm \
-            --api 20 --install-dir $ANDROID_ARM_TOOLCHAIN
+            --api 21 --install-dir $ANDROID_ARM_TOOLCHAIN
     fi
   - >
     if [ ! -d "$ANDROID_X86_TOOLCHAIN" ]; then
         echo "Make standalone toolchain for X86 arch"
         $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch x86 \
-            --api 20 --install-dir $ANDROID_X86_TOOLCHAIN
+            --api 21 --install-dir $ANDROID_X86_TOOLCHAIN
     fi
   - >
     if [ ! -d "$ANDROID_AARCH64_TOOLCHAIN" ]; then
         echo "Make standalone toolchain for AARCH64 arch"
         $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch arm64 \
-            --api 20 --install-dir $ANDROID_AARCH64_TOOLCHAIN
+            --api 21 --install-dir $ANDROID_AARCH64_TOOLCHAIN
     fi
   - >
     if [ ! -d "$ANDROID_X64_TOOLCHAIN" ]; then
         echo "Make standalone toolchain for X86_64 arch"
         $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch x86_64 \
-            --api 20 --install-dir $ANDROID_X64_TOOLCHAIN
+            --api 21 --install-dir $ANDROID_X64_TOOLCHAIN
     fi
   - >
     if [ ! -d "$ANDROID_MIPS64_TOOLCHAIN" ]; then
         echo "Make standalone toolchain for MIPS64EL arch"
         $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch mips64 \
-            --api 20 --install-dir $ANDROID_MIPS64_TOOLCHAIN
+            --api 21 --install-dir $ANDROID_MIPS64_TOOLCHAIN
     fi
   - >
     if [ ! -d "$ANDROID_MIPS_TOOLCHAIN" ]; then
         echo "Make standalone toolchain for MIPS arch"
         $ANDROID_NDK_HOME/build/tools/make_standalone_toolchain.py --arch mips \
-            --api 20 --install-dir $ANDROID_MIPS_TOOLCHAIN
+            --api 21 --install-dir $ANDROID_MIPS_TOOLCHAIN
     fi
   - go get github.com/op/go-logging
   - go get github.com/garyburd/redigo/redis
