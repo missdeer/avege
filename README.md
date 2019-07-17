@@ -77,7 +77,7 @@ Socks5/Transparent Proxy Client
 ```shell
 go get -u -f -v github.com/op/go-logging
 go get -u -f -v github.com/garyburd/redigo/redis
-go get -u -f -v github.com/go-fsnotify/fsnotify
+go get -u -f -v github.com/fsnotify/fsnotify
 go get -u -f -v github.com/kardianos/osext
 go get -u -f -v github.com/gin-gonic/gin
 go get -u -f -v github.com/gorilla/websocket

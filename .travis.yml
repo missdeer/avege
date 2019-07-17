@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.8
+  - tip
 env:
   global:
       - NDK_VERSION=r15
@@ -78,7 +78,7 @@ install:
     fi
   - go get github.com/op/go-logging
   - go get github.com/garyburd/redigo/redis
-  - go get github.com/go-fsnotify/fsnotify
+  - go get github.com/fsnotify/fsnotify
   - go get github.com/kardianos/osext
   - go get github.com/gin-gonic/gin
   - go get github.com/gorilla/websocket
@@ -92,38 +92,38 @@ install:
   - go get github.com/RouterScript/ProxyClient
   - go get github.com/ftrvxmtrx/fd
 script:
-  - pwd && ls -l && cd src/avege
-  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_ARM_CC GOOS=android GOARCH=arm GOARM=7 go build -ldflags="-s -w" && tar czvf avege-android-armv7.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_X86_CC GOOS=android GOARCH=386 go build -ldflags="-s -w"  && tar czvf avege-android-386.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_AARCH64_CC GOOS=android GOARCH=arm64 go build -ldflags="-s -w"  && tar czvf avege-android-arm64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_X64_CC GOOS=android GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf avege-android-amd64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_MIPS64_CC GOOS=android GOARCH=mips64le go build -ldflags="-s -w"  && tar czvf avege-android-mips64le.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. CGO_ENABLED=1 CC=$ANDROID_MIPS_CC GOOS=android GOARCH=mipsle go build -ldflags="-s -w"  && tar czvf avege-android-mipsle.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-amd64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-386.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOARM=5 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-armv5.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOARM=6 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-armv6.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOARM=7 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-armv7.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm64 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-arm64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=ppc64 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-ppc64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=ppc64le GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-ppc64le.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=mips64 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mips64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=mips64le GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mips64le.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=mips GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mips.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=mipsle GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mipsle.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=darwin go build  && tar czvf avege-darwin-amd64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=windows go build  && tar czvf avege-windows-amd64.tar.gz avege.exe conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=windows go build  && tar czvf avege-windows-386.tar.gz avege.exe conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=freebsd go build  && tar czvf avege-freebsd-amd64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=freebsd go build  && tar czvf avege-freebsd-386.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOOS=freebsd go build  && tar czvf avege-freebsd-arm.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=openbsd go build  && tar czvf avege-openbsd-amd64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=openbsd go build  && tar czvf avege-openbsd-386.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=netbsd go build  && tar czvf avege-netbsd-amd64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=386 GOOS=netbsd go build  && tar czvf avege-netbsd-386.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=arm GOOS=netbsd go build  && tar czvf avege-netbsd-arm.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=dragonfly go build  && tar czvf avege-dragonflybsd-amd64.tar.gz avege conf resources templates config-sample.json
-  - env GOPATH=$GOPATH:$PWD/../.. GOARCH=amd64 GOOS=solaris go build  && tar czvf avege-solaris-amd64.tar.gz avege conf resources templates config-sample.json
+  - pwd && ls -l
+  - env CGO_ENABLED=1 CC=$ANDROID_ARM_CC GOOS=android GOARCH=arm GOARM=7 go build -ldflags="-s -w" && tar czvf avege-android-armv7.tar.gz avege conf resources templates config-sample.json
+  - env CGO_ENABLED=1 CC=$ANDROID_X86_CC GOOS=android GOARCH=386 go build -ldflags="-s -w"  && tar czvf avege-android-386.tar.gz avege conf resources templates config-sample.json
+  - env CGO_ENABLED=1 CC=$ANDROID_AARCH64_CC GOOS=android GOARCH=arm64 go build -ldflags="-s -w"  && tar czvf avege-android-arm64.tar.gz avege conf resources templates config-sample.json
+  - env CGO_ENABLED=1 CC=$ANDROID_X64_CC GOOS=android GOARCH=amd64 go build -ldflags="-s -w"  && tar czvf avege-android-amd64.tar.gz avege conf resources templates config-sample.json
+  - env CGO_ENABLED=1 CC=$ANDROID_MIPS64_CC GOOS=android GOARCH=mips64le go build -ldflags="-s -w"  && tar czvf avege-android-mips64le.tar.gz avege conf resources templates config-sample.json
+  - env CGO_ENABLED=1 CC=$ANDROID_MIPS_CC GOOS=android GOARCH=mipsle go build -ldflags="-s -w"  && tar czvf avege-android-mipsle.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-amd64.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=386 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-386.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=arm GOARM=5 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-armv5.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=arm GOARM=6 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-armv6.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=arm GOARM=7 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-armv7.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=arm64 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-arm64.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=ppc64 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-ppc64.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=ppc64le GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-ppc64le.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=mips64 GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mips64.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=mips64le GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mips64le.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=mips GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mips.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=mipsle GOOS=linux go build -ldflags="-s -w"  && tar czvf avege-linux-mipsle.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=amd64 GOOS=darwin go build  && tar czvf avege-darwin-amd64.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=amd64 GOOS=windows go build  && tar czvf avege-windows-amd64.tar.gz avege.exe conf resources templates config-sample.json
+  - env GOARCH=386 GOOS=windows go build  && tar czvf avege-windows-386.tar.gz avege.exe conf resources templates config-sample.json
+  - env GOARCH=amd64 GOOS=freebsd go build  && tar czvf avege-freebsd-amd64.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=386 GOOS=freebsd go build  && tar czvf avege-freebsd-386.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=arm GOOS=freebsd go build  && tar czvf avege-freebsd-arm.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=amd64 GOOS=openbsd go build  && tar czvf avege-openbsd-amd64.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=386 GOOS=openbsd go build  && tar czvf avege-openbsd-386.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=amd64 GOOS=netbsd go build  && tar czvf avege-netbsd-amd64.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=386 GOOS=netbsd go build  && tar czvf avege-netbsd-386.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=arm GOOS=netbsd go build  && tar czvf avege-netbsd-arm.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=amd64 GOOS=dragonfly go build  && tar czvf avege-dragonflybsd-amd64.tar.gz avege conf resources templates config-sample.json
+  - env GOARCH=amd64 GOOS=solaris go build  && tar czvf avege-solaris-amd64.tar.gz avege conf resources templates config-sample.json
 deploy:
   provider: releases
   api_key:
