@@ -25,21 +25,6 @@ install:
         unzip -q android-ndk-${NDK_VERSION}-linux-${ARCH}.zip;
         popd;
     fi
-  - go get github.com/op/go-logging
-  - go get github.com/garyburd/redigo/redis
-  - go get github.com/fsnotify/fsnotify
-  - go get github.com/kardianos/osext
-  - go get github.com/gin-gonic/gin
-  - go get github.com/gorilla/websocket
-  - go get github.com/DeanThompson/ginpprof
-  - go get github.com/miekg/dns
-  - go get github.com/Yawning/chacha20
-  - go get github.com/dgryski/go-camellia
-  - go get github.com/dgryski/go-idea
-  - go get github.com/dgryski/go-rc2
-  - go get github.com/patrickmn/go-cache
-  - go get github.com/RouterScript/ProxyClient
-  - go get github.com/ftrvxmtrx/fd
 script:
   - pwd && ls -l
   - env CGO_ENABLED=1 CC=$ANDROID_ARM_CC GOOS=android GOARCH=arm GOARM=7 go build -o assets/avege -ldflags="-s -w" && cd assets && tar czvf avege-android-armv7.tar.gz avege conf resources templates config-sample.json
