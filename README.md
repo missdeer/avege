@@ -2,13 +2,12 @@
 
 Socks5/Transparent Proxy Client
 
-[![Build Status](https://travis-ci.org/avege/avege.svg?branch=master)](https://travis-ci.org/avege/avege)
-[![Join the chat at https://t.me/avege](https://img.shields.io/badge/chat-on%20Telegram-blue.svg)](https://t.me/avege)
-[![GitHub release](https://img.shields.io/github/release/avege/avege.svg?maxAge=2592000)](https://github.com/avege/avege/releases) 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/avege/avege/master/LICENSE) 
-[![Github Releases Downloads Total](https://img.shields.io/github/downloads/avege/avege/total.svg)](https://github.com/avege/avege/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/avege/avege)](https://goreportcard.com/report/github.com/avege/avege)
-[![codebeat badge](https://codebeat.co/badges/630a79a4-2ebf-4e23-8dbd-eb81ae6b078e)](https://codebeat.co/projects/github-com-avege-avege)
+[![Build Status](https://travis-ci.org/avege/avege.svg?branch=master)](https://travis-ci.org/missdeer/avege)
+[![GitHub release](https://img.shields.io/github/release/missdeer/avege.svg?maxAge=2592000)](https://github.com/missdeer/avege/releases) 
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/missdeer/avege/master/LICENSE) 
+[![Github Releases Downloads Total](https://img.shields.io/github/downloads/missdeer/avege/total.svg)](https://github.com/missdeer/avege/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/missdeer/avege)](https://goreportcard.com/report/github.com/missdeer/avege)
+[![codebeat badge](https://codebeat.co/badges/1cf94e1d-9b1a-4834-b9ae-a99df311273e)](https://codebeat.co/projects/github-com-missdeer-avege-master)
 
 ## Feature
 
@@ -97,7 +96,7 @@ go get -u -f -v github.com/ftrvxmtrx/fd
 for macOS/Linux/BSDs
 
 ```shell
-git clone https://github.com/avege/avege.git
+git clone https://github.com/missdeer/avege.git
 cd avege/src/avege
 GOPATH=$GOPATH:$PWD/../.. go build 
 ```
