@@ -45,6 +45,7 @@ func Unpack(dst, pkt []byte, s *StreamCipher) ([]byte, error) {
 type SSUDPConn struct {
 	net.PacketConn
 	*StreamCipher
+	IFilter   Filter
 }
 
 // NewPacketConn wraps a net.PacketConn with stream cipher encryption/decryption.
@@ -53,6 +54,9 @@ func NewSSUDPConn(c net.PacketConn, cipher *StreamCipher) net.PacketConn {
 }
 
 func (c *SSUDPConn) WriteTo(b []byte, addr net.Addr) (int, error) {
+	if c.IFilter.Match(b) {
+		return 0, errors.New("udp packet matched filter, rejected")
+	}
 	buf := make([]byte, len(c.iv)+len(b))
 	_, err := Pack(buf, b, c.StreamCipher)
 	if err != nil {

@@ -3,6 +3,7 @@ package ss
 import (
 	"net"
 	"sync"
+	"time"
 
 	"github.com/Max-Sum/avege/common"
 	"github.com/Max-Sum/avege/common/ds"
@@ -17,10 +18,14 @@ type SSTCPConn struct {
 	*StreamCipher
 	IObfs         obfs.IObfs
 	IProtocol     protocol.IProtocol
-	left          []byte
+	IFilter       Filter
+	leftToRead    []byte
+	leftToWrite   []byte
+	ltwMutex      sync.Mutex
 	readBuf       []byte
 	writeBuf      []byte
 	lastReadError error
+	coldStart     bool
 }
 
 func NewSSTCPConn(c net.Conn, cipher *StreamCipher) *SSTCPConn {
@@ -28,7 +33,9 @@ func NewSSTCPConn(c net.Conn, cipher *StreamCipher) *SSTCPConn {
 		Conn:         c,
 		StreamCipher: cipher,
 		readBuf:      ds.GlobalLeakyBuf.Get(),
-		writeBuf:     ds.GlobalLeakyBuf.Get()}
+		writeBuf:     ds.GlobalLeakyBuf.Get(),
+		coldStart:    true,
+	}
 }
 
 func (c *SSTCPConn) Close() error {
@@ -94,7 +101,7 @@ func (c *SSTCPConn) doRead() (err error) {
 			common.Debug("do send back")
 			//buf := c.IObfs.Encode(make([]byte, 0))
 			//c.Conn.Write(buf)
-			c.Write(make([]byte, 0))
+			c.Write(nil)
 			return nil
 		}
 
@@ -123,10 +130,10 @@ func (c *SSTCPConn) doRead() (err error) {
 			}
 			postDecryptedDataLen := len(postDecryptedData)
 			if postDecryptedDataLen > 0 {
-				b := make([]byte, len(c.left)+postDecryptedDataLen)
-				copy(b, c.left)
-				copy(b[len(c.left):], postDecryptedData)
-				c.left = b
+				b := make([]byte, len(c.leftToRead)+postDecryptedDataLen)
+				copy(b, c.leftToRead)
+				copy(b[len(c.leftToRead):], postDecryptedData)
+				c.leftToRead = b
 				return
 			}
 		}
@@ -136,7 +143,7 @@ func (c *SSTCPConn) doRead() (err error) {
 
 func (c *SSTCPConn) Read(b []byte) (n int, err error) {
 	c.RLock()
-	leftLength := len(c.left)
+	leftLength := len(c.leftToRead)
 	c.RUnlock()
 	if leftLength == 0 {
 		if err = c.doRead(); err != nil {
@@ -149,23 +156,55 @@ func (c *SSTCPConn) Read(b []byte) (n int, err error) {
 		}()
 	}
 
-	if leftLength := len(c.left); leftLength > 0 {
+	if leftLength := len(c.leftToRead); leftLength > 0 {
 		maxLength := len(b)
 		if leftLength > maxLength {
 			c.Lock()
-			copy(b, c.left[:maxLength])
-			c.left = c.left[maxLength:]
+			copy(b, c.leftToRead[:maxLength])
+			c.leftToRead = c.leftToRead[maxLength:]
 			c.Unlock()
 			return maxLength, nil
 		}
 
 		c.Lock()
-		copy(b, c.left)
-		c.left = nil
+		copy(b, c.leftToRead)
+		c.leftToRead = nil
 		c.Unlock()
 		return leftLength, c.lastReadError
 	}
 	return 0, c.lastReadError
+}
+
+// Avoid server filtering (SSPanel)
+// Cuts off data when a pattern is found.
+// Send it out after a reply is received or a duration is passed
+func (c *SSTCPConn) avoidServerFilter(b []byte) (outData []byte) {
+	if c.coldStart && len(b) > 0 {
+		c.ltwMutex.Lock()
+		defer c.ltwMutex.Unlock()
+		if c.leftToWrite == nil {
+			if loc := c.IFilter.FindIndex(b); loc != nil {
+				c.leftToWrite = b[loc[0]:]
+				b = b[:loc[0]]
+				// timeout handler
+				go func() {
+					time.Sleep(time.Duration(10) * time.Millisecond)
+					c.coldStart = false
+					if len(c.leftToWrite) > 0 {
+						c.Write(nil)
+					}
+				}()
+			}
+		} else if len(b) > 0 {
+			c.leftToWrite = append(c.leftToWrite, b...)
+		}
+	} else if len(c.leftToWrite) > 0 {
+		c.ltwMutex.Lock()
+		defer c.ltwMutex.Unlock()
+		b = append(c.leftToWrite, b...)
+		c.leftToWrite = nil
+	}
+	return b
 }
 
 func (c *SSTCPConn) preWrite(b []byte) (outData []byte, err error) {
@@ -174,7 +213,13 @@ func (c *SSTCPConn) preWrite(b []byte) (outData []byte, err error) {
 		return
 	}
 
+	// Avoid server filtering (SSPanel)
+	c.avoidServerFilter(b)
+
 	var preEncryptedData []byte
+	if b == nil {
+		b = make([]byte, 0)
+	}
 	preEncryptedData, err = c.IProtocol.PreEncrypt(b)
 	if err != nil {
 		return
