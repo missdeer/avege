@@ -1,9 +1,9 @@
 package protocol
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/hmac"
 	"encoding/base64"
 	"encoding/binary"
 	"math/rand"
@@ -239,7 +239,7 @@ func (a *authAES128) PostDecrypt(plainData []byte) (outData []byte, err error) {
 		}
 
 		h = a.hmac(key, a.recvBuffer[0:length-4])
-		if !hmac.Equal(h[0:4], a.recvBuffer[length-4:]) {
+		if !bytes.Equal(h[0:4], a.recvBuffer[length-4:]) {
 			common.Error("client post decrypt incorrect checksum")
 			return nil, ssr.ErrAuthAES128IncorrectChecksum
 		}
