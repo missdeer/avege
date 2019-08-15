@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/missdeer/avege/common"
+	"github.com/Max-Sum/avege/common"
 )
 
 const text = "Don't tell me the moon is shining; show me the glint of light on broken glass."

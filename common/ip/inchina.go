@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/missdeer/avege/common"
-	"github.com/missdeer/avege/common/fs"
-	"github.com/missdeer/avege/common/netutil"
+	"github.com/Max-Sum/avege/common"
+	"github.com/Max-Sum/avege/common/fs"
+	"github.com/Max-Sum/avege/common/netutil"
 )
 
 const apnic = "https://yii.li/apnic"

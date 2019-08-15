@@ -3,7 +3,7 @@ package obfs
 import (
 	"strings"
 
-	"github.com/missdeer/avege/outbound/ss/ssr"
+	"github.com/Max-Sum/avege/outbound/ss/ssr"
 )
 
 type creator func() IObfs

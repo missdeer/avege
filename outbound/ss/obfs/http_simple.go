@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/missdeer/avege/outbound/ss/ssr"
+	"github.com/Max-Sum/avege/outbound/ss/ssr"
 )
 
 var (

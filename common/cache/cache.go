@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"github.com/missdeer/avege/common"
+	"github.com/Max-Sum/avege/common"
 )
 
 type ICache interface {

@@ -4,10 +4,10 @@ import (
 	"net"
 	"sync"
 
-	"github.com/missdeer/avege/common"
-	"github.com/missdeer/avege/config"
-	"github.com/missdeer/avege/outbound"
-	"github.com/missdeer/avege/outbound/ss"
+	"github.com/Max-Sum/avege/common"
+	"github.com/Max-Sum/avege/config"
+	"github.com/Max-Sum/avege/outbound"
+	"github.com/Max-Sum/avege/outbound/ss"
 )
 
 type BackendsInformation []*BackendInfo

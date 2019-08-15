@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/missdeer/avege/common"
-	"github.com/missdeer/avege/config"
+	"github.com/Max-Sum/avege/common"
+	"github.com/Max-Sum/avege/config"
 	"github.com/RouterScript/ProxyClient"
-	"github.com/missdeer/avege/outbound/ss"
+	"github.com/Max-Sum/avege/outbound/ss"
 )
 
 // CommonProxyInfo fields that auth for http/https/socks

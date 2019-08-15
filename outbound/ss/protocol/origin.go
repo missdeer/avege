@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"github.com/missdeer/avege/outbound/ss/ssr"
+	"github.com/Max-Sum/avege/outbound/ss/ssr"
 )
 
 func init() {

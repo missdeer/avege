@@ -1,7 +1,7 @@
 package ip
 
 import (
-	"github.com/missdeer/avege/common/ds"
+	"github.com/Max-Sum/avege/common/ds"
 )
 
 var (

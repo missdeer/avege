@@ -3,7 +3,7 @@
 package config
 
 import (
-	"github.com/missdeer/avege/common"
+	"github.com/Max-Sum/avege/common"
 	"syscall"
 )
 

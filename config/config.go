@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/missdeer/avege/common"
-	"github.com/missdeer/avege/inbound"
-	"github.com/missdeer/avege/outbound"
+	"github.com/Max-Sum/avege/common"
+	"github.com/Max-Sum/avege/inbound"
+	"github.com/Max-Sum/avege/outbound"
 )
 
 var (
@@ -203,7 +203,7 @@ type LocalConfig struct {
 	Generals        *GeneralConfig       `json:"general"`
 	DNSProxy        *DNS                 `json:"dns"`
 	Target          *ACL                 `json:"target"`
-	InboundConfig   *inbound.Inbound     `json:"github.com/missdeer/avege/inbound"`
+	InboundConfig   *inbound.Inbound     `json:"github.com/Max-Sum/avege/inbound"`
 	InboundsConfig  []*inbound.Inbound   `json:"inbounds"`
 	OutboundsConfig []*outbound.Outbound `json:"outbounds"`
 }

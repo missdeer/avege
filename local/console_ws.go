@@ -5,13 +5,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/missdeer/avege/common"
-	"github.com/missdeer/avege/config"
+	"github.com/Max-Sum/avege/common"
+	"github.com/Max-Sum/avege/config"
 	"github.com/gorilla/websocket"
-	"github.com/missdeer/avege/inbound"
-	"github.com/missdeer/avege/outbound"
-	"github.com/missdeer/avege/outbound/ss"
-	"github.com/missdeer/avege/rule"
+	"github.com/Max-Sum/avege/inbound"
+	"github.com/Max-Sum/avege/outbound"
+	"github.com/Max-Sum/avege/outbound/ss"
+	"github.com/Max-Sum/avege/rule"
 )
 
 var (

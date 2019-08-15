@@ -3,7 +3,7 @@ package dnsproxy
 import (
 	"strings"
 
-	"github.com/missdeer/avege/common/domain"
+	"github.com/Max-Sum/avege/common/domain"
 	"github.com/miekg/dns"
 )
 

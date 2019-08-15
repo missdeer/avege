@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/missdeer/avege/common"
-	"github.com/missdeer/avege/config"
+	"github.com/Max-Sum/avege/common"
+	"github.com/Max-Sum/avege/config"
 )
 
 var (

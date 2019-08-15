@@ -6,8 +6,8 @@ import (
 	"log"
 	"net"
 
-	"github.com/missdeer/avege/common"
-	"github.com/missdeer/avege/inbound"
+	"github.com/Max-Sum/avege/common"
+	"github.com/Max-Sum/avege/inbound"
 )
 
 func handleTCPInbound(conn *net.TCPConn, outboundHandler common.TCPOutboundHandler) error {

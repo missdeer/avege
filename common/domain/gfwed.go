@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/missdeer/avege/common"
-	"github.com/missdeer/avege/common/ds"
-	"github.com/missdeer/avege/common/netutil"
+	"github.com/Max-Sum/avege/common"
+	"github.com/Max-Sum/avege/common/ds"
+	"github.com/Max-Sum/avege/common/netutil"
 )
 
 const gfwlistURL = "https://yii.li/gfwlist"

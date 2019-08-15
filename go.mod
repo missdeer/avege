@@ -1,4 +1,4 @@
-module github.com/missdeer/avege
+module github.com/Max-Sum/avege
 
 go 1.12
 
