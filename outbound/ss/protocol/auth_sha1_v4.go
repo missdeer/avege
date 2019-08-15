@@ -49,36 +49,19 @@ func (a *authSHA1v4) GetData() interface{} {
 
 func (a *authSHA1v4) packData(data []byte) (outData []byte) {
 	dataLength := len(data)
-	randLength := 1
-	if dataLength <= 1300 {
-		if dataLength > 400 {
-			randLength += rand.Intn(128)
-		} else {
-			randLength += rand.Intn(1024)
-		}
-	}
 
-	outLength := randLength + dataLength + 8
+	outLength := 1 + dataLength + 8
 	outData = make([]byte, outLength)
 	// 0~1, out length
 	binary.BigEndian.PutUint16(outData[0:2], uint16(outLength&0xFFFF))
 	// 2~3, crc of out length
 	crc32 := ssr.CalcCRC32(outData, 2, 0xFFFFFFFF)
 	binary.LittleEndian.PutUint16(outData[2:4], uint16(crc32&0xFFFF))
-	// 4~rand length+4, rand number
-	rand.Read(outData[4 : 4+randLength])
 	// 4, rand length
-	if randLength < 128 {
-		outData[4] = byte(randLength & 0xFF)
-	} else {
-		// 4, magic number 0xFF
-		outData[4] = 0xFF
-		// 5~6, rand length
-		binary.BigEndian.PutUint16(outData[5:], uint16(randLength&0xFFFF))
-	}
+	outData[4] = 1
 	// rand length+4~out length-4, data
 	if dataLength > 0 {
-		copy(outData[randLength+4:], data)
+		copy(outData[5:], data)
 	}
 	// out length-4~end, adler32 of full data
 	adler := ssr.CalcAdler32(outData[:outLength-4])
@@ -89,15 +72,7 @@ func (a *authSHA1v4) packData(data []byte) (outData []byte) {
 
 func (a *authSHA1v4) packAuthData(data []byte) (outData []byte) {
 	dataLength := len(data)
-	randLength := 1
-	if dataLength <= 1300 {
-		if dataLength > 400 {
-			randLength += rand.Intn(128)
-		} else {
-			randLength += rand.Intn(1024)
-		}
-	}
-	dataOffset := randLength + 4 + 2
+	dataOffset := 1 + 4 + 2
 	outLength := dataOffset + dataLength + 12 + ssr.ObfsHMACSHA1Len
 	outData = make([]byte, outLength)
 
@@ -124,17 +99,8 @@ func (a *authSHA1v4) packAuthData(data []byte) (outData []byte) {
 	crc32 := ssr.CalcCRC32(crcData, len(crcData), 0xFFFFFFFF)
 	// 2~6, crc of out length+salt+key
 	binary.LittleEndian.PutUint32(outData[2:], crc32)
-	// 6~rand length+6, rand numbers
-	rand.Read(outData[dataOffset-randLength : dataOffset])
 	// 6, rand length
-	if randLength < 128 {
-		outData[6] = byte(randLength & 0xFF)
-	} else {
-		// 6, magic number 0xFF
-		outData[6] = 0xFF
-		// 7-8, rand length
-		binary.BigEndian.PutUint16(outData[7:], uint16(randLength&0xFFFF))
-	}
+	outData[6] = 1
 	// rand length+6~rand length+10, time stamp
 	now := time.Now().Unix()
 	binary.LittleEndian.PutUint32(outData[dataOffset:dataOffset+4], uint32(now))

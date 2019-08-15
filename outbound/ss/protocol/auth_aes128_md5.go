@@ -76,20 +76,7 @@ func (a *authAES128) GetData() interface{} {
 
 func (a *authAES128) packData(data []byte) (outData []byte) {
 	dataLength := len(data)
-	randLength := 1
-	if dataLength <= 1200 {
-		if a.packID > 4 {
-			randLength += rand.Intn(32)
-		} else {
-			if dataLength > 900 {
-				randLength += rand.Intn(128)
-			} else {
-				randLength += rand.Intn(512)
-			}
-		}
-	}
-
-	outLength := randLength + dataLength + 8
+	outLength := 1 + dataLength + 8
 	outData = make([]byte, outLength)
 	// 0~1, out length
 	binary.LittleEndian.PutUint16(outData[0:], uint16(outLength&0xFFFF))
@@ -99,20 +86,11 @@ func (a *authAES128) packData(data []byte) (outData []byte) {
 	binary.LittleEndian.PutUint32(key[len(key)-4:], a.packID)
 	h := a.hmac(key, outData[0:2])
 	copy(outData[2:4], h[:2])
-	// 4~rand length+4, rand number
-	rand.Read(outData[4 : 4+randLength])
 	// 4, rand length
-	if randLength < 128 {
-		outData[4] = byte(randLength & 0xFF)
-	} else {
-		// 4, magic number 0xFF
-		outData[4] = 0xFF
-		// 5~6, rand length
-		binary.LittleEndian.PutUint16(outData[5:], uint16(randLength&0xFFFF))
-	}
+	outData[4] = 1
 	// rand length+4~out length-4, data
 	if dataLength > 0 {
-		copy(outData[randLength+4:], data)
+		copy(outData[5:], data)
 	}
 	a.packID++
 	h = a.hmac(key, outData[:outLength-4])
@@ -122,22 +100,13 @@ func (a *authAES128) packData(data []byte) (outData []byte) {
 
 func (a *authAES128) packAuthData(data []byte) (outData []byte) {
 	dataLength := len(data)
-	var randLength int
-	if dataLength > 400 {
-		randLength = rand.Intn(512)
-	} else {
-		randLength = rand.Intn(1024)
-	}
-
-	dataOffset := randLength + 16 + 4 + 4 + 7
+	dataOffset := 16 + 4 + 4 + 7
 	outLength := dataOffset + dataLength + 4
 	outData = make([]byte, outLength)
 	encrypt := make([]byte, 24)
 	key := make([]byte, a.IVLen+a.KeyLen)
 	copy(key, a.IV)
 	copy(key[a.IVLen:], a.Key)
-
-	rand.Read(outData[dataOffset-randLength:])
 
 	if a.data.connectionID > 0xFF000000 {
 		a.data.clientID = nil
@@ -157,7 +126,8 @@ func (a *authAES128) packAuthData(data []byte) (outData []byte) {
 	binary.LittleEndian.PutUint32(encrypt[0:4], uint32(now))
 
 	binary.LittleEndian.PutUint16(encrypt[12:], uint16(outLength&0xFFFF))
-	binary.LittleEndian.PutUint16(encrypt[14:], uint16(randLength&0xFFFF))
+	encrypt[14] = 0
+	encrypt[15] = 0
 
 	params := strings.Split(a.Param, ":")
 	uid := make([]byte, 4)
