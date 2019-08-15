@@ -188,7 +188,7 @@ func (c *SSTCPConn) avoidServerFilter(b []byte) (outData []byte) {
 				b = b[:loc[0]]
 				// timeout handler
 				go func() {
-					time.Sleep(time.Duration(10) * time.Millisecond)
+					time.Sleep(time.Duration(20) * time.Millisecond)
 					c.coldStart = false
 					if len(c.leftToWrite) > 0 {
 						c.Write(nil)
@@ -256,6 +256,11 @@ func (c *SSTCPConn) Write(b []byte) (n int, err error) {
 	outData, err := c.preWrite(b)
 	if err == nil {
 		n, err = c.Conn.Write(outData)
+	}
+	// For fastauth
+	if c.coldStart && b != nil {
+		nn, err := c.Write(nil)
+		return n+nn, err
 	}
 	return
 }
