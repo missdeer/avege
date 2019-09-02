@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net"
 
-	"github.com/Max-Sum/avege/common/ds"
+	"github.com/missdeer/avege/common/ds"
 )
 
 var ENotImpl = errors.New("function not implemented")

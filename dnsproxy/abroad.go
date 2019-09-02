@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Max-Sum/avege/common"
-	"github.com/Max-Sum/avege/common/cache"
-	"github.com/Max-Sum/avege/common/domain"
-	iputil "github.com/Max-Sum/avege/common/ip"
-	"github.com/Max-Sum/avege/config"
+	"github.com/missdeer/avege/common"
+	"github.com/missdeer/avege/common/cache"
+	"github.com/missdeer/avege/common/domain"
+	iputil "github.com/missdeer/avege/common/ip"
+	"github.com/missdeer/avege/config"
 	"github.com/garyburd/redigo/redis"
 	"github.com/miekg/dns"
 )

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Max-Sum/avege/common"
-	"github.com/Max-Sum/avege/outbound/ss/ssr"
+	"github.com/missdeer/avege/common"
+	"github.com/missdeer/avege/outbound/ss/ssr"
 )
 
 type hmacMethod func(key []byte, data []byte) []byte

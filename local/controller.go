@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Max-Sum/avege/common"
-	"github.com/Max-Sum/avege/common/cache"
-	"github.com/Max-Sum/avege/config"
+	"github.com/missdeer/avege/common"
+	"github.com/missdeer/avege/common/cache"
+	"github.com/missdeer/avege/config"
 	"github.com/gin-gonic/gin"
 	"github.com/kardianos/osext"
-	"github.com/Max-Sum/avege/inbound"
-	"github.com/Max-Sum/avege/rule"
+	"github.com/missdeer/avege/inbound"
+	"github.com/missdeer/avege/rule"
 )
 
 var (

@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/Max-Sum/avege/common"
-	"github.com/Max-Sum/avege/common/ds"
-	"github.com/Max-Sum/avege/common/netutil"
+	"github.com/missdeer/avege/common"
+	"github.com/missdeer/avege/common/ds"
+	"github.com/missdeer/avege/common/netutil"
 )
 
 const dnChinaURL = "https://yii.li/dnchina"

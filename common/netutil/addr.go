@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/Max-Sum/avege/common"
+	"github.com/missdeer/avege/common"
 )
 
 func GetExternalIPAddress() (string, error) {

@@ -91,6 +91,6 @@ deploy:
     - assets/avege-windows-amd64.tar.gz
     - assets/avege-windows-386.tar.gz
   on:
-    repo: Max-Sum/avege
+    repo: missdeer/avege
     tags: true
   skip_cleanup: true

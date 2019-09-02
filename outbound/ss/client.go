@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/RouterScript/ProxyClient"
-	"github.com/Max-Sum/avege/outbound/ss/obfs"
-	"github.com/Max-Sum/avege/outbound/ss/protocol"
-	"github.com/Max-Sum/avege/outbound/ss/ssr"
+	"github.com/missdeer/avege/outbound/ss/obfs"
+	"github.com/missdeer/avege/outbound/ss/protocol"
+	"github.com/missdeer/avege/outbound/ss/ssr"
 )
 
 func init() {

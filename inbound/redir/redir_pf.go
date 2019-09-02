@@ -12,8 +12,8 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/Max-Sum/avege/common"
-	"github.com/Max-Sum/avege/inbound"
+	"github.com/missdeer/avege/common"
+	"github.com/missdeer/avege/inbound"
 )
 
 type Natlook struct {

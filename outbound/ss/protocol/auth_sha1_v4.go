@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Max-Sum/avege/common"
-	"github.com/Max-Sum/avege/outbound/ss/ssr"
+	"github.com/missdeer/avege/common"
+	"github.com/missdeer/avege/outbound/ss/ssr"
 )
 
 func init() {

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net"
 
-	"github.com/Max-Sum/avege/common"
+	"github.com/missdeer/avege/common"
 )
 
 var (

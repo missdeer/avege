@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Max-Sum/avege/common"
-	"github.com/Max-Sum/avege/outbound/ss"
+	"github.com/missdeer/avege/common"
+	"github.com/missdeer/avege/outbound/ss"
 )
 
 const (

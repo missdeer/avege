@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Max-Sum/avege/local"
+	"github.com/missdeer/avege/local"
 )
 
 func main() {

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Max-Sum/avege/common"
-	"github.com/Max-Sum/avege/common/fs"
+	"github.com/missdeer/avege/common"
+	"github.com/missdeer/avege/common/fs"
 )
 
 type itemNode struct {

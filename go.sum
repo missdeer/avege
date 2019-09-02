@@ -20,7 +20,6 @@ github.com/dgryski/go-rc2 v0.0.0-20150621095337-8a9021637152 h1:ED31mPIxDJnrLt9W
 github.com/dgryski/go-rc2 v0.0.0-20150621095337-8a9021637152/go.mod h1:I9fhc/EvSg88cDxmfQ47v35Ssz9rlFunL/KY0A1JAYI=
 github.com/ebfe/rc2 v0.0.0-20131011165748-24b9757f5521 h1:fBHFH+Y/GPGFGo7LIrErQc3p2MeAhoIQNgaxPWYsSxk=
 github.com/ebfe/rc2 v0.0.0-20131011165748-24b9757f5521/go.mod h1:ucvhdsUCE3TH0LoLRb6ShHiJl8e39dGlx6A4g/ujlow=
-github.com/fsnotify/fsnotify v0.0.0-20180321022601-755488143dae h1:PeVNzgTRtWGm6fVic5i21t+n5ptPGCZuMcSPVMyTWjs=
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff h1:zk1wwii7uXmI0znwU+lqg+wFL9G5+vm5I+9rv2let60=

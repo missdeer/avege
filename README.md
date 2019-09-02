@@ -2,11 +2,11 @@
 
 Socks5/Transparent Proxy Client
 
-[![Build Status](https://travis-ci.org/Max-Sum/avege.svg?branch=master)](https://travis-ci.org/Max-Sum/avege)
-[![GitHub release](https://img.shields.io/github/release/Max-Sum/avege.svg?maxAge=2592000)](https://github.com/Max-Sum/avege/releases) 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/Max-Sum/avege/master/LICENSE) 
-[![Github Releases Downloads Total](https://img.shields.io/github/downloads/Max-Sum/avege/total.svg)](https://github.com/Max-Sum/avege/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Max-Sum/avege)](https://goreportcard.com/report/github.com/Max-Sum/avege)
+[![Build Status](https://travis-ci.org/missdeer/avege.svg?branch=master)](https://travis-ci.org/missdeer/avege)
+[![GitHub release](https://img.shields.io/github/release/missdeer/avege.svg?maxAge=2592000)](https://github.com/missdeer/avege/releases) 
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/missdeer/avege/master/LICENSE) 
+[![Github Releases Downloads Total](https://img.shields.io/github/downloads/missdeer/avege/total.svg)](https://github.com/missdeer/avege/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/missdeer/avege)](https://goreportcard.com/report/github.com/missdeer/avege)
 [![codebeat badge](https://codebeat.co/badges/1cf94e1d-9b1a-4834-b9ae-a99df311273e)](https://codebeat.co/projects/github-com-missdeer-avege-master)
 
 ## Feature
@@ -96,7 +96,7 @@ go get -u -f -v github.com/ftrvxmtrx/fd
 for macOS/Linux/BSDs
 
 ```shell
-git clone https://github.com/Max-Sum/avege.git
+git clone https://github.com/missdeer/avege.git
 cd avege/src/avege
 GOPATH=$GOPATH:$PWD/../.. go build 
 ```

@@ -1,7 +1,7 @@
 package obfs
 
 import (
-	"github.com/Max-Sum/avege/outbound/ss/ssr"
+	"github.com/missdeer/avege/outbound/ss/ssr"
 )
 
 func init() {

@@ -2,7 +2,7 @@ package socks
 
 import (
 	"bufio"
-	"github.com/Max-Sum/avege/common"
+	"github.com/missdeer/avege/common"
 	"fmt"
 	"net"
 

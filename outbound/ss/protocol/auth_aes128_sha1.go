@@ -1,6 +1,6 @@
 package protocol
 
-import "github.com/Max-Sum/avege/common"
+import "github.com/missdeer/avege/common"
 
 func init() {
 	register("auth_aes128_sha1", newAuthAES128SHA1)
