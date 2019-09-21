@@ -4,17 +4,14 @@ package rule
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math"
 	"net"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/missdeer/avege/common"
 	"github.com/missdeer/avege/common/fs"
@@ -67,63 +64,6 @@ func UpdateRedirFirewallRules() {
 	oneUpdateIptablesRules.Do(doUpdateRules)
 }
 
-func getSSServerDomainList() (res []string) {
-	retry := 0
-doRequest:
-	req, err := http.NewRequest("GET", config.Configurations.Generals.ConsoleHost+"/admin/servers", nil)
-	if err != nil {
-		common.Error("Could not parse get ss server list request:", err)
-		return
-	}
-
-	req.Header.Set("Authorization", "PqFVgV6InD")
-
-	client := &http.Client{
-		Timeout: 300 * time.Second,
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		common.Error("Could not send get ss server list request:", err)
-		retry++
-		if retry < 3 {
-			time.Sleep(3 * time.Second)
-			goto doRequest
-		}
-		return
-	}
-
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		common.Error("get ss server list request not 200")
-		retry++
-		if retry < 3 {
-			time.Sleep(3 * time.Second)
-			goto doRequest
-		}
-		return
-	}
-	content, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		common.Error("cannot read get ss server list content", err)
-		retry++
-		if retry < 3 {
-			time.Sleep(3 * time.Second)
-			goto doRequest
-		}
-	}
-
-	var suffixes []string
-	if err = json.Unmarshal(content, &suffixes); err != nil {
-		common.Error("unmarshalling ss server list failed", err)
-		return
-	}
-
-	for _, v := range suffixes {
-		res = append(res, fmt.Sprintf("%s.dfordsoft.com", v))
-	}
-	return res
-}
-
 func getExceptionDomainList() (res []string) {
 	exceptionFile, err := fs.GetConfigPath(`exception.txt`)
 	if err != nil {
@@ -156,7 +96,7 @@ func resolveIPFromDomainName(host string) (res []string) {
 	return
 }
 
-func addAbroadDNSServerIPs(encountered map[string]bool) (records []string) {
+func addAbroadDNSServerIPs(encountered map[string]struct{}) (records []string) {
 	// abroad DNS servers IPs
 	record := "-A SS -d %s/32 -j RETURN"
 	records = append(records, "# skip DNS server out of China")
@@ -170,18 +110,43 @@ func addAbroadDNSServerIPs(encountered map[string]bool) (records []string) {
 			// don't insert duplicated items
 			continue
 		}
-		encountered[val] = true
+		encountered[val] = struct{}{}
 		records = append(records, val)
 	}
 	return
 }
 
-func addProxyServerIPs(encountered map[string]bool) (records []string) {
+func addProxyServerIPs(encountered map[string]struct{}) (records []string) {
 	// ss servers ip
 	record := "-A SS -d %s/32 -j RETURN"
 	var ss []string
-	for len(ss) == 0 {
-		ss = getSSServerDomainList()
+	// SSR subscription
+	if config.Configurations.Generals.SSRSubscriptionEnabled {
+		res := getSSRSubcription()
+		if len(res) == 0 {
+			// read from history
+			if file, err := os.OpenFile(`ssrsub.history`, os.O_RDONLY, 0644); err != nil {
+				common.Error("open ssrsub.history file for read failed", err)
+			} else {
+				r, err := ioutil.ReadAll(file)
+				if err != nil {
+					common.Error("reading ssrsub.history failed", err)
+				} else {
+					res = strings.Split(string(r), "\n")
+				}
+				file.Close()
+				common.Debug("ssrsub.history has been read")
+			}
+		}
+		ss = append(ss, res...)
+		// save to history
+		if file, err := os.OpenFile(`ssrsub.history`, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644); err != nil {
+			common.Error("open ssrsub.history file failed", err)
+		} else {
+			file.WriteString(strings.Join(res, "\n"))
+			file.Close()
+			common.Debug("ssrsub.history file has been updated")
+		}
 	}
 	// exception domains
 	exception := getExceptionDomainList()
@@ -189,22 +154,19 @@ func addProxyServerIPs(encountered map[string]bool) (records []string) {
 	dl := append(ss, exception...)
 	for _, host := range dl {
 		ips := resolveIPFromDomainName(host)
-		if len(ips) > 0 {
-			records = append(records, fmt.Sprintf("# skip ip for %s", host))
-		}
 		for _, v := range ips {
 			val := fmt.Sprintf(record, v)
 			if _, ok := encountered[val]; !ok {
 				// don't insert duplicated items
-				encountered[val] = true
-				records = append(records, val)
+				encountered[val] = struct{}{}
+				records = append(records, fmt.Sprintf("# skip ip for %s", host), val)
 			}
 		}
 	}
 	return
 }
 
-func addChinaIPs(encountered map[string]bool) (records []string) {
+func addChinaIPs(encountered map[string]struct{}) (records []string) {
 	// china IPs
 	apnicFile, err := fs.GetConfigPath("apnic.txt")
 	if err != nil {
@@ -237,7 +199,7 @@ func addChinaIPs(encountered map[string]bool) (records []string) {
 	return
 }
 
-func addCurrentRunningServerIPs(encountered map[string]bool) (res []string) {
+func addCurrentRunningServerIPs(encountered map[string]struct{}) (res []string) {
 	// current running server addresses
 	record := "-A SS -d %s/32 -j RETURN"
 	for _, outbound := range config.Configurations.OutboundsConfig {
@@ -256,7 +218,7 @@ func addCurrentRunningServerIPs(encountered map[string]bool) (res []string) {
 				// don't insert duplicated items
 				continue
 			}
-			encountered[val] = true
+			encountered[val] = struct{}{}
 			res = append(res, val)
 		}
 	}
@@ -274,7 +236,7 @@ func saveToRuleFile(res []string, records []string) {
 }
 
 func doUpdateRules() {
-	encountered := make(map[string]bool)
+	encountered := make(map[string]struct{})
 	records := addAbroadDNSServerIPs(encountered)
 	records = append(records, addProxyServerIPs(encountered)...)
 	records = append(records, addChinaIPs(encountered)...)

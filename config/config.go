@@ -58,6 +58,8 @@ type ProxyPolicyConfiguration struct {
 
 // GeneralConfig represents the general config section in configuration file
 type GeneralConfig struct {
+	SSRSubscription         string `json:"ssrsub"`
+	SSRSubscriptionEnabled  bool   `json:"ssrsub_enabled"`
 	Token                   string `json:"token"`
 	CacheService            string `json:"cache_service"`
 	ProtectSocketPathPrefix string `json:"protect_socket_path_prefix"`
