@@ -1,0 +1,3 @@
+#!/bin/bash
+kill -9 $(pidof ss-redir){{range $i, $item := .Items}}
+/home/pi/avege/ss-redir -f ss-redir{{$i}}.pid -p {{.Port}} -l 5809{{$i}} -s 127.0.0.1 -b 0.0.0.0 -k password -m method -O obfs -o protocol -G obfs_param -g protocol_param{{end}}

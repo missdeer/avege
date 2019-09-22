@@ -1,0 +1,51 @@
+global
+    daemon
+    maxconn 10240
+    pidfile /home/pi/avege/haproxy.pid
+
+defaults
+    mode tcp
+    balance roundrobin
+    timeout connect 10000ms
+    timeout client 50000ms
+    timeout server 50000ms
+    log 127.0.0.1 local0 err
+
+listen admin_stats
+    bind 0.0.0.0:8099
+    mode http
+    option httplog
+    maxconn 10
+    stats refresh 30s
+    stats uri /stats
+{{range $i, $prefix := .Prefixes}}
+frontend {{$prefix}}-frontend543
+    bind *:5{{$i}}543
+    default_backend {{$prefix}}-backend543
+
+frontend {{$prefix}}-frontend443
+    bind *:5{{$i}}443
+    default_backend {{$prefix}}-backend443
+
+frontend {{$prefix}}-frontend80
+    bind *:5{{$i}}080
+    default_backend {{$prefix}}-backend80
+
+backend {{$prefix}}-backend543
+    option log-health-checks
+    default-server inter 60s fall 3 rise 2
+    {{range $j, $host := index $.Hosts $i }}server {{$prefix}}-{{$j}} {{$host}}:543 check
+    {{end}}
+
+backend {{$prefix}}-backend443
+    option log-health-checks
+    default-server inter 60s fall 3 rise 2
+    {{range $j, $host := index $.Hosts $i }}server {{$prefix}}-{{$j}} {{$host}}:443 check
+    {{end}}
+
+backend {{$prefix}}-backend80
+    option log-health-checks
+    default-server inter 60s fall 3 rise 2
+    {{range $j, $host := index $.Hosts $i }}server {{$prefix}}-{{$j}} {{$host}}:80 check
+    {{end}}
+{{end}}

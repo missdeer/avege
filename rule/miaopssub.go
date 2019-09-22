@@ -1,18 +1,38 @@
 package rule
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/missdeer/avege/common"
 	"github.com/missdeer/avege/config"
 )
+
+var (
+	prefixLocalPortMap = make(PrefixPortMap)
+)
+
+type PrefixPortMap map[string]int
+
+func (m PrefixPortMap) Contains(s string) bool {
+	_, ok := m[s]
+	return ok
+}
+
+func (m PrefixPortMap) Value(s string) int {
+	return m[s]
+}
+
+type placeholder struct{}
 
 func decodeBase64(s string) []byte {
 	sr := s
@@ -79,7 +99,7 @@ doRequest:
 		}
 	}
 
-	rm := make(map[string]struct{})
+	rm := make(map[string]placeholder)
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		pos := strings.Index(line, "://")
@@ -100,24 +120,120 @@ doRequest:
 			ss := strings.Split(string(output), ":")
 			common.Info(ss[0])
 			if _, ok := rm[ss[0]]; !ok {
-				rm[ss[0]] = struct{}{}
+				rm[ss[0]] = placeholder{}
 				res = append(res, ss[0])
 			}
 		}
 	}
-	prefixes := make(map[string]struct{})
+	reg := regexp.MustCompile(`([a-zA-Z]{2,2})\-[a-z0-9A-Z]+\.mitsuha\-node\.com`)
+	prefixes := make(map[string]placeholder)
 	for host := range rm {
-		h := strings.Split(host, "-")
-		prefixes[h[0]] = struct{}{}
+		ss := reg.FindAllStringSubmatch(host, -1)
+		if len(ss) > 0 && len(ss[0]) == 2 {
+			prefixes[ss[0][1]] = placeholder{}
+		}
 	}
-	prefixes["all"] = struct{}{}
+	var ps []string
+	for prefix := range prefixes {
+		ps = append(ps, prefix)
+	}
+	generateHAProxyMixedConfiguration(rm, ps)
+
+	prefixRemotePortMap := make(PrefixPortMap)
+	for i, prefix := range ps {
+		prefixRemotePortMap[prefix] = 50543 + i*1000
+	}
+	generateSSCommandScript(prefixRemotePortMap)
+
+	prefixes["all"] = placeholder{}
 	for prefix := range prefixes {
 		generateHAProxyConfigurations(rm, prefix)
 	}
 	return
 }
 
-func generateHAProxyConfigurations(rm map[string]struct{}, prefix string) {
+func generateSSCommandScript(prefixRemotePortMap PrefixPortMap) {
+	type Item struct {
+		Port int
+	}
+	type S struct {
+		Items []Item
+	}
+	d := S{
+		Items: []Item{},
+	}
+	localPort := 58090
+	for prefix, remotePort := range prefixRemotePortMap {
+		d.Items = append(d.Items, Item{Port: remotePort})
+		prefixLocalPortMap[prefix] = localPort
+		localPort++
+	}
+
+	t, err := template.New("ss-redir.tmpl").ParseFiles(`ss-redir.tmpl`)
+	if err != nil {
+		common.Error("parsing ss-redir.tmpl failed", err)
+		return
+	}
+
+	var tpl bytes.Buffer
+	err = t.Execute(&tpl, d)
+	if err != nil {
+		common.Error("executing ss-redir.tmpl failed", err)
+		return
+	}
+
+	outFile, err := os.OpenFile(`ss-redir.sh`, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		common.Error("can't open ss-redir.sh", err)
+		return
+	}
+	defer outFile.Close()
+	_, err = outFile.WriteString(tpl.String())
+	if err != nil {
+		common.Error("write content to ss-redir.sh failed", err)
+	}
+}
+
+func generateHAProxyMixedConfiguration(rm map[string]placeholder, prefixes []string) {
+	type S struct {
+		Prefixes []string
+		Hosts    [][]string
+	}
+	d := S{
+		Prefixes: prefixes,
+	}
+	for _, prefix := range d.Prefixes {
+		var hosts []string
+		for host := range rm {
+			if strings.HasPrefix(host, prefix) {
+				hosts = append(hosts, host)
+			}
+		}
+		d.Hosts = append(d.Hosts, hosts)
+	}
+
+	t, err := template.New("haproxy.mixed.cfg.tmpl").ParseFiles(`haproxy.mixed.cfg.tmpl`)
+
+	var tpl bytes.Buffer
+	err = t.Execute(&tpl, d)
+	if err != nil {
+		common.Error("executing ss-redir.tmpl failed", err)
+		return
+	}
+
+	outFile, err := os.OpenFile(`haproxy.mixed.cfg`, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		common.Error("can't open haproxy.mixed.cfg", err)
+		return
+	}
+	defer outFile.Close()
+	_, err = outFile.WriteString(tpl.String())
+	if err != nil {
+		common.Error("write content to haproxy.cfg failed", err)
+	}
+}
+
+func generateHAProxyConfigurations(rm map[string]placeholder, prefix string) {
 	var be543, be443, be80 string
 	count := 0
 	for host := range rm {
@@ -180,7 +296,14 @@ backend miaops80
     default-server inter %ds fall 3 rise 2
 %s
 `
-	outFile, _ := os.OpenFile(`haproxy.cfg.`+prefix, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
-	outFile.WriteString(fmt.Sprintf(haproxyCfgTemplate, count, be543, count, be443, count, be80))
-	outFile.Close()
+	outFile, err := os.OpenFile(`haproxy.cfg.`+prefix, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		common.Error("can't open haproxy.cfg", err)
+		return
+	}
+	defer outFile.Close()
+	_, err = outFile.WriteString(fmt.Sprintf(haproxyCfgTemplate, count, be543, count, be443, count, be80))
+	if err != nil {
+		common.Error("write content to haproxy.cfg failed", err)
+	}
 }
