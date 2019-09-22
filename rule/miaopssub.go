@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -206,7 +207,18 @@ func generateHAProxyMixedConfiguration(rm map[string]placeholder, prefixes []str
 		var hosts []string
 		for host := range rm {
 			if strings.HasPrefix(host, prefix) {
-				hosts = append(hosts, host)
+				// resolve host name to IP
+				ips, err := net.LookupIP(host)
+				if err != nil {
+					continue
+				}
+				for _, ip := range ips {
+					if ip.To4() == nil {
+						// invalid IPv4 address
+						continue
+					}
+					hosts = append(hosts, ip.String())
+				}
 			}
 		}
 		d.Hosts = append(d.Hosts, hosts)
