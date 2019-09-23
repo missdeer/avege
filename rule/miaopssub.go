@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/missdeer/avege/common"
+	"github.com/missdeer/avege/common/fs"
 	"github.com/missdeer/avege/config"
 )
 
@@ -170,7 +171,12 @@ func generateSSCommandScript(prefixRemotePortMap PrefixPortMap) {
 		localPort++
 	}
 
-	t, err := template.New("ss-redir.tmpl").ParseFiles(`ss-redir.tmpl`)
+	tmpl, err := fs.GetConfigPath(`ss-redir.tmpl`)
+	if err != nil {
+		common.Error("can't get ss-redir.tmpl", err)
+		return
+	}
+	t, err := template.New("ss-redir.tmpl").ParseFiles(tmpl)
 	if err != nil {
 		common.Error("parsing ss-redir.tmpl failed", err)
 		return
@@ -224,7 +230,16 @@ func generateHAProxyMixedConfiguration(rm map[string]placeholder, prefixes []str
 		d.Hosts = append(d.Hosts, hosts)
 	}
 
-	t, err := template.New("haproxy.mixed.cfg.tmpl").ParseFiles(`haproxy.mixed.cfg.tmpl`)
+	tmpl, err := fs.GetConfigPath(`haproxy.mixed.cfg.tmpl`)
+	if err != nil {
+		common.Error("can't get haproxy.mixed.cfg.tmpl", err)
+		return
+	}
+	t, err := template.New("haproxy.mixed.cfg.tmpl").ParseFiles(tmpl)
+	if err != nil {
+		common.Error("parsing template failed", err)
+		return
+	}
 
 	var tpl bytes.Buffer
 	err = t.Execute(&tpl, d)
