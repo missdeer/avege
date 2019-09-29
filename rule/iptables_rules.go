@@ -3,7 +3,8 @@
 package rule
 
 import (
-	"fmt"
+	"bytes"
+	"html/template"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -43,13 +44,38 @@ func UpdateRedirFirewallRules() {
 }
 
 func saveToRuleFile(res []string, records []string) {
+	t, err := template.New("").Parse(rulesTemplate)
+	if err != nil {
+		common.Error("parse rules template failed", err)
+		return
+	}
+
+	d := struct {
+		Predefined string
+		Servers    string
+	}{
+		Predefined: strings.Join(res, "\n"),
+		Servers:    strings.Join(records, "\n"),
+	}
+	var tpl bytes.Buffer
+	err = t.Execute(&tpl, d)
+	if err != nil {
+		common.Error("executing ss-redir.tmpl failed", err)
+		return
+	}
+
 	file, err := os.OpenFile(ruleFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		common.Error("open rule file failed", err)
 		return
 	}
-	file.WriteString(fmt.Sprintf(rulesTemplate, strings.Join(res, "\n"), strings.Join(records, "\n")))
-	file.Close()
+	defer file.Close()
+	_, err = file.WriteString(tpl.String())
+	if err != nil {
+		common.Error("write content to rule file failed", err)
+		return
+	}
+
 	common.Debug("rule file has been updated")
 }
 

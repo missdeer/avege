@@ -38,8 +38,8 @@ COMMIT
 -A SS -d 207.46.156.130/24 -j RETURN
 -A SS -d 104.28.30.28/32 -j RETURN
 -A SS -d 104.28.31.28/32 -j RETURN
-%s
-%s
+{{ .Predefined }}
+{{ .Servers }}
 -A SS -p tcp -j REDIRECT --to-ports 58097
 COMMIT
 # Completed on Sat Oct 10 15:36:42 2015
