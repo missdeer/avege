@@ -244,7 +244,7 @@ func generateHAProxyMixedConfiguration(rm map[string]placeholder, prefixes []str
 	var tpl bytes.Buffer
 	err = t.Execute(&tpl, d)
 	if err != nil {
-		common.Error("executing ss-redir.tmpl failed", err)
+		common.Error("executing haproxy.mixed.cfg.tmpl failed", err)
 		return
 	}
 
