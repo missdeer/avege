@@ -158,10 +158,9 @@ func generateSSCommandScript(prefixRemotePortMap PrefixPortMap) {
 	type Item struct {
 		Port int
 	}
-	type S struct {
+	d := struct {
 		Items []Item
-	}
-	d := S{
+	}{
 		Items: []Item{},
 	}
 	localPort := 58090
@@ -202,11 +201,10 @@ func generateSSCommandScript(prefixRemotePortMap PrefixPortMap) {
 }
 
 func generateHAProxyMixedConfiguration(rm map[string]placeholder, prefixes []string) {
-	type S struct {
+	d := struct {
 		Prefixes []string
 		Hosts    [][]string
-	}
-	d := S{
+	}{
 		Prefixes: prefixes,
 	}
 	for _, prefix := range d.Prefixes {
