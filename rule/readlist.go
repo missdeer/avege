@@ -161,7 +161,8 @@ func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPo
 	}
 
 	// sorted
-	for _, prefix := range sortedPrefixes {
+	records = append(recordMap["us"], records...)
+	for _, prefix := range sortedPrefixes[1:] {
 		if rs, ok := recordMap[prefix]; ok {
 			records = append(records, rs...)
 		}
