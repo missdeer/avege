@@ -97,8 +97,8 @@ for macOS/Linux/BSDs
 
 ```shell
 git clone https://github.com/missdeer/avege.git
-cd avege/src/avege
-GOPATH=$GOPATH:$PWD/../.. go build 
+cd avege
+go build 
 ```
 
 ## Usage
@@ -111,9 +111,8 @@ GOPATH=$GOPATH:$PWD/../.. go build
 
 for macOS/Linux/BSDs, open terminal as you like, input:
 
-```shell
-cd avege/src/avege
-cp config-sample.json config.json
+```bash
+cp assets/conf/config-sample.json config.json
 # modify config.json as you like
 ./avege
 ```
@@ -121,8 +120,7 @@ cp config-sample.json config.json
 for Windows, open cmd.exe, input:
 
 ```shell
-cd avege\src\avege
-copy config-sample.json config.json
+copy assets\conf\config-sample.json config.json
 # modify config.json as you like
 avege.exe
 ```
