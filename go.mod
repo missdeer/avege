@@ -11,8 +11,8 @@ require (
 	github.com/ebfe/rc2 v0.0.0-20131011165748-24b9757f5521 // indirect
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff
-	github.com/garyburd/redigo v1.6.0
 	github.com/gin-gonic/gin v1.4.0
+	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/websocket v1.4.1
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/miekg/dns v1.1.17

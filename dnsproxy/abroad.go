@@ -9,7 +9,7 @@ import (
 	"github.com/missdeer/avege/common/domain"
 	iputil "github.com/missdeer/avege/common/ip"
 	"github.com/missdeer/avege/config"
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/miekg/dns"
 )
 
