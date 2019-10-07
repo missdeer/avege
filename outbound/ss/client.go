@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/RouterScript/ProxyClient"
+	"github.com/missdeer/ProxyClient"
 	"github.com/missdeer/avege/outbound/ss/obfs"
 	"github.com/missdeer/avege/outbound/ss/protocol"
 	"github.com/missdeer/avege/outbound/ss/ssr"

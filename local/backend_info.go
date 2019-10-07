@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/missdeer/ProxyClient"
 	"github.com/missdeer/avege/common"
 	"github.com/missdeer/avege/config"
-	"github.com/RouterScript/ProxyClient"
 	"github.com/missdeer/avege/outbound/ss"
 )
 

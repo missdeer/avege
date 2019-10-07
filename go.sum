@@ -1,11 +1,5 @@
 github.com/DeanThompson/ginpprof v0.0.0-20190408063150-3be636683586 h1:vDSj8WQZoe+dhK9JVwkSEBwtmcJw5rJ7l1L0Yik8Ku0=
 github.com/DeanThompson/ginpprof v0.0.0-20190408063150-3be636683586/go.mod h1:kMi/fSDAgvjo9TYfYwYeQ2vkyj+VTR/tB6u/Tjh39t0=
-github.com/RouterScript/HTTPProxy v0.0.0-20170824204601-3856617f113d h1:mTqPVt3QlwoiO6PJoW0uA4zcZYOeoUW2ZNCyf54CX3g=
-github.com/RouterScript/HTTPProxy v0.0.0-20170824204601-3856617f113d/go.mod h1:A75EfEuGLY1f7RRQqbFN+/Vku5GB56NMntt+d08aaVE=
-github.com/RouterScript/ProxyClient v0.0.0-20170825010427-5d0cc9e71d0c h1:qNOIDE3QlJ+T8xcVM90vrLSpiLBb6GlGKryZC/ip8Mg=
-github.com/RouterScript/ProxyClient v0.0.0-20170825010427-5d0cc9e71d0c/go.mod h1:sC3UtWipj4pJk7DZUJWVlv3d3SXiJdyujMVdwlGt67Q=
-github.com/RouterScript/SOCKSProxy v0.0.0-20190603052541-2888410264d3 h1:C4H2ToDZidLZyAB3ad0A6rvTgzAJv7hXsxZkKMSrNDA=
-github.com/RouterScript/SOCKSProxy v0.0.0-20190603052541-2888410264d3/go.mod h1:5VF1/b2kgU5QU/yg2KdFM2OfZevCuLudhO5TG+BGfBo=
 github.com/Yawning/chacha20 v0.0.0-20170904085104-e3b1f968fc63 h1:I6/SJSN9wJMJ+ZyQaCHUlzoTA4ypU5Bb44YWR1wTY/0=
 github.com/Yawning/chacha20 v0.0.0-20170904085104-e3b1f968fc63/go.mod h1:nf+Komq6fVP4SwmKEaVGxHTyQGKREVlwjQKpvOV39yE=
 github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da h1:KjTM2ks9d14ZYCvmHS9iAKVt9AyzRSqNU1qabPih5BY=
@@ -42,6 +36,14 @@ github.com/mattn/go-isatty v0.0.7 h1:UvyT9uN+3r7yLEYSlJsbQGdsaB/a0DlgWP3pql6iwOc
 github.com/mattn/go-isatty v0.0.7/go.mod h1:Iq45c/XA43vh69/j3iqttzPXn0bhXyGjM0Hdxcsrc5s=
 github.com/miekg/dns v1.1.17 h1:BhJxdA7bH51vKFZSY8Sn9pR7++LREvg0eYFzHA452ew=
 github.com/miekg/dns v1.1.17/go.mod h1:WgzbA6oji13JREwiNsRDNfl7jYdPnmz+VEuLrA+/48M=
+github.com/missdeer/HTTPProxy v0.0.0-20191007125451-db8a80107c09 h1:U4BZfq5Hseo4FEKHBX1smVXAc1O+3UvzUeNvwdJLZDc=
+github.com/missdeer/HTTPProxy v0.0.0-20191007125451-db8a80107c09/go.mod h1:TwWZNvDx00ApZIt5Dmo7WGcIcgIJTxYcIrlUwMm05M8=
+github.com/missdeer/ProxyClient v0.0.0-20191007125832-7d6840803b38 h1:vPOX3Il+hOhRdX6x1AbBF30c2DclWa/nhE1B9INcjQg=
+github.com/missdeer/ProxyClient v0.0.0-20191007125832-7d6840803b38/go.mod h1:2NODRs/OfuhPr2oIUDizIdTzqqYrdW0Z+rIwAz4XHIs=
+github.com/missdeer/ProxyClient v0.0.0-20191007130722-f1046289d045 h1:Zo8+8NqLLVdRiM/r9RAI5HFskD/aS7H4JniDqjh3c+E=
+github.com/missdeer/ProxyClient v0.0.0-20191007130722-f1046289d045/go.mod h1:fNfe1C3Z3rNGFEyN3s8N3FLOz56YytwsqW/bdQ8uboU=
+github.com/missdeer/SOCKSProxy v0.0.0-20191007125905-229a1d9deeb6 h1:47pnpGb8BgSG2EOKavFG0capynOZdKEA1UwpYDQWt/0=
+github.com/missdeer/SOCKSProxy v0.0.0-20191007125905-229a1d9deeb6/go.mod h1:VTWHsxH+8sQ0ovgOlWj8xBk6IzEqTKm8Ik2/ZBYUcLw=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w8PVh93nsPXa1VrQ6jlwL5oN8l14QlcNfg=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.1 h1:9f412s+6RmYXLWZSEzVVgPGK7C2PphHj5RJrvfx9AWI=
@@ -63,6 +65,8 @@ golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACk
 golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 h1:0hQKqeLdqlt5iIwVOBErRisrHJAN57yOiPRQItI20fU=
 golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
+golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc h1:c0o/qxkaO2LF5t6fQrT4b5hzyggAkLLlCUjqfRxd8Q4=
+golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
 golang.org/x/net v0.0.0-20190503192946-f4e77d36d62c/go.mod h1:t9HGtf8HONx5eT2rtn7q6eTqICYqUVnKs3thJo3Qplg=
 golang.org/x/net v0.0.0-20190620200207-3b0461eec859/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
@@ -76,6 +80,8 @@ golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190904154756-749cb33beabd h1:DBH9mDw0zluJT/R+nGuV3jWFWLFaHyYZWD4tOT+cjn0=
 golang.org/x/sys v0.0.0-20190904154756-749cb33beabd/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20191007092633-5f54ce542709 h1:wGFnQAzp3osDbpU/aeSzlZ7/hHjXuMgcAX3p8UKPEcA=
+golang.org/x/sys v0.0.0-20191007092633-5f54ce542709/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.2/go.mod h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk=
 golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
