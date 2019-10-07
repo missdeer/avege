@@ -131,6 +131,7 @@ func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPo
 	scanner := bufio.NewScanner(inFile)
 	scanner.Split(bufio.ScanLines)
 
+	recordMap := make(map[string][]string)
 	for scanner.Scan() {
 		rec := scanner.Text()
 		s := strings.Split(rec, "|")
@@ -146,11 +147,31 @@ func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPo
 				// china IPs
 				records = append(records, fmt.Sprintf("-A SS -d %s/%d -j RETURN", s[3], int(mask)))
 			} else if prefixPortMap.Contains(prefix) {
-				// special IPs
-				records = append(records, fmt.Sprintf("-A SS -p tcp -d %s/%d -j REDIRECT --to-ports %d", s[3], int(mask), prefixPortMap.Value(prefix)))
+				if rs, ok := recordMap[prefix]; ok {
+					rs = append(rs, fmt.Sprintf("-A SS -p tcp -d %s/%d -j REDIRECT --to-ports %d", s[3], int(mask), prefixPortMap.Value(prefix)))
+				} else {
+					rs = []string{fmt.Sprintf("-A SS -p tcp -d %s/%d -j REDIRECT --to-ports %d", s[3], int(mask), prefixPortMap.Value(prefix))}
+					recordMap[prefix] = rs
+				}
 			} else {
 				// skip
 			}
+		}
+	}
+
+	// sorted
+	prefixes := []string{
+		"us",
+		"jp",
+		"hk",
+		"sg",
+		"tw",
+		"kr",
+		"eu",
+	}
+	for _, prefix := range prefixes {
+		if rs, ok := recordMap[prefix]; ok {
+			records = append(records, rs...)
 		}
 	}
 	return
