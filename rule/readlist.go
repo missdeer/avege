@@ -147,12 +147,13 @@ func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPo
 				// china IPs
 				records = append(records, fmt.Sprintf("-A SS -d %s/%d -j RETURN", s[3], int(mask)))
 			} else if prefixPortMap.Contains(prefix) {
-				if rs, ok := recordMap[prefix]; ok {
+				rs, ok := recordMap[prefix]
+				if ok {
 					rs = append(rs, fmt.Sprintf("-A SS -p tcp -d %s/%d -j REDIRECT --to-ports %d", s[3], int(mask), prefixPortMap.Value(prefix)))
 				} else {
 					rs = []string{fmt.Sprintf("-A SS -p tcp -d %s/%d -j REDIRECT --to-ports %d", s[3], int(mask), prefixPortMap.Value(prefix))}
-					recordMap[prefix] = rs
 				}
+				recordMap[prefix] = rs
 			} else {
 				// skip
 			}
