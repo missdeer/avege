@@ -49,7 +49,7 @@ func resolveIPFromDomainName(host string) (res []string) {
 
 func addAbroadDNSServerIPs(encountered map[string]placeholder) (records []string) {
 	// abroad DNS servers IPs
-	record := "-A SS -d %s/32 -j RETURN"
+	record := "add cnroute %s/32"
 	records = append(records, "# skip DNS server out of China")
 	for _, v := range config.Configurations.DNSProxy.Abroad {
 		if v.Protocol != "tcp" {
@@ -69,7 +69,7 @@ func addAbroadDNSServerIPs(encountered map[string]placeholder) (records []string
 
 func addProxyServerIPs(encountered map[string]placeholder) (records []string) {
 	// ss servers ip
-	record := "-A SS -d %s/32 -j RETURN"
+	record := "add cnroute %s/32"
 	var ss []string
 	// SSR subscription
 	if config.Configurations.Generals.SSRSubscriptionEnabled {
@@ -110,7 +110,7 @@ func addProxyServerIPs(encountered map[string]placeholder) (records []string) {
 			if _, ok := encountered[val]; !ok {
 				// don't insert duplicated items
 				encountered[val] = placeholder{}
-				records = append(records, fmt.Sprintf("# skip ip for %s", host), val)
+				//records = append(records, fmt.Sprintf("# skip ip for %s", host), val)
 			}
 		}
 	}
@@ -145,13 +145,13 @@ func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPo
 			mask := 32 - math.Log2(v)
 			if prefix == "cn" {
 				// china IPs
-				records = append(records, fmt.Sprintf("-A SS -d %s/%d -j RETURN", s[3], int(mask)))
+				records = append(records, fmt.Sprintf("add cnroute %s/%d", s[3], int(mask)))
 			} else if prefixPortMap.Contains(prefix) {
 				rs, ok := recordMap[prefix]
 				if ok {
-					rs = append(rs, fmt.Sprintf("-A SS -p tcp -d %s/%d -j REDIRECT --to-ports %d", s[3], int(mask), prefixPortMap.Value(prefix)))
+					rs = append(rs, fmt.Sprintf("add %sroute %s/%d", s[3], int(mask), prefixPortMap.Value(prefix)))
 				} else {
-					rs = []string{fmt.Sprintf("-A SS -p tcp -d %s/%d -j REDIRECT --to-ports %d", s[3], int(mask), prefixPortMap.Value(prefix))}
+					rs = []string{fmt.Sprintf("add %sroute %s/%d", s[3], int(mask), prefixPortMap.Value(prefix))}
 				}
 				recordMap[prefix] = rs
 			} else {
@@ -172,7 +172,7 @@ func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPo
 
 func addCurrentRunningServerIPs(encountered map[string]placeholder) (res []string) {
 	// current running server addresses
-	record := "-A SS -d %s/32 -j RETURN"
+	record := "add cnroute %s/32"
 	for _, outbound := range config.Configurations.OutboundsConfig {
 		host, _, _ := net.SplitHostPort(outbound.Address)
 		ips, err := net.LookupIP(host)
