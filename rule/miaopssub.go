@@ -21,6 +21,18 @@ import (
 
 var (
 	prefixLocalPortMap = make(PrefixPortMap)
+
+	sortedPrefixes = []string{
+		"us",
+		"jp",
+		"hk",
+		"sg",
+		"tw",
+		"kr",
+		"eu",
+		"ru",
+		"cn",
+	}
 )
 
 type PrefixPortMap map[string]int
@@ -135,9 +147,12 @@ doRequest:
 			prefixes[ss[0][1]] = placeholder{}
 		}
 	}
+	// sorted
 	var ps []string
-	for prefix := range prefixes {
-		ps = append(ps, prefix)
+	for _, prefix := range sortedPrefixes {
+		if _, ok := prefixes[prefix]; ok {
+			ps = append(ps, prefix)
+		}
 	}
 	generateHAProxyMixedConfiguration(rm, ps)
 
@@ -164,10 +179,13 @@ func generateSSCommandScript(prefixRemotePortMap PrefixPortMap) {
 		Items: []Item{},
 	}
 	localPort := 58090
-	for prefix, remotePort := range prefixRemotePortMap {
-		d.Items = append(d.Items, Item{Port: remotePort})
-		prefixLocalPortMap[prefix] = localPort
-		localPort++
+
+	// sorted
+	for index, prefix := range sortedPrefixes {
+		if remotePort, ok := prefixRemotePortMap[prefix]; ok {
+			d.Items = append(d.Items, Item{Port: remotePort})
+			prefixLocalPortMap[prefix] = localPort + index
+		}
 	}
 
 	tmpl, err := fs.GetConfigPath(`ss-redir.tmpl`)
