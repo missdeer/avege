@@ -94,9 +94,9 @@ func saveToRuleFile() {
 }
 
 func saveToIPSetFile(recordMap map[string][]string) {
-	t, err := template.New(filepath.Base(iptablesRuleTemplateFile)).Parse(iptablesRuleTemplateFile)
+	t, err := template.New(filepath.Base(ipsetTemplateFile)).Parse(ipsetTemplateFile)
 	if err != nil {
-		common.Error("parse rules template failed", err)
+		common.Error("parse ipset template failed", err)
 		return
 	}
 
