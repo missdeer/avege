@@ -149,9 +149,9 @@ func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPo
 			} else if prefixPortMap.Contains(prefix) {
 				rs, ok := recordMap[prefix]
 				if ok {
-					rs = append(rs, fmt.Sprintf("add %sroute %s/%d", s[3], int(mask), prefixPortMap.Value(prefix)))
+					rs = append(rs, fmt.Sprintf("add %sroute %s/%d", prefix, s[3], int(mask)))
 				} else {
-					rs = []string{fmt.Sprintf("add %sroute %s/%d", s[3], int(mask), prefixPortMap.Value(prefix))}
+					rs = []string{fmt.Sprintf("add %sroute %s/%d", prefix, s[3], int(mask))}
 				}
 				recordMap[prefix] = rs
 			} else {

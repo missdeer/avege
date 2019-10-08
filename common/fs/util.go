@@ -5,9 +5,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/missdeer/avege/common"
 	"github.com/fsnotify/fsnotify"
 	"github.com/kardianos/osext"
+	"github.com/missdeer/avege/common"
 )
 
 // IsFileExists check if the file exists
@@ -59,8 +59,18 @@ func GetConfigPath(fileName string) (filePath string, err error) {
 	}
 
 	if exists, _ := IsFileExists(configFile); !exists {
+		if executable, err := osext.Executable(); err == nil {
+			binDir = path.Dir(executable)
+			oldConfig := configFile
+			configFile = path.Join(binDir, "..", "assets", "conf", fileName)
+			common.Warningf("%s not found, try file %s\n", oldConfig, configFile)
+		}
+	}
+
+	if exists, _ := IsFileExists(configFile); !exists {
 		return "", errors.New("File not found")
 	}
+
 	return configFile, nil
 }
 
