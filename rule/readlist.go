@@ -47,26 +47,6 @@ func resolveIPFromDomainName(host string) (res []string) {
 	return
 }
 
-func addAbroadDNSServerIPs(encountered map[string]placeholder) (records []string) {
-	// abroad DNS servers IPs
-	record := "add cnroute %s/32"
-	records = append(records, "# skip DNS server out of China")
-	for _, v := range config.Configurations.DNSProxy.Abroad {
-		if v.Protocol != "tcp" {
-			// only TCP is NATed
-			continue
-		}
-		val := fmt.Sprintf(record, v.Address[:strings.Index(v.Address, ":")])
-		if _, ok := encountered[val]; ok {
-			// don't insert duplicated items
-			continue
-		}
-		encountered[val] = placeholder{}
-		records = append(records, val)
-	}
-	return
-}
-
 func addProxyServerIPs(encountered map[string]placeholder) (records []string) {
 	// ss servers ip
 	record := "add cnroute %s/32"
@@ -110,14 +90,14 @@ func addProxyServerIPs(encountered map[string]placeholder) (records []string) {
 			if _, ok := encountered[val]; !ok {
 				// don't insert duplicated items
 				encountered[val] = placeholder{}
-				//records = append(records, fmt.Sprintf("# skip ip for %s", host), val)
+				records = append(records, val)
 			}
 		}
 	}
 	return
 }
 
-func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPortMap) (records []string) {
+func filterSpecialIPs(encountered map[string]placeholder) (records []string, recordMap map[string][]string) {
 	apnicFile, err := fs.GetConfigPath("apnic.txt")
 	if err != nil {
 		apnicFile = "apnic.txt"
@@ -131,7 +111,6 @@ func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPo
 	scanner := bufio.NewScanner(inFile)
 	scanner.Split(bufio.ScanLines)
 
-	recordMap := make(map[string][]string)
 	for scanner.Scan() {
 		rec := scanner.Text()
 		s := strings.Split(rec, "|")
@@ -146,7 +125,7 @@ func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPo
 			if prefix == "cn" {
 				// china IPs
 				records = append(records, fmt.Sprintf("add cnroute %s/%d", s[3], int(mask)))
-			} else if prefixPortMap.Contains(prefix) {
+			} else if prefixLocalPortMap.Contains(prefix) {
 				rs, ok := recordMap[prefix]
 				if ok {
 					rs = append(rs, fmt.Sprintf("add %sroute %s/%d", prefix, s[3], int(mask)))
@@ -160,13 +139,6 @@ func filterSpecialIPs(encountered map[string]placeholder, prefixPortMap PrefixPo
 		}
 	}
 
-	// sorted
-	records = append(recordMap["us"], records...)
-	for _, prefix := range sortedPrefixes[1:] {
-		if rs, ok := recordMap[prefix]; ok {
-			records = append(records, rs...)
-		}
-	}
 	return
 }
 

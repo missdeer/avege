@@ -25,7 +25,7 @@ func TestGenerateSSCommandScript(t *testing.T) {
 }
 
 func TestGenerateHAProxyMixedConfiguration(t *testing.T) {
-	rm := map[string]placeholder{
+	hostsMap := map[string]placeholder{
 		"us-1.mitsuha-node.com": {},
 		"us-2.mitsuha-node.com": {},
 		"us-4.mitsuha-node.com": {},
@@ -85,5 +85,5 @@ func TestGenerateHAProxyMixedConfiguration(t *testing.T) {
 	for prefix := range prefixes {
 		ps = append(ps, prefix)
 	}
-	generateHAProxyMixedConfiguration(rm, ps)
+	generateHAProxyMixedConfiguration(hostsMap, ps)
 }

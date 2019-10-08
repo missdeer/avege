@@ -113,7 +113,7 @@ doRequest:
 		}
 	}
 
-	rm := make(map[string]placeholder)
+	hostsMap := make(map[string]placeholder)
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		pos := strings.Index(line, "://")
@@ -133,15 +133,15 @@ doRequest:
 			common.Info(string(output))
 			ss := strings.Split(string(output), ":")
 			common.Info(ss[0])
-			if _, ok := rm[ss[0]]; !ok {
-				rm[ss[0]] = placeholder{}
+			if _, ok := hostsMap[ss[0]]; !ok {
+				hostsMap[ss[0]] = placeholder{}
 				res = append(res, ss[0])
 			}
 		}
 	}
 	reg := regexp.MustCompile(`([a-zA-Z]{2,2})\-[a-z0-9A-Z]+\.mitsuha\-node\.com`)
 	prefixes := make(map[string]placeholder)
-	for host := range rm {
+	for host := range hostsMap {
 		ss := reg.FindAllStringSubmatch(host, -1)
 		if len(ss) > 0 && len(ss[0]) == 2 {
 			prefixes[ss[0][1]] = placeholder{}
@@ -154,7 +154,7 @@ doRequest:
 			ps = append(ps, prefix)
 		}
 	}
-	generateHAProxyMixedConfiguration(rm, ps)
+	generateHAProxyMixedConfiguration(hostsMap, ps)
 
 	prefixRemotePortMap := make(PrefixPortMap)
 	for i, prefix := range ps {
@@ -164,7 +164,7 @@ doRequest:
 
 	prefixes["all"] = placeholder{}
 	for prefix := range prefixes {
-		generateHAProxyConfigurations(rm, prefix)
+		generateHAProxyConfigurations(hostsMap, prefix)
 	}
 	return
 }
@@ -218,7 +218,7 @@ func generateSSCommandScript(prefixRemotePortMap PrefixPortMap) {
 	}
 }
 
-func generateHAProxyMixedConfiguration(rm map[string]placeholder, prefixes []string) {
+func generateHAProxyMixedConfiguration(hostsMap map[string]placeholder, prefixes []string) {
 	d := struct {
 		Prefixes []string
 		Hosts    [][]string
@@ -227,7 +227,7 @@ func generateHAProxyMixedConfiguration(rm map[string]placeholder, prefixes []str
 	}
 	for _, prefix := range d.Prefixes {
 		var hosts []string
-		for host := range rm {
+		for host := range hostsMap {
 			if strings.HasPrefix(host, prefix) {
 				// resolve host name to IP
 				ips, err := net.LookupIP(host)

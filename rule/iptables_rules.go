@@ -5,9 +5,8 @@ package rule
 import (
 	"bytes"
 	"html/template"
-	"io/ioutil"
 	"os"
-	"strings"
+	"path/filepath"
 	"sync"
 
 	"github.com/missdeer/avege/common"
@@ -15,9 +14,12 @@ import (
 )
 
 var (
-	rulesTemplate          string
-	ruleFile               = `rules.v4.latest`
-	oneUpdateIptablesRules *sync.Once
+	rulesTemplate            string
+	iptablesRuleTemplateFile = `rules.v4.template`
+	ruleFile                 = `rules.v4.latest`
+	ipsetTemplateFile        = `ipset.tmpl`
+	ipsetFile                = `ipset.txt`
+	oneUpdateIptablesRules   *sync.Once
 )
 
 func monitorFileChange(fileName string) {
@@ -27,9 +29,6 @@ func monitorFileChange(fileName string) {
 			select {
 			case <-configFileChanged:
 				common.Debug(fileName, "changes, reload now...")
-				if b, err := ioutil.ReadFile(fileName); err == nil {
-					rulesTemplate = string(b)
-				}
 			}
 		}
 	}()
@@ -43,24 +42,39 @@ func UpdateRedirFirewallRules() {
 	oneUpdateIptablesRules.Do(doUpdateRules)
 }
 
-func saveToRuleFile(res []string, records []string) {
-	t, err := template.New("").Parse(rulesTemplate)
+func saveToRuleFile() {
+	t, err := template.New(filepath.Base(iptablesRuleTemplateFile)).Parse(iptablesRuleTemplateFile)
 	if err != nil {
 		common.Error("parse rules template failed", err)
 		return
 	}
 
-	d := struct {
-		Predefined string
-		Servers    string
-	}{
-		Predefined: strings.Join(res, "\n"),
-		Servers:    strings.Join(records, "\n"),
+	type Prefix struct {
+		Prefix string
+		Port   int
 	}
+	d := struct {
+		Prefixes    []Prefix
+		DefaultPort int
+	}{
+		Prefixes:    []Prefix{},
+		DefaultPort: 58090,
+	}
+
+	for prefix, port := range prefixLocalPortMap {
+		d.Prefixes = append(d.Prefixes, Prefix{Prefix: prefix, Port: port})
+	}
+	for _, prefix := range sortedPrefixes {
+		if port, ok := prefixLocalPortMap[prefix]; ok {
+			d.DefaultPort = port
+			break
+		}
+	}
+
 	var tpl bytes.Buffer
 	err = t.Execute(&tpl, d)
 	if err != nil {
-		common.Error("executing ss-redir.tmpl failed", err)
+		common.Error("executing rules.v4.template failed", err)
 		return
 	}
 
@@ -76,29 +90,86 @@ func saveToRuleFile(res []string, records []string) {
 		return
 	}
 
-	common.Debug("rule file has been updated")
+	common.Debug(ruleFile, " has been updated")
+}
+
+func saveToIPSetFile(recordMap map[string][]string) {
+	t, err := template.New(filepath.Base(iptablesRuleTemplateFile)).Parse(iptablesRuleTemplateFile)
+	if err != nil {
+		common.Error("parse rules template failed", err)
+		return
+	}
+
+	type Net struct {
+	}
+
+	d := struct {
+		Prefixes []string
+		Nets     [][]string
+	}{}
+
+	for _, prefix := range sortedPrefixes {
+		if _, ok := prefixLocalPortMap[prefix]; ok {
+			d.Prefixes = append(d.Prefixes, prefix)
+		}
+	}
+
+	for _, prefix := range d.Prefixes {
+		if records, ok := recordMap[prefix]; ok {
+			d.Nets = append(d.Nets, records)
+		}
+	}
+
+	var tpl bytes.Buffer
+	err = t.Execute(&tpl, d)
+	if err != nil {
+		common.Error("executing ipset.tmpl failed", err)
+		return
+	}
+
+	file, err := os.OpenFile(ipsetFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		common.Error("open ipset file failed", err)
+		return
+	}
+	defer file.Close()
+	_, err = file.WriteString(tpl.String())
+	if err != nil {
+		common.Error("write content to ipset file failed", err)
+		return
+	}
+	common.Debug(ipsetFile, " has been updated")
 }
 
 func doUpdateRules() {
 	var err error
+	if iptablesRuleTemplateFile, err = fs.GetConfigPath(iptablesRuleTemplateFile); err != nil {
+		common.Error("can't find iptables rule template file", err)
+		return
+	}
 	if ruleFile, err = fs.GetConfigPath(ruleFile); err != nil {
 		ruleFile = `rules.v4.latest`
 	}
-
-	templateFile := `rules.v4.template`
-	if templateFile, err = fs.GetConfigPath(templateFile); err != nil {
-		templateFile = `rules.v4.template`
+	if ipsetTemplateFile, err = fs.GetConfigPath(ipsetTemplateFile); err != nil {
+		common.Error("can't find ipset template file", err)
+		return
 	}
-
-	if b, err := ioutil.ReadFile(templateFile); err == nil {
-		rulesTemplate = string(b)
-		monitorFileChange(templateFile)
+	if ipsetFile, err = fs.GetConfigPath(ipsetFile); err != nil {
+		ipsetFile = `ipset.txt`
 	}
+	monitorFileChange(iptablesRuleTemplateFile)
+
 	encountered := make(map[string]placeholder)
-	records := addAbroadDNSServerIPs(encountered)
-	records = append(records, addProxyServerIPs(encountered)...)
-	records = append(records, filterSpecialIPs(encountered, prefixLocalPortMap)...)
-	res := addCurrentRunningServerIPs(encountered)
-	saveToRuleFile(res, records)
+	cnroutes := addProxyServerIPs(encountered)
+	cn2, recordMap := filterSpecialIPs(encountered)
+	cn3 := addCurrentRunningServerIPs(encountered)
+	cnroutes = append(cnroutes, cn2...)
+	cnroutes = append(cnroutes, cn3...)
+	if len(cnroutes) > 0 {
+		recordMap["cn"] = cnroutes
+	}
+
+	saveToRuleFile()
+	saveToIPSetFile(recordMap)
 	oneUpdateIptablesRules = nil
 }

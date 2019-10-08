@@ -31,15 +31,8 @@ COMMIT
 -A SS -d 224.0.0.0/4 -j RETURN
 -A SS -d 240.0.0.0/4 -j RETURN
 -A SS -d 10.0.0.0/8 -j RETURN
--A SS -d 108.61.223.249/32 -j RETURN
--A SS -d 106.186.22.184/32 -j RETURN
--A SS -d 64.94.18.120/32 -j RETURN
-#-A SS -d 131.103.20.0/24 -j RETURN
--A SS -d 207.46.156.130/24 -j RETURN
--A SS -d 104.28.30.28/32 -j RETURN
--A SS -d 104.28.31.28/32 -j RETURN
-{{ .Predefined }}
-{{ .Servers }}
--A SS -p tcp -j REDIRECT --to-ports 58097
+{{range $i, $item := .Prefixes}}-A SS -p tcp -m set --match-set {{$.Prefix}}route dst -j REDIRECT --to-ports {{.Port}}{{end}}
+-A SS -p tcp -m set --match-set cnroute dst -j RETURN
+-A SS -p tcp -j REDIRECT --to-ports {{ .DefaultPort }}
 COMMIT
 # Completed on Sat Oct 10 15:36:42 2015
