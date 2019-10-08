@@ -15,7 +15,7 @@ var (
 	ipsetFile                = `ipset.txt`
 )
 
-func saveToIptablesRuleFile() {
+func saveToIptablesRuleFile(recordMap map[string][]string) {
 	type Prefix struct {
 		Prefix string
 		Port   int
@@ -29,7 +29,7 @@ func saveToIptablesRuleFile() {
 	}
 
 	for prefix, port := range prefixLocalPortMap {
-		if prefix != "cn" {
+		if _, ok := recordMap[prefix]; ok && prefix != "cn" {
 			d.Prefixes = append(d.Prefixes, Prefix{Prefix: prefix, Port: port})
 		}
 	}

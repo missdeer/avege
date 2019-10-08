@@ -61,7 +61,7 @@ func doUpdateRules() {
 		recordMap["cn"] = cnroutes
 	}
 
-	saveToIptablesRuleFile()
+	saveToIptablesRuleFile(recordMap)
 	saveToIPSetFile(recordMap)
 	oneUpdateIptablesRules = nil
 }
