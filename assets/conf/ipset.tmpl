@@ -1,4 +1,5 @@
 {{range $i, $prefix := .Prefixes}}
 create {{$prefix}}route hash:net family inet hashsize 1024 maxelem 65535
-{{range $j, $net := index $.Nets $i }}add {{$prefix}}route {{$net}}{{end}}
+{{range $j, $net := index $.Nets $i }}
+add {{$prefix}}route {{$net}}{{end}}
 {{end}}

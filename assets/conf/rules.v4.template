@@ -31,7 +31,8 @@ COMMIT
 -A SS -d 224.0.0.0/4 -j RETURN
 -A SS -d 240.0.0.0/4 -j RETURN
 -A SS -d 10.0.0.0/8 -j RETURN
-{{range $i, $item := .Prefixes}}-A SS -p tcp -m set --match-set {{$.Prefix}}route dst -j REDIRECT --to-ports {{.Port}}{{end}}
+{{range $i, $item := .Prefixes}}
+-A SS -p tcp -m set --match-set {{.Prefix}}route dst -j REDIRECT --to-ports {{.Port}}{{end}}
 -A SS -p tcp -m set --match-set cnroute dst -j RETURN
 -A SS -p tcp -j REDIRECT --to-ports {{ .DefaultPort }}
 COMMIT

@@ -3,7 +3,6 @@ package rule
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -162,10 +161,6 @@ doRequest:
 	}
 	generateSSCommandScript(prefixRemotePortMap)
 
-	prefixes["all"] = placeholder{}
-	for prefix := range prefixes {
-		generateHAProxyConfigurations(hostsMap, prefix)
-	}
 	return
 }
 
@@ -271,81 +266,6 @@ func generateHAProxyMixedConfiguration(hostsMap map[string]placeholder, prefixes
 	}
 	defer outFile.Close()
 	_, err = outFile.WriteString(tpl.String())
-	if err != nil {
-		common.Error("write content to haproxy.cfg failed", err)
-	}
-}
-
-func generateHAProxyConfigurations(rm map[string]placeholder, prefix string) {
-	var be543, be443, be80 string
-	count := 0
-	for host := range rm {
-		if strings.HasPrefix(host, prefix) || prefix == "all" {
-			count++
-			be543 += fmt.Sprintf("    server %s %s:543 check\n", strings.Split(host, ".")[0], host)
-			be443 += fmt.Sprintf("    server %s %s:443 check\n", strings.Split(host, ".")[0], host)
-			be80 += fmt.Sprintf("    server %s %s:80 check\n", strings.Split(host, ".")[0], host)
-		}
-	}
-	if count < 5 {
-		count = 5
-	}
-	haproxyCfgTemplate := `
-global 
-    daemon  
-    maxconn 10240 
-    pidfile /home/pi/avege/haproxy.pid 
-
-defaults 
-    mode tcp
-    balance roundrobin
-    timeout connect 10000ms  
-    timeout client 50000ms  
-    timeout server 50000ms  
-    log 127.0.0.1 local0 err
-
-listen admin_stats  
-    bind 0.0.0.0:8099
-    mode http
-    option httplog
-    maxconn 10  
-    stats refresh 30s
-    stats uri /stats  
-
-frontend ssr543 
-    bind *:58543  
-    default_backend miaops543
-	
-frontend ssr443
-    bind *:58443  
-    default_backend miaops443  
-
-frontend ssr80 
-    bind *:58080  
-    default_backend miaops80
-	
-backend miaops543
-    option log-health-checks
-    default-server inter %ds fall 3 rise 2
-%s 	
-
-backend miaops443
-    option log-health-checks
-    default-server inter %ds fall 3 rise 2
-%s 	
-
-backend miaops80
-    option log-health-checks
-    default-server inter %ds fall 3 rise 2
-%s
-`
-	outFile, err := os.OpenFile(`haproxy.cfg.`+prefix, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		common.Error("can't open haproxy.cfg", err)
-		return
-	}
-	defer outFile.Close()
-	_, err = outFile.WriteString(fmt.Sprintf(haproxyCfgTemplate, count, be543, count, be443, count, be80))
 	if err != nil {
 		common.Error("write content to haproxy.cfg failed", err)
 	}
