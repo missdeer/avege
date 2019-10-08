@@ -111,6 +111,7 @@ func filterSpecialIPs(encountered map[string]placeholder) (records []string, rec
 	scanner := bufio.NewScanner(inFile)
 	scanner.Split(bufio.ScanLines)
 
+	recordMap = make(map[string][]string)
 	for scanner.Scan() {
 		rec := scanner.Text()
 		s := strings.Split(rec, "|")
