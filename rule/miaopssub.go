@@ -138,10 +138,10 @@ doRequest:
 			}
 		}
 	}
-	reg := regexp.MustCompile(`([a-zA-Z]{2,2})\-[a-z0-9A-Z]+\.mitsuha\-node\.com`)
+	regLevel12 := regexp.MustCompile(`([a-zA-Z]{2,2})\-[a-z0-9A-Z]+\.mitsuha\-node\.com`)
 	prefixes := make(map[string]placeholder)
 	for host := range hostsMap {
-		ss := reg.FindAllStringSubmatch(host, -1)
+		ss := regLevel12.FindAllStringSubmatch(host, -1)
 		if len(ss) > 0 && len(ss[0]) == 2 {
 			prefixes[ss[0][1]] = placeholder{}
 		}
