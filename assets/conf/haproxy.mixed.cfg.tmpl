@@ -27,9 +27,13 @@ frontend {{$prefix}}-frontend443
     bind *:5{{$i}}443
     default_backend {{$prefix}}-backend443
 
-frontend {{$prefix}}-frontend80
-    bind *:5{{$i}}080
-    default_backend {{$prefix}}-backend80
+frontend {{$prefix}}-frontend233
+    bind *:5{{$i}}233
+    default_backend {{$prefix}}-backend233
+
+frontend {{$prefix}}-frontend59237
+    bind *:5{{$i}}389
+    default_backend {{$prefix}}-backend59237
 
 backend {{$prefix}}-backend543
     option log-health-checks
@@ -43,9 +47,15 @@ backend {{$prefix}}-backend443
     {{range $j, $host := index $.Hosts $i }}server {{$prefix}}-{{$j}} {{$host}}:443 check
     {{end}}
 
-backend {{$prefix}}-backend80
+backend {{$prefix}}-backend233
     option log-health-checks
     default-server inter 60s fall 3 rise 2
-    {{range $j, $host := index $.Hosts $i }}server {{$prefix}}-{{$j}} {{$host}}:80 check
+    {{range $j, $host := index $.Hosts $i }}server {{$prefix}}-{{$j}} {{$host}}:233 check
+    {{end}}
+
+backend {{$prefix}}-backend59237
+    option log-health-checks
+    default-server inter 60s fall 3 rise 2
+    {{range $j, $host := index $.Hosts $i }}server {{$prefix}}-{{$j}} {{$host}}:59237 check
     {{end}}
 {{end}}
