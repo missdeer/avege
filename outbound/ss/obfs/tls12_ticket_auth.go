@@ -259,7 +259,7 @@ func (t *tls12TicketAuth) Decode(data []byte) (decodedData []byte, needSendBack 
 
 	hash := t.hmacSHA1(data[11 : 11+22])
 
-	if !bytes.Equal(data[33:33+ssr.ObfsHMACSHA1Len], hash) {
+	if !hmac.Equal(data[33:33+ssr.ObfsHMACSHA1Len], hash) {
 		common.Error("hmac verification failed:", hash, data[33:33+ssr.ObfsHMACSHA1Len], len(data), " bytes recevied:", data)
 		return nil, false, ssr.ErrTLS12TicketAuthHMACError
 	}
@@ -294,7 +294,7 @@ func (t *tls12TicketAuth) sni(u string) []byte {
 	bURL := []byte(u)
 	length := len(bURL)
 	ret := make([]byte, length+9)
-	copy(ret[9:], bURL)
+	copy(ret[9:9+length], bURL)
 	binary.BigEndian.PutUint16(ret[7:], uint16(length&0xFFFF))
 	length += 3
 	binary.BigEndian.PutUint16(ret[4:], uint16(length&0xFFFF))

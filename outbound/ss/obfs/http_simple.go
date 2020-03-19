@@ -174,7 +174,8 @@ func (t *httpSimplePost) Decode(data []byte) (decodedData []byte, needSendBack b
 		decodedData = make([]byte, len(data)-pos-4)
 		copy(decodedData, data[pos+4:])
 		t.rawTransReceived = true
+		return decodedData, false, nil
 	}
 
-	return decodedData, false, nil
+	return nil, false, nil
 }
