@@ -58,10 +58,8 @@ startDecoding:
 	return content
 }
 
-func getSSRSubcription() (res []string) {
-	retry := 0
-doRequest:
-	req, err := http.NewRequest("GET", config.Configurations.Generals.SSRSubscription, nil)
+func getSubscriptionContent(u string) (content []byte) {
+	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		common.Error("Could not parse get ssr subscription request:", err)
 		return
@@ -73,43 +71,29 @@ doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
 		common.Error("Could not send get ssr subscription request:", err)
-		retry++
-		if retry < 3 {
-			time.Sleep(3 * time.Second)
-			goto doRequest
-		}
 		return
 	}
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		common.Error("get ssr subscription request not 200")
-		retry++
-		if retry < 3 {
-			time.Sleep(3 * time.Second)
-			goto doRequest
-		}
 		return
 	}
 
 	rawcontent, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("cannot read ssr subscription content:", err)
-		retry++
-		if retry < 3 {
-			time.Sleep(3 * time.Second)
-			goto doRequest
-		}
+		return
 	}
 
-	content := decodeBase64(string(rawcontent))
+	return decodeBase64(string(rawcontent))
+}
+
+func getSSRSubcription() (res []string) {
+	content := getSubscriptionContent(config.Configurations.Generals.SSRSubscription)
 	if len(content) == 0 {
 		common.Error("cannot parse ssr subscription as base64 content")
-		retry++
-		if retry < 3 {
-			time.Sleep(3 * time.Second)
-			goto doRequest
-		}
+		return
 	}
 
 	hostsMap := make(map[string]placeholder)
