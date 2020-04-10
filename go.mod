@@ -19,6 +19,7 @@ require (
 	github.com/missdeer/ProxyClient v0.0.0-20191007130722-f1046289d045
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc
 	golang.org/x/net v0.0.0-20190921015927-1a5e07d1ff72
 	golang.org/x/sys v0.0.0-20191007092633-5f54ce542709

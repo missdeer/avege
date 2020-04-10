@@ -1,7 +1,7 @@
 package main
 
 import (
-	"flag"
+	flag "github.com/spf13/pflag"
 
 	"github.com/missdeer/avege/common"
 	"github.com/missdeer/avege/common/fs"
@@ -12,7 +12,7 @@ import (
 func main() {
 	var configFile string
 
-	flag.StringVar(&configFile, "c", "config.Configurations.json", "(s)pecify config file")
+	flag.StringVarP(&configFile, "config", "c", "config.Configurations.json", "Specify config file")
 
 	flag.Parse()
 	// read config file
