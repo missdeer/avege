@@ -2,6 +2,7 @@ package obfs
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"encoding/binary"
 	"math/rand"
 	"strings"
@@ -92,8 +93,8 @@ func (t *tls12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 		return data, nil
 	}
 	// buffer cleared
-	if t.handshakeStatus & 4 == 4 {
-		d := make([]byte, 0, len(data) + 100)
+	if t.handshakeStatus&4 == 4 {
+		d := make([]byte, 0, len(data)+100)
 		for len(data) > 0 {
 			length := len(data)
 			// 16k record size
@@ -113,9 +114,9 @@ func (t *tls12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 		t.sendBuffer = append(t.sendBuffer, data)
 	}
 	// Client Hello sent & Client Finished not sent
-	if t.handshakeStatus & 3 == 1 {
+	if t.handshakeStatus&3 == 1 {
 		// No Server Hello Received & not FastAuth
-		if t.handshakeStatus & 8 != 8 && !t.fastAuth {
+		if t.handshakeStatus&8 != 8 && !t.fastAuth {
 			return make([]byte, 0), nil
 		}
 		hmacData := make([]byte, 43)
@@ -129,7 +130,7 @@ func (t *tls12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 			return hmacData, nil
 		}
 		// Clear buffer
-		totalLength := 43 + len(t.sendBuffer) * 5 // len(hmacData) + header size of buffers
+		totalLength := 43 + len(t.sendBuffer)*5 // len(hmacData) + header size of buffers
 		for _, buf := range t.sendBuffer {
 			totalLength += len(buf)
 		}
@@ -146,7 +147,7 @@ func (t *tls12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 		return d, nil
 	}
 	// Client Hello & Client Finish sent
-	if t.handshakeStatus & 3 == 3 {
+	if t.handshakeStatus&3 == 3 {
 		// Clear buffer
 		totalLength := len(t.sendBuffer) * 5 // header size
 		for _, buf := range t.sendBuffer {
@@ -181,12 +182,12 @@ func (t *tls12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 	sslBuf = append(sslBuf, 0x16, 0x03, 0x01)
 	// length (2)
 	sslBuf = sslBuf[:5]
-	binary.BigEndian.PutUint16(sslBuf[3:], uint16((sslLen - 3)&0xFFFF))
+	binary.BigEndian.PutUint16(sslBuf[3:], uint16((sslLen-3)&0xFFFF))
 	// hand shake protocol (2)
 	sslBuf = append(sslBuf, 0x01, 0x00)
 	// hand shake length (2)
 	sslBuf = sslBuf[:9]
-	binary.BigEndian.PutUint16(sslBuf[7:], uint16((sslLen - 7)&0xFFFF))
+	binary.BigEndian.PutUint16(sslBuf[7:], uint16((sslLen-7)&0xFFFF))
 	// client version 2
 	sslBuf = append(sslBuf, 0x3, 0x3)
 
@@ -198,11 +199,11 @@ func (t *tls12TicketAuth) Encode(data []byte) (encodedData []byte, err error) {
 	sslBuf = append(sslBuf, t.data.localClientID[:]...)
 	// tlsData0 (32)
 	sslBuf = append(sslBuf, tlsData0...)
-	
+
 	// extBuf
 	sslBuf = sslBuf[:sslLen]
 	// extBuf length (2)
-	extBuf := sslBuf[sslLen-extLen:sslLen-extLen + 2]
+	extBuf := sslBuf[sslLen-extLen : sslLen-extLen+2]
 	binary.BigEndian.PutUint16(extBuf, uint16(cap(extBuf)&0xFFFF))
 	// tlsData1 (5)
 	extBuf = append(extBuf, tlsData1...)
@@ -226,7 +227,7 @@ func (t *tls12TicketAuth) Decode(data []byte) (decodedData []byte, needSendBack 
 	}
 
 	// Server Hello Had Received (Normal)
-	if t.handshakeStatus & 8 != 0 {
+	if t.handshakeStatus&8 != 0 {
 		var d []byte
 		for len(data) > 0 {
 			if t.recvLength == 0 {
