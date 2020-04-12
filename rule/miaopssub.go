@@ -108,11 +108,6 @@ func getSSRSubcription() (res []string) {
 			continue
 		}
 		input := line[pos+6:]
-		pos = strings.Index(input, "_")
-		if pos > 0 {
-			input = input[:pos]
-		}
-		input = input + "/"
 		common.Info("input:", input)
 		output := string(decodeBase64(input))
 		if len(output) == 0 {
