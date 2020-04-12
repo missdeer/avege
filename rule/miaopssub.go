@@ -103,7 +103,7 @@ func getSSRSubcription() (res []string) {
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		pos := strings.Index(line, "ssr://")
-		if pos <= 0 {
+		if pos < 0 {
 			common.Error("unexpected ssr subscription line:", line)
 			continue
 		}
