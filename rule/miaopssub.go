@@ -113,29 +113,30 @@ func getSSRSubcription() (res []string) {
 			input = input[:pos]
 		}
 		input = input + "/"
-		common.Info(input)
-		output := decodeBase64(input)
+		common.Info("input:", input)
+		output := string(decodeBase64(input))
 		if len(output) == 0 {
 			common.Error("cannot parse ssr subscription line")
 			continue
 		}
-		common.Info(string(output))
-		ss := strings.Split(string(output), ":")
-		common.Info(ss[0])
+
+		ss := strings.Split(output, ":")
+		common.Info("output:", output, ss[0])
 
 		var remarks string
-		idx := strings.Index(line, `&remarks=`)
+		idx := strings.Index(output, `&remarks=`)
 		if idx <= 0 {
 			common.Error("cannot find remarks field")
 			continue
 		}
-		remarks = line[idx+len(`&remarks=`):]
+		remarks = output[idx+len(`&remarks=`):]
 		idx = strings.Index(remarks, `&`)
 		if idx <= 0 {
 			common.Error("cannot find remarks end")
 			continue
 		}
 		remarks = string(decodeBase64(remarks[:idx]))
+		common.Info("remarks:", remarks)
 		if regLevel12.MatchString(ss[0]) {
 			if _, ok := level12HostRemarksMap[ss[0]]; !ok {
 				level12HostRemarksMap[ss[0]] = remarks
