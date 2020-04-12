@@ -153,6 +153,9 @@ func getSSRSubcription() (res []string) {
 		}
 	}
 
+	common.Info("level12 map:", level12HostRemarksMap)
+	common.Info("level3 map:", level3HostRemarksMap)
+
 	level12PrefixesExistMap := make(map[string]placeholder)
 	for host := range level12HostRemarksMap {
 		ss := regLevel12.FindAllStringSubmatch(host, -1)
@@ -259,13 +262,17 @@ func generateHAProxyMixedConfiguration(hostRemarksMap map[string]string, prefixe
 				continue
 			}
 			var location string
+			notHK := false
 			for l, p := range level3LocationsPrefixMap {
+				if prefix == `hk` && strings.Contains(remarks, l) {
+					notHK = true
+				}
 				if p == prefix {
 					location = l
 					break
 				}
 			}
-			if !strings.Contains(remarks, location) && regLevel3.MatchString(host) {
+			if (!strings.Contains(remarks, location) || notHK) && regLevel3.MatchString(host) {
 				continue
 			}
 			// resolve host name to IP
