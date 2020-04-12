@@ -15,7 +15,9 @@ jobs:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
-
+      with:
+        ref: master
+        
     - name: Build
       run: |
         env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o linux-amd64/avege -ldflags="-s -w" .
@@ -34,6 +36,7 @@ jobs:
         env CGO_ENABLED=0 GOOS=netbsd GOARCH=amd64 go build -o netbsd-amd64/avege -ldflags="-s -w" .
         env CGO_ENABLED=0 GOOS=netbsd GOARCH=386 go build -o netbsd-386/avege -ldflags="-s -w" .
         env CGO_ENABLED=0 GOOS=dragonfly GOARCH=amd64 go build -o dragonfly-amd64/avege -ldflags="-s -w" .
+        go get -u github.com/missdeer/cicdutil
       
     - name: Upload artifact avege-linux-amd64
       uses: actions/upload-artifact@v1.0.0
@@ -165,4 +168,4 @@ jobs:
 
     - name: Remove old artifacts
       run: |
-        linux-amd64/avege -p github -u missdeer -t ${{ secrets.GH_TOKEN }} -r avege -k 0 -a delete
+        $GOPATH/bin/cicdutil -p github -u missdeer -t ${{ secrets.GH_TOKEN }} -r avege -k 0 -a delete
