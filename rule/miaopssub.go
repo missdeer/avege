@@ -54,7 +54,7 @@ type placeholder struct{}
 func decodeBase64(s string) []byte {
 	sr := s
 startDecoding:
-	content, err := base64.StdEncoding.DecodeString(sr)
+	content, err := base64.RawURLEncoding.DecodeString(sr)
 	if err != nil && len(sr) > 0 {
 		sr = sr[:len(sr)-1]
 		goto startDecoding
@@ -254,8 +254,18 @@ func generateHAProxyMixedConfiguration(hostRemarksMap map[string]string, prefixe
 	}
 	for _, prefix := range d.Prefixes {
 		var hosts []string
-		for host := range hostRemarksMap {
-			if !strings.HasPrefix(host, prefix) && !regLevel3.MatchString(host) {
+		for host, remarks := range hostRemarksMap {
+			if !strings.HasPrefix(host, prefix) && regLevel12.MatchString(host) {
+				continue
+			}
+			var location string
+			for l, p := range level3LocationsPrefixMap {
+				if p == prefix {
+					location = l
+					break
+				}
+			}
+			if !strings.Contains(remarks, location) && regLevel3.MatchString(host) {
 				continue
 			}
 			// resolve host name to IP
