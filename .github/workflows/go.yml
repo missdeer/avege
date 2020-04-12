@@ -1,0 +1,168 @@
+name: Go
+on: [push]
+jobs:
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Set up Go 1.14
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.14
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Build
+      run: |
+        env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o linux-amd64/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o linux-386/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=5 go build -o linux-arm-5/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=6 go build -o linux-arm-6/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o linux-arm-7/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o linux-arm64/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o darwin-amd64/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o windows-amd64/avege.exe -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -o windows-386/avege.exe -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -o freebsd-amd64/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=freebsd GOARCH=386 go build -o freebsd-386/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=openbsd GOARCH=amd64 go build -o openbsd-amd64/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=openbsd GOARCH=386 go build -o openbsd-386/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=netbsd GOARCH=amd64 go build -o netbsd-amd64/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=netbsd GOARCH=386 go build -o netbsd-386/avege -ldflags="-s -w" .
+        env CGO_ENABLED=0 GOOS=dragonfly GOARCH=amd64 go build -o dragonfly-amd64/avege -ldflags="-s -w" .
+      
+    - name: Upload artifact avege-linux-amd64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-linux-amd64
+        # Directory containing files to upload
+        path: linux-amd64
+
+    - name: Upload artifact avege-linux-386
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-linux-386
+        # Directory containing files to upload
+        path: linux-386
+
+    - name: Upload artifact avege-linux-arm-5
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-linux-arm-5
+        # Directory containing files to upload
+        path: linux-arm-5
+
+    - name: Upload artifact avege-linux-arm-6
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-linux-arm-6
+        # Directory containing files to upload
+        path: linux-arm-6
+
+    - name: Upload artifact avege-linux-arm-7
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-linux-arm-7
+        # Directory containing files to upload
+        path: linux-arm-7
+
+    - name: Upload artifact avege-linux-arm64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-linux-arm64
+        # Directory containing files to upload
+        path: linux-arm64
+
+    - name: Upload artifact avege-darwin-amd64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-darwin-amd64
+        # Directory containing files to upload
+        path: darwin-amd64
+
+    - name: Upload artifact avege-dragonfly-amd64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-dragonfly-amd64
+        # Directory containing files to upload
+        path: dragonfly-amd64
+
+    - name: Upload artifact avege-openbsd-amd64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-openbsd-amd64
+        # Directory containing files to upload
+        path: openbsd-amd64
+
+    - name: Upload artifact avege-openbsd-386
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-openbsd-386
+        # Directory containing files to upload
+        path: openbsd-386
+
+    - name: Upload artifact avege-netbsd-amd64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-netbsd-amd64
+        # Directory containing files to upload
+        path: netbsd-amd64
+
+    - name: Upload artifact avege-netbsd-386
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-netbsd-386
+        # Directory containing files to upload
+        path: netbsd-386
+
+    - name: Upload artifact avege-freebsd-amd64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-freebsd-amd64
+        # Directory containing files to upload
+        path: freebsd-amd64
+
+    - name: Upload artifact avege-freebsd-386
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-freebsd-386
+        # Directory containing files to upload
+        path: freebsd-386
+
+    - name: Upload artifact avege-windows-amd64
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-windows-amd64
+        # Directory containing files to upload
+        path: windows-amd64
+
+    - name: Upload artifact avege-windows-386
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        # Artifact name
+        name: avege-windows-386
+        # Directory containing files to upload
+        path: windows-386
+
+    - name: Remove old artifacts
+      run: |
+        linux-amd64/avege -p github -u missdeer -t ${{ secrets.GH_TOKEN }} -r avege -k 0 -a delete
