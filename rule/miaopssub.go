@@ -19,17 +19,22 @@ import (
 )
 
 var (
+	regLevel12         = regexp.MustCompile(`([a-zA-Z]{2,2})\-[a-z0-9]{1,2}\.[a-z\-]{12,12}\.com`)
+	regLevel3          = regexp.MustCompile(`[a-z0-9]{6,6}\.[a-z\-]{12,12}\.com`)
 	prefixLocalPortMap = make(PrefixPortMap)
 
 	sortedPrefixes = []string{
 		"us", "jp", "hk", "sg", "tw", "kr", "eu", "ru",
 		"cn",
 	}
-	level3Locations = []string{
-		`美国`, `日本`, `台湾`, `俄罗斯`, `新加坡`, `澳门`, //`香港`,
-	}
-	level3Prefixes = []string{
-		`us`, `jp`, `tw`, `ru`, `sg`, `kr`, `hk`,
+	level3LocationsPrefixMap = map[string]string{
+		`美国`:  `us`,
+		`日本`:  `jp`,
+		`台湾`:  `tw`,
+		`俄罗斯`: `ru`,
+		`新加坡`: `sg`,
+		`澳门`:  `kr`,
+		//`香港`:`hk`,
 	}
 )
 
@@ -95,9 +100,6 @@ func getSSRSubcription() (res []string) {
 		return
 	}
 
-	regLevel12 := regexp.MustCompile(`([a-zA-Z]{2,2})\-[a-z0-9]{1,2}\.[a-z\-]{12,12}\.com`)
-	regLevel3 := regexp.MustCompile(`[a-z0-9]{6,6}\.[a-z\-]{12,12}\.com`)
-
 	level12HostRemarksMap := make(map[string]string) // host - remarks pair
 	level3HostRemarksMap := make(map[string]string)  // host - remarks pair
 	lines := strings.Split(string(content), "\n")
@@ -116,7 +118,12 @@ func getSSRSubcription() (res []string) {
 		}
 
 		ss := strings.Split(output, ":")
-		common.Info("output:", output, ss[0])
+		if len(ss) <= 2 {
+			common.Error("unexpected output:", output)
+			continue
+		}
+		host := ss[0]
+		common.Info("output:", output, host)
 
 		var remarks string
 		idx := strings.Index(output, `&remarks=`)
@@ -132,39 +139,38 @@ func getSSRSubcription() (res []string) {
 		}
 		remarks = string(decodeBase64(remarks[:idx]))
 		common.Info("remarks:", remarks)
-		if regLevel12.MatchString(ss[0]) {
-			if _, ok := level12HostRemarksMap[ss[0]]; !ok {
-				level12HostRemarksMap[ss[0]] = remarks
-				res = append(res, ss[0])
+		if regLevel12.MatchString(host) {
+			if _, ok := level12HostRemarksMap[host]; !ok {
+				level12HostRemarksMap[host] = remarks
+				res = append(res, host)
 			}
 		}
-		if regLevel3.MatchString(ss[0]) {
-			if _, ok := level3HostRemarksMap[ss[0]]; !ok {
-				level3HostRemarksMap[ss[0]] = remarks
-				res = append(res, ss[0])
+		if regLevel3.MatchString(host) {
+			if _, ok := level3HostRemarksMap[host]; !ok {
+				level3HostRemarksMap[host] = remarks
+				res = append(res, host)
 			}
 		}
 	}
 
 	level12PrefixesExistMap := make(map[string]placeholder)
-	level3PrefixesExistMap := make(map[string]placeholder)
 	for host := range level12HostRemarksMap {
 		ss := regLevel12.FindAllStringSubmatch(host, -1)
 		if len(ss) > 0 && len(ss[0]) == 2 {
 			level12PrefixesExistMap[ss[0][1]] = placeholder{}
 		}
 	}
-	for host, remarks := range level3HostRemarksMap {
-		if regLevel3.MatchString(host) {
-			// it's level3
-			for index, location := range level3Locations {
-				prefix := `hk`
-				if strings.Contains(remarks, location) {
-					prefix = level3Prefixes[index]
-					level3PrefixesExistMap[prefix] = placeholder{}
-				}
+	level3PrefixesExistMap := make(map[string]placeholder)
+	for _, remarks := range level3HostRemarksMap {
+		matched := false
+		for location, prefix := range level3LocationsPrefixMap {
+			if strings.Contains(remarks, location) {
+				level3PrefixesExistMap[prefix] = placeholder{}
+				matched = true
 			}
-			continue
+		}
+		if !matched {
+			level3PrefixesExistMap[`hk`] = placeholder{}
 		}
 	}
 	// sorted
@@ -249,7 +255,7 @@ func generateHAProxyMixedConfiguration(hostRemarksMap map[string]string, prefixe
 	for _, prefix := range d.Prefixes {
 		var hosts []string
 		for host := range hostRemarksMap {
-			if !strings.HasPrefix(host, prefix) {
+			if !strings.HasPrefix(host, prefix) && !regLevel3.MatchString(host) {
 				continue
 			}
 			// resolve host name to IP
