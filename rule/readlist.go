@@ -37,11 +37,14 @@ func getExceptionDomainList() (res []string) {
 }
 
 func resolveIPFromDomainName(host string) (res []string) {
-	if ips, err := net.LookupIP(host); err == nil {
-		for _, ip := range ips {
-			if ip.To4() != nil {
-				res = append(res, ip.String())
-			}
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		common.Error("lookup IP failed", err)
+		return
+	}
+	for _, ip := range ips {
+		if ip.To4() != nil {
+			res = append(res, ip.String())
 		}
 	}
 	return
@@ -97,21 +100,23 @@ func addProxyServerIPs(encountered map[string]placeholder) (records []string) {
 	return
 }
 
-func filterSpecialIPs(encountered map[string]placeholder) (records []string, recordMap map[string][]string) {
-	apnicFile, err := fs.GetConfigPath("apnic.txt")
+func filterSpecialIPs(encountered map[string]placeholder) (cnIPs []string, outIPMap map[string][]string) {
+	outIPMap = make(map[string][]string)
+
+	// outside route
+	apnicFilePath, err := fs.GetConfigPath("apnic.txt")
 	if err != nil {
-		apnicFile = "apnic.txt"
+		apnicFilePath = "apnic.txt"
 	}
-	inFile, err := os.Open(apnicFile)
+	apnicFile, err := os.Open(apnicFilePath)
 	if err != nil {
 		common.Error("opening apnic.txt failed", err)
 		return
 	}
-	defer inFile.Close()
-	scanner := bufio.NewScanner(inFile)
+	defer apnicFile.Close()
+	scanner := bufio.NewScanner(apnicFile)
 	scanner.Split(bufio.ScanLines)
 
-	recordMap = make(map[string][]string)
 	for scanner.Scan() {
 		rec := scanner.Text()
 		s := strings.Split(rec, "|")
@@ -123,23 +128,36 @@ func filterSpecialIPs(encountered map[string]placeholder) (records []string, rec
 				continue
 			}
 			mask := 32 - math.Log2(v)
-			if prefix == "cn" {
-				// china IPs
-				records = append(records, fmt.Sprintf("add cnroute %s/%d", s[3], int(mask)))
-			} else if prefixLocalPortMap.Contains(prefix) {
-				rs, ok := recordMap[prefix]
+			if prefixLocalPortMap.Contains(prefix) && prefix != "cn" {
+				rs, ok := outIPMap[prefix]
 				if ok {
 					rs = append(rs, fmt.Sprintf("add %sroute %s/%d", prefix, s[3], int(mask)))
 				} else {
 					rs = []string{fmt.Sprintf("add %sroute %s/%d", prefix, s[3], int(mask))}
 				}
-				recordMap[prefix] = rs
-			} else {
-				// skip
+				outIPMap[prefix] = rs
 			}
 		}
 	}
 
+	// cnroute
+	chinaIPListFilePath, err := fs.GetConfigPath("china_ip_list.txt")
+	if err != nil {
+		chinaIPListFilePath = "china_ip_list.txt"
+	}
+	chinaIPListFile, err := os.Open(chinaIPListFilePath)
+	if err != nil {
+		common.Error("opening china_ip_list.txt failed", err)
+		return
+	}
+	defer chinaIPListFile.Close()
+	scanner = bufio.NewScanner(chinaIPListFile)
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		rec := scanner.Text()
+		cnIPs = append(cnIPs, fmt.Sprintf("add cnroute %s", rec))
+	}
 	return
 }
 
@@ -150,6 +168,7 @@ func addCurrentRunningServerIPs(encountered map[string]placeholder) (res []strin
 		host, _, _ := net.SplitHostPort(outbound.Address)
 		ips, err := net.LookupIP(host)
 		if err != nil {
+			common.Error("lookup IP failed", err)
 			continue
 		}
 		for _, ip := range ips {

@@ -22,15 +22,14 @@ var (
 	prefixLocalPortMap = make(PrefixPortMap)
 
 	sortedPrefixes = []string{
-		"us",
-		"jp",
-		"hk",
-		"sg",
-		"tw",
-		"kr",
-		"eu",
-		"ru",
+		"us", "jp", "hk", "sg", "tw", "kr", "eu", "ru",
 		"cn",
+	}
+	level3Locations = []string{
+		`美国`, `日本`, `台湾`, `俄罗斯`, `新加坡`, `澳门`, //`香港`,
+	}
+	level3Prefixes = []string{
+		`us`, `jp`, `tw`, `ru`, `sg`, `kr`, `hk`,
 	}
 )
 
@@ -96,51 +95,98 @@ func getSSRSubcription() (res []string) {
 		return
 	}
 
-	hostsMap := make(map[string]placeholder)
+	regLevel12 := regexp.MustCompile(`([a-zA-Z]{2,2})\-[a-z0-9]{1,2}\.[a-z\-]{12,12}\.com`)
+	regLevel3 := regexp.MustCompile(`[a-z0-9]{6,6}\.[a-z\-]{12,12}\.com`)
+
+	level12HostRemarksMap := make(map[string]string) // host - remarks pair
+	level3HostRemarksMap := make(map[string]string)  // host - remarks pair
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
-		pos := strings.Index(line, "://")
+		pos := strings.Index(line, "ssr://")
+		if pos <= 0 {
+			common.Error("unexpected ssr subscription line")
+			continue
+		}
+		input := line[pos+6:]
+		pos = strings.Index(input, "_")
 		if pos > 0 {
-			input := line[pos+3:]
-			pos = strings.Index(input, "_")
-			if pos > 0 {
-				input = input[:pos]
+			input = input[:pos]
+		}
+		input = input + "/"
+		common.Info(input)
+		output := decodeBase64(input)
+		if len(output) == 0 {
+			common.Error("cannot parse ssr subscription line")
+			continue
+		}
+		common.Info(string(output))
+		ss := strings.Split(string(output), ":")
+		common.Info(ss[0])
+
+		var remarks string
+		idx := strings.Index(line, `&remarks=`)
+		if idx <= 0 {
+			common.Error("cannot find remarks field")
+			continue
+		}
+		remarks = line[idx+len(`&remarks=`):]
+		idx = strings.Index(remarks, `&`)
+		if idx <= 0 {
+			common.Error("cannot find remarks end")
+			continue
+		}
+		remarks = string(decodeBase64(remarks[:idx]))
+		if regLevel12.MatchString(ss[0]) {
+			if _, ok := level12HostRemarksMap[ss[0]]; !ok {
+				level12HostRemarksMap[ss[0]] = remarks
+				res = append(res, ss[0])
 			}
-			input = input + "/"
-			common.Info(input)
-			output := decodeBase64(input)
-			if len(output) == 0 {
-				common.Error("cannot parse ssr subscription line")
-				continue
-			}
-			common.Info(string(output))
-			ss := strings.Split(string(output), ":")
-			common.Info(ss[0])
-			if _, ok := hostsMap[ss[0]]; !ok {
-				hostsMap[ss[0]] = placeholder{}
+		}
+		if regLevel3.MatchString(ss[0]) {
+			if _, ok := level3HostRemarksMap[ss[0]]; !ok {
+				level3HostRemarksMap[ss[0]] = remarks
 				res = append(res, ss[0])
 			}
 		}
 	}
-	regLevel12 := regexp.MustCompile(`([a-zA-Z]{2,2})\-[a-z0-9A-Z]+\.mitsuha\-node\.com`)
-	prefixes := make(map[string]placeholder)
-	for host := range hostsMap {
+
+	level12PrefixesExistMap := make(map[string]placeholder)
+	level3PrefixesExistMap := make(map[string]placeholder)
+	for host := range level12HostRemarksMap {
 		ss := regLevel12.FindAllStringSubmatch(host, -1)
 		if len(ss) > 0 && len(ss[0]) == 2 {
-			prefixes[ss[0][1]] = placeholder{}
+			level12PrefixesExistMap[ss[0][1]] = placeholder{}
+		}
+	}
+	for host, remarks := range level3HostRemarksMap {
+		if regLevel3.MatchString(host) {
+			// it's level3
+			for index, location := range level3Locations {
+				prefix := `hk`
+				if strings.Contains(remarks, location) {
+					prefix = level3Prefixes[index]
+					level3PrefixesExistMap[prefix] = placeholder{}
+				}
+			}
+			continue
 		}
 	}
 	// sorted
-	var ps []string
+	var level12Prefixes []string
+	var level3Prefixes []string
 	for _, prefix := range sortedPrefixes {
-		if _, ok := prefixes[prefix]; ok {
-			ps = append(ps, prefix)
+		if _, ok := level12PrefixesExistMap[prefix]; ok {
+			level12Prefixes = append(level12Prefixes, prefix)
+		}
+		if _, ok := level3PrefixesExistMap[prefix]; ok {
+			level3Prefixes = append(level3Prefixes, prefix)
 		}
 	}
-	generateHAProxyMixedConfiguration(hostsMap, ps)
+	generateHAProxyMixedConfiguration(level12HostRemarksMap, level12Prefixes, `haproxy.level12.mixed.cfg`)
+	generateHAProxyMixedConfiguration(level3HostRemarksMap, level3Prefixes, `haproxy.level3.mixed.cfg`)
 
 	prefixRemotePortMap := make(PrefixPortMap)
-	for i, prefix := range ps {
+	for i, prefix := range level12Prefixes {
 		prefixRemotePortMap[prefix] = 50543 + i*1000
 	}
 	generateSSCommandScript(prefixRemotePortMap)
@@ -197,7 +243,7 @@ func generateSSCommandScript(prefixRemotePortMap PrefixPortMap) {
 	}
 }
 
-func generateHAProxyMixedConfiguration(hostsMap map[string]placeholder, prefixes []string) {
+func generateHAProxyMixedConfiguration(hostRemarksMap map[string]string, prefixes []string, saveFile string) {
 	d := struct {
 		Prefixes []string
 		Hosts    [][]string
@@ -206,20 +252,22 @@ func generateHAProxyMixedConfiguration(hostsMap map[string]placeholder, prefixes
 	}
 	for _, prefix := range d.Prefixes {
 		var hosts []string
-		for host := range hostsMap {
-			if strings.HasPrefix(host, prefix) {
-				// resolve host name to IP
-				ips, err := net.LookupIP(host)
-				if err != nil {
+		for host := range hostRemarksMap {
+			if !strings.HasPrefix(host, prefix) {
+				continue
+			}
+			// resolve host name to IP
+			ips, err := net.LookupIP(host)
+			if err != nil {
+				common.Error("lookup IP failed", err)
+				continue
+			}
+			for _, ip := range ips {
+				if ip.To4() == nil {
+					// invalid IPv4 address
 					continue
 				}
-				for _, ip := range ips {
-					if ip.To4() == nil {
-						// invalid IPv4 address
-						continue
-					}
-					hosts = append(hosts, ip.String())
-				}
+				hosts = append(hosts, ip.String())
 			}
 		}
 		d.Hosts = append(d.Hosts, hosts)
@@ -243,14 +291,14 @@ func generateHAProxyMixedConfiguration(hostsMap map[string]placeholder, prefixes
 		return
 	}
 
-	outFile, err := os.OpenFile(`haproxy.mixed.cfg`, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
+	outFile, err := os.OpenFile(saveFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		common.Error("can't open haproxy.mixed.cfg", err)
+		common.Error("can't open", saveFile, err)
 		return
 	}
 	defer outFile.Close()
 	_, err = outFile.WriteString(tpl.String())
 	if err != nil {
-		common.Error("write content to haproxy.cfg failed", err)
+		common.Error("failed to write content to", saveFile, err)
 	}
 }
