@@ -16,6 +16,7 @@ import (
 
 var (
 	Configurations       = new(LocalConfig)
+	Properties           = make(map[string]interface{})
 	LeftQuote      int64 = 1 * 1024 * 1024 // 1MB initially
 	AllowedPort          = make(map[int]bool)
 	DeniedPort           = make(map[int]bool)

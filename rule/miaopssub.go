@@ -22,6 +22,7 @@ var (
 	regLevel12         = regexp.MustCompile(`([a-zA-Z]{2,2})\-[a-z0-9]{1,2}\.[a-z\-]{12,12}\.com`)
 	regLevel3          = regexp.MustCompile(`[a-z0-9]{6,6}\.[a-z\-]{12,12}\.com`)
 	prefixLocalPortMap = make(PrefixPortMap)
+	keepNodeUnresolved = false
 
 	sortedPrefixes = []string{
 		"us", "jp", "hk", "sg", "tw", "kr", "eu", "ru",
@@ -248,6 +249,63 @@ func generateSSCommandScript(prefixRemotePortMap PrefixPortMap) {
 	}
 }
 
+func getAllHostsByPrefix(prefix string, hostRemarksMap map[string]string) (hosts []string) {
+	for host, remarks := range hostRemarksMap {
+		if !strings.HasPrefix(host, prefix) && regLevel12.MatchString(host) {
+			continue
+		}
+		var location string
+		notHK := false
+		for l, p := range level3LocationsPrefixMap {
+			if prefix == `hk` && strings.Contains(remarks, l) {
+				notHK = true
+			}
+			if p == prefix {
+				location = l
+				break
+			}
+		}
+		if (!strings.Contains(remarks, location) || notHK) && regLevel3.MatchString(host) {
+			continue
+		}
+		// resolve host name to IP
+		ips, err := net.LookupIP(host)
+		if err != nil {
+			common.Error("lookup IP failed", err)
+			continue
+		}
+		for _, ip := range ips {
+			if ip.To4() == nil {
+				// invalid IPv4 address
+				continue
+			}
+			hosts = append(hosts, ip.String())
+		}
+	}
+	return
+}
+
+func getHostsByPrefix(prefix string) (hosts []string) {
+	if v, ok := config.Properties[prefix]; ok {
+		if host, ok := v.(string); ok {
+			// resolve host name to IP
+			ips, err := net.LookupIP(host)
+			if err != nil {
+				common.Error("lookup IP failed", err)
+				return []string{host}
+			}
+			for _, ip := range ips {
+				if ip.To4() == nil {
+					// invalid IPv4 address
+					return []string{host}
+				}
+				return []string{ip.String()}
+			}
+		}
+	}
+	return
+}
+
 func generateHAProxyMixedConfiguration(hostRemarksMap map[string]string, prefixes []string, saveFile string) {
 	d := struct {
 		Prefixes []string
@@ -255,41 +313,30 @@ func generateHAProxyMixedConfiguration(hostRemarksMap map[string]string, prefixe
 	}{
 		Prefixes: prefixes,
 	}
-	for _, prefix := range d.Prefixes {
-		var hosts []string
-		for host, remarks := range hostRemarksMap {
-			if !strings.HasPrefix(host, prefix) && regLevel12.MatchString(host) {
-				continue
-			}
-			var location string
-			notHK := false
-			for l, p := range level3LocationsPrefixMap {
-				if prefix == `hk` && strings.Contains(remarks, l) {
-					notHK = true
-				}
-				if p == prefix {
-					location = l
-					break
-				}
-			}
-			if (!strings.Contains(remarks, location) || notHK) && regLevel3.MatchString(host) {
-				continue
-			}
-			// resolve host name to IP
-			ips, err := net.LookupIP(host)
-			if err != nil {
-				common.Error("lookup IP failed", err)
-				continue
-			}
-			for _, ip := range ips {
-				if ip.To4() == nil {
-					// invalid IPv4 address
-					continue
-				}
-				hosts = append(hosts, ip.String())
-			}
+	nodePolicy := `all`
+	if v, ok := config.Properties["policy"]; ok {
+		if nodePolicy, ok = v.(string); !ok {
+			nodePolicy = `all`
 		}
-		d.Hosts = append(d.Hosts, hosts)
+	}
+	switch strings.ToLower(nodePolicy) {
+	case "all":
+		for _, prefix := range d.Prefixes {
+			hosts := getAllHostsByPrefix(prefix, hostRemarksMap)
+			d.Hosts = append(d.Hosts, hosts)
+		}
+	case "area":
+		for _, prefix := range d.Prefixes {
+			hosts := getHostsByPrefix(prefix)
+			d.Hosts = append(d.Hosts, hosts)
+		}
+	case "unique":
+		hosts := getHostsByPrefix("unique")
+		for range d.Prefixes {
+			d.Hosts = append(d.Hosts, hosts)
+		}
+	default:
+		log.Fatal("unsupported node policy")
 	}
 
 	tmpl, err := fs.GetConfigPath(`haproxy.mixed.cfg.tmpl`)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/missdeer/avege/common"
 	"github.com/missdeer/avege/common/fs"
+	"github.com/missdeer/avege/config"
 )
 
 var (
@@ -27,6 +28,9 @@ func monitorFileChange(fileName string) {
 }
 
 func UpdateRedirFirewallRules() {
+	if v, ok := config.Properties["keep-node-unresolved"]; ok {
+		keepNodeUnresolved, ok = v.(bool)
+	}
 	if oneUpdateIptablesRules == nil {
 		oneUpdateIptablesRules = &sync.Once{}
 	}
