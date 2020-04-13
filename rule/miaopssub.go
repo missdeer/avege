@@ -307,10 +307,18 @@ func getHostsByPrefix(prefix string) (hosts []string) {
 }
 
 func generateHAProxyMixedConfiguration(hostRemarksMap map[string]string, prefixes []string, saveFile string) {
+	port := `59237`
+	if v, ok := config.Properties["port"]; ok {
+		if port, ok = v.(string); !ok {
+			port = `59237`
+		}
+	}
 	d := struct {
+		Port     string
 		Prefixes []string
 		Hosts    [][]string
 	}{
+		Port:     port,
 		Prefixes: prefixes,
 	}
 	nodePolicy := `all`

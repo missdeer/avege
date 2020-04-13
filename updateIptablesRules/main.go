@@ -23,13 +23,14 @@ func main() {
 	updateChinaIPList := false
 	keepNodeUnresolved := false
 	nodePolicy := "all"
+	port := `59237`
 	var uniqueNode, hkNode, sgNode, twNode, usNode, ruNode, euNode, cnNode, jpNode, krNode string
 
 	flag.StringVarP(&configFile, "config", "c", configFile, "Specify config file")
 	flag.BoolVarP(&updateAPNIC, "apnic", "n", updateAPNIC, "update APNIC list")
 	flag.BoolVarP(&updateChinaIPList, "china", "i", updateChinaIPList, "update China IP List")
 	flag.BoolVarP(&keepNodeUnresolved, "unresolved", "u", keepNodeUnresolved, "keep node domain name unresolved")
-	flag.StringVarP(&nodePolicy, "policy", "p", nodePolicy, "node policy: all, area, unique")
+	flag.StringVarP(&nodePolicy, "policy", "", nodePolicy, "node policy: all, area, unique")
 	flag.StringVarP(&uniqueNode, "unique", "", uniqueNode, "unique node address")
 	flag.StringVarP(&hkNode, "hk", "", hkNode, "hk node address")
 	flag.StringVarP(&sgNode, "sg", "", sgNode, "sg node address")
@@ -40,6 +41,7 @@ func main() {
 	flag.StringVarP(&jpNode, "jp", "", jpNode, "jp node address")
 	flag.StringVarP(&krNode, "kr", "", krNode, "kr node address")
 	flag.StringVarP(&cnNode, "cn", "", cnNode, "cn node address")
+	flag.StringVarP(&port, "port", "p", port, "port: 80, 233, 443, 543, 59237")
 
 	flag.Parse()
 
@@ -77,6 +79,7 @@ func main() {
 	config.Properties["jp"] = jpNode
 	config.Properties["kr"] = krNode
 	config.Properties["cn"] = cnNode
+	config.Properties["port"] = port
 
 	// read config file
 	var err error
