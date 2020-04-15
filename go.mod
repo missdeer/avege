@@ -11,20 +11,19 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff
 	github.com/gin-gonic/gin v1.6.2
-	github.com/golang/protobuf v1.3.5 // indirect
+	github.com/golang/protobuf v1.4.0 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/websocket v1.4.2
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/miekg/dns v1.1.29
-	github.com/missdeer/ProxyClient v0.0.0-20191007130722-f1046289d045
+	github.com/missdeer/ProxyClient v0.0.0-20200415134903-d5354ea45b97
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/shadowsocks/go-shadowsocks2 v0.1.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	gitlab.com/yawning/chacha20.git v0.0.0-20190903091407-6d1cb28dc72c
-	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71
+	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
-	golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa
+	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4
 )
