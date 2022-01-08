@@ -10,7 +10,7 @@ require (
 	github.com/ebfe/rc2 v0.0.0-20131011165748-24b9757f5521 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff
-	github.com/gin-gonic/gin v1.6.2
+	github.com/gin-gonic/gin v1.7.7
 	github.com/golang/protobuf v1.4.0 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/websocket v1.4.2
@@ -23,7 +23,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/spf13/pflag v1.0.5
 	gitlab.com/yawning/chacha20.git v0.0.0-20190903091407-6d1cb28dc72c
-	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4
 )
