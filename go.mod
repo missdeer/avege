@@ -8,7 +8,7 @@ require (
 	github.com/dgryski/go-idea v0.0.0-20170306091226-d2fb45a411fb
 	github.com/dgryski/go-rc2 v0.0.0-20150621095337-8a9021637152
 	github.com/ebfe/rc2 v0.0.0-20131011165748-24b9757f5521 // indirect
-	github.com/fsnotify/fsnotify v1.5.1
+	github.com/fsnotify/fsnotify v1.5.3
 	github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff
 	github.com/gin-gonic/gin v1.7.7
 	github.com/golang/protobuf v1.4.0 // indirect
