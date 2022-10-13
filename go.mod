@@ -8,7 +8,7 @@ require (
 	github.com/dgryski/go-idea v0.0.0-20170306091226-d2fb45a411fb
 	github.com/dgryski/go-rc2 v0.0.0-20150621095337-8a9021637152
 	github.com/ebfe/rc2 v0.0.0-20131011165748-24b9757f5521 // indirect
-	github.com/fsnotify/fsnotify v1.5.4
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/ftrvxmtrx/fd v0.0.0-20150925145434-c6d800382fff
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gomodule/redigo v2.0.0+incompatible
@@ -23,5 +23,5 @@ require (
 	gitlab.com/yawning/chacha20.git v0.0.0-20190903091407-6d1cb28dc72c
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
 	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
+	golang.org/x/sys v0.0.0-20220908164124-27713097b956
 )
