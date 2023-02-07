@@ -23,5 +23,5 @@ require (
 	gitlab.com/yawning/chacha20.git v0.0.0-20190903091407-6d1cb28dc72c
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 	golang.org/x/net v0.5.0
-	golang.org/x/sys v0.4.0
+	golang.org/x/sys v0.5.0
 )
