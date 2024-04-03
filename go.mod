@@ -23,7 +23,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	gitlab.com/yawning/chacha20.git v0.0.0-20190903091407-6d1cb28dc72c
 	golang.org/x/crypto v0.21.0
-	golang.org/x/net v0.22.0
+	golang.org/x/net v0.23.0
 	golang.org/x/sys v0.18.0
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
