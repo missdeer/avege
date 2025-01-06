@@ -22,7 +22,7 @@ require (
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	gitlab.com/yawning/chacha20.git v0.0.0-20190903091407-6d1cb28dc72c
-	golang.org/x/crypto v0.31.0
+	golang.org/x/crypto v0.32.0
 	golang.org/x/net v0.33.0
 	golang.org/x/sys v0.29.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
