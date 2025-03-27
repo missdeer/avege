@@ -2,7 +2,7 @@ module github.com/missdeer/avege
 
 go 1.23.0
 
-toolchain go1.23.6
+toolchain go1.24.1
 
 require (
 	github.com/DeanThompson/ginpprof v0.0.0-20190408063150-3be636683586
@@ -22,7 +22,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	gitlab.com/yawning/chacha20.git v0.0.0-20190903091407-6d1cb28dc72c
 	golang.org/x/crypto v0.36.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	golang.org/x/sys v0.31.0
 )
 
