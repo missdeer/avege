@@ -15,7 +15,7 @@ require (
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/websocket v1.5.3
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
-	github.com/miekg/dns v1.1.69
+	github.com/miekg/dns v1.1.70
 	github.com/missdeer/ProxyClient v0.0.0-20200415134903-d5354ea45b97
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/patrickmn/go-cache v2.1.0+incompatible
