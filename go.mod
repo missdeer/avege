@@ -1,6 +1,6 @@
 module github.com/missdeer/avege
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/DeanThompson/ginpprof v0.0.0-20190408063150-3be636683586
@@ -21,7 +21,7 @@ require (
 	gitlab.com/yawning/chacha20.git v0.0.0-20190903091407-6d1cb28dc72c
 	golang.org/x/crypto v0.55.0
 	golang.org/x/net v0.58.0
-	golang.org/x/sys v0.47.0
+	golang.org/x/sys v0.48.0
 )
 
 require (
